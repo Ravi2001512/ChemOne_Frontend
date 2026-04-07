@@ -1,16 +1,18 @@
 import React, { useState } from 'react';
 import { Plus, Trash2, Clock, BookOpen, Users, Save, ArrowLeft, CheckCircle2 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import AdminNavbar from '../../components/AdminNavbar';
 import API from '../../services/api';
 
 const CreateSpotTest = () => {
   const navigate = useNavigate();
+  const { id } = useParams();
+  const isEditMode = !!id;
   const [testDetails, setTestDetails] = useState({
     title: '',
     description: '',
     duration: '',
-    batch: '',
+    batch: [],
   });
 
   const [questions, setQuestions] = useState([
@@ -19,10 +21,59 @@ const CreateSpotTest = () => {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [loading, setLoading] = useState(isEditMode);
+
+  // Fetch test details if in edit mode
+  React.useEffect(() => {
+    if (isEditMode) {
+      const fetchTest = async () => {
+        try {
+          const response = await API.get(`/tests/${id}`);
+          if (response.data.success) {
+            const test = response.data.test;
+            setTestDetails({
+              title: test.title,
+              description: test.description || '',
+              duration: test.duration,
+              batch: test.batch,
+            });
+            // Ensure questions have numerical IDs for the UI key/removal logic
+            setQuestions(test.questions.map((q, i) => ({
+              ...q,
+              id: q._id || Date.now() + i
+            })));
+          }
+        } catch (error) {
+          console.error("Error fetching test:", error);
+          alert("Failed to fetch test data.");
+        } finally {
+          setLoading(false);
+        }
+      };
+      fetchTest();
+    }
+  }, [id, isEditMode]);
 
   const handleTestDetailChange = (e) => {
     const { name, value } = e.target;
     setTestDetails(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleBatchToggle = (batchValue) => {
+    setTestDetails(prev => {
+      const currentBatches = [...prev.batch];
+      if (batchValue === 'all') {
+        const isAllSelected = currentBatches.includes('all');
+        return { ...prev, batch: isAllSelected ? [] : ['all'] };
+      }
+      
+      const newBatches = currentBatches.filter(b => b !== 'all');
+      if (newBatches.includes(batchValue)) {
+        return { ...prev, batch: newBatches.filter(b => b !== batchValue) };
+      } else {
+        return { ...prev, batch: [...newBatches, batchValue] };
+      }
+    });
   };
 
   const addQuestion = () => {
@@ -61,8 +112,8 @@ const CreateSpotTest = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!testDetails.title || !testDetails.duration || !testDetails.batch) {
-      alert("Please fill in Title, Duration, and Batch.");
+    if (!testDetails.title || !testDetails.duration || testDetails.batch.length === 0) {
+      alert("Please fill in Title, Duration, and Select at least one Batch.");
       return;
     }
 
@@ -84,7 +135,12 @@ const CreateSpotTest = () => {
         }))
       };
 
-      const response = await API.post('/tests/create', finalData);
+      let response;
+      if (isEditMode) {
+        response = await API.put(`/tests/${id}`, finalData);
+      } else {
+        response = await API.post('/tests/create', finalData);
+      }
 
       if (response.data.success) {
         setSuccess(true);
@@ -116,8 +172,12 @@ const CreateSpotTest = () => {
               <ArrowLeft className="w-4 h-4 mr-1" />
               Back to Dashboard
             </button>
-            <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">Create Spot Test</h1>
-            <p className="mt-2 text-sm text-gray-500">Design a quick assessment for your students.</p>
+            <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">
+              {isEditMode ? 'Update Spot Test' : 'Create Spot Test'}
+            </h1>
+            <p className="mt-2 text-sm text-gray-500">
+              {isEditMode ? 'Modify your assessment details and questions.' : 'Design a quick assessment for your students.'}
+            </p>
           </div>
           <div className="flex space-x-3">
             <button 
@@ -146,7 +206,7 @@ const CreateSpotTest = () => {
               ) : (
                 <>
                   <Save className="w-4 h-4 mr-2" />
-                  Publish Test
+                  Save Test
                 </>
               )}
             </button>
@@ -160,7 +220,7 @@ const CreateSpotTest = () => {
                 <CheckCircle2 className="h-5 w-5 text-green-400" aria-hidden="true" />
               </div>
               <div className="ml-3">
-                <h3 className="text-sm font-medium text-green-800">Test successfully created and published!</h3>
+                <h3 className="text-sm font-medium text-green-800">Test successfully saved!</h3>
               </div>
             </div>
           </div>
@@ -232,28 +292,31 @@ const CreateSpotTest = () => {
                 </div>
               </div>
 
-              <div className="sm:col-span-3">
-                <label htmlFor="batch" className="block text-sm font-medium leading-6 text-gray-900">
-                  Target Batch/Class
+              <div className="col-span-full">
+                <label className="block text-sm font-medium leading-6 text-gray-900 mb-2">
+                  Target Batches
                 </label>
-                <div className="mt-2 text-gray-700">
-                  <div className="flex rounded-md shadow-sm ring-1 ring-inset ring-gray-300 focus-within:ring-2 focus-within:ring-inset focus-within:ring-indigo-600 sm:max-w-md bg-white">
-                    <span className="flex select-none items-center pl-3 text-gray-400 sm:text-sm">
-                      <Users className="w-4 h-4" />
-                    </span>
-                    <select
-                      id="batch"
-                      name="batch"
-                      value={testDetails.batch}
-                      onChange={handleTestDetailChange}
-                      className="block flex-1 border-0 bg-transparent py-2.5 pl-2 text-gray-900 focus:ring-0 sm:text-sm sm:leading-6"
-                    >
-                      <option value="">Select a batch</option>
-                      <option value="batch_2024">Batch 2024 - Morning</option>
-                      <option value="batch_2025">Batch 2025 - Evening</option>
-                      <option value="all">All Students</option>
-                    </select>
-                  </div>
+                <div className="mt-2 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3 p-4 bg-gray-50 rounded-xl border border-gray-200">
+                  {['2026', '2027', '2028', '2029', '2030', 'all'].map((b) => (
+                    <label key={b} className="flex items-center gap-2 cursor-pointer group">
+                      <div className="relative flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={testDetails.batch.includes(b)}
+                          onChange={() => handleBatchToggle(b)}
+                          className="peer h-5 w-5 cursor-pointer appearance-none rounded-md border border-slate-300 transition-all checked:border-indigo-600 checked:bg-indigo-600 focus:outline-none"
+                        />
+                        <span className="absolute text-white opacity-0 peer-checked:opacity-100 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor" stroke="currentColor" strokeWidth="1">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"></path>
+                          </svg>
+                        </span>
+                      </div>
+                      <span className="text-sm font-medium text-gray-700 group-hover:text-indigo-600 capitalize">
+                        {b === 'all' ? 'All Students' : `${b}`}
+                      </span>
+                    </label>
+                  ))}
                 </div>
               </div>
 

@@ -103,7 +103,7 @@ function Field({ label, icon, children }) {
 export default function Signup() {
   const navigate = useNavigate();
   const [form, setForm] = useState({
-    name: "", email: "", password: "", confirmPassword: "", role: "student",
+    name: "", email: "", password: "", confirmPassword: "", role: "student", batch: "",
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -121,6 +121,7 @@ export default function Signup() {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) return setError("Enter a valid email address.");
     if (form.password.length < 6) return setError("Password must be at least 6 characters.");
     if (form.password !== form.confirmPassword) return setError("Passwords do not match.");
+    if (form.role === "student" && !form.batch) return setError("Please select your batch.");
     return true;
   };
 
@@ -312,17 +313,36 @@ export default function Signup() {
                 )}
               </div>
 
-              {/* Role */}
-              <Field label="I am a…" icon="🎓">
-                <select
-                  className={`${inp} appearance-none cursor-pointer pr-8`}
-                  name="role" value={form.role} onChange={change}
-                >
-                  <option value="student">Student</option>
-                  <option value="instructor">Instructor</option>
-                </select>
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-600 text-xs pointer-events-none">▾</span>
-              </Field>
+              {/* Role & Batch */}
+              <div className={form.role === "student" ? "grid grid-cols-1 sm:grid-cols-2 gap-4" : "w-full"}>
+                <Field label="I am a…" icon="🎓">
+                  <select
+                    className={`${inp} appearance-none cursor-pointer pr-8`}
+                    name="role" value={form.role} onChange={change}
+                  >
+                    <option value="student">Student</option>
+                    <option value="instructor">Instructor</option>
+                  </select>
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-600 text-xs pointer-events-none">▾</span>
+                </Field>
+
+                {form.role === "student" && (
+                  <Field label="Batch" icon="📅">
+                    <select
+                      className={`${inp} appearance-none cursor-pointer pr-8`}
+                      name="batch" value={form.batch} onChange={change}
+                    >
+                      <option value="">Select Batch</option>
+                      <option value="2026">2026 Batch</option>
+                      <option value="2027">2027 Batch</option>
+                      <option value="2028">2028 Batch</option>
+                      <option value="2029">2029 Batch</option>
+                      <option value="2030">2030 Batch</option>
+                    </select>
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-600 text-xs pointer-events-none">▾</span>
+                  </Field>
+                )}
+              </div>
 
               {/* Submit */}
               <button

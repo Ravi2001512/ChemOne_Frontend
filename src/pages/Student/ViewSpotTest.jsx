@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BookOpen, Clock, ChevronRight, Search, Layout } from 'lucide-react';
+import { BookOpen, Clock, ChevronRight, Search, Layout, CheckCircle2 } from 'lucide-react';
 import StudentNavbar from '../../components/StudentNavbar';
 import API from '../../services/api';
 
@@ -31,7 +31,7 @@ const ViewSpotTest = () => {
 
   const filteredTests = tests.filter(test => 
     test.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    test.batch.toLowerCase().includes(searchQuery.toLowerCase())
+    (Array.isArray(test.batch) ? test.batch.join(' ').toLowerCase() : test.batch.toLowerCase()).includes(searchQuery.toLowerCase())
   );
 
   return (
@@ -85,25 +85,40 @@ const ViewSpotTest = () => {
             {filteredTests.map((test) => (
               <div 
                 key={test._id} 
-                className="group bg-white rounded-3xl border border-slate-100 shadow-sm hover:shadow-xl hover:border-indigo-100 transition-all duration-300 overflow-hidden cursor-pointer flex flex-col"
-                onClick={() => navigate(`/student/spot-test/${test._id}`)}
+                className={`group bg-white rounded-3xl border ${test.isSubmitted ? 'border-green-100' : 'border-slate-100'} shadow-sm hover:shadow-xl hover:border-indigo-100 transition-all duration-300 overflow-hidden ${test.isSubmitted ? 'cursor-default' : 'cursor-pointer'} flex flex-col`}
+                onClick={() => !test.isSubmitted && navigate(`/student/spot-test/${test._id}`)}
               >
                 <div className="p-6 flex-1">
                   <div className="flex items-start justify-between mb-4">
-                    <div className="p-3 bg-indigo-50 rounded-2xl text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-colors duration-300">
+                    <div className={`p-3 rounded-2xl ${test.isSubmitted ? 'bg-green-50 text-green-600' : 'bg-indigo-50 text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white'} transition-colors duration-300`}>
                       <Layout className="h-6 w-6" />
                     </div>
-                    <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-600">
-                      {test.batch}
-                    </span>
+                    {test.isSubmitted ? (
+                      <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700">
+                        COMPLETED
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-600">
+                        {Array.isArray(test.batch) 
+                          ? (test.batch.includes('all') ? 'ALL STUDENTS' : test.batch.join('/'))
+                          : test.batch}
+                      </span>
+                    )}
                   </div>
                   
-                  <h3 className="text-xl font-bold text-slate-900 mb-2 group-hover:text-indigo-600 transition-colors">
+                  <h3 className={`text-xl font-bold ${test.isSubmitted ? 'text-slate-700' : 'text-slate-900'} mb-2 group-hover:text-indigo-600 transition-colors`}>
                     {test.title}
                   </h3>
-                  <p className="text-slate-500 text-sm line-clamp-2 mb-6">
-                    {test.description || "No description provided."}
-                  </p>
+                  {test.isSubmitted ? (
+                    <div className="bg-green-50/50 rounded-xl p-3 mb-4">
+                       <p className="text-xs text-green-700 font-bold uppercase tracking-wider mb-1">Your Result</p>
+                       <p className="text-2xl font-black text-green-600">{test.score} / {test.totalMarks}</p>
+                    </div>
+                  ) : (
+                    <p className="text-slate-500 text-sm line-clamp-2 mb-6">
+                      {test.description || "No description provided."}
+                    </p>
+                  )}
                   
                   <div className="flex items-center gap-4 text-sm font-medium text-slate-600">
                     <div className="flex items-center gap-1.5">
@@ -117,9 +132,12 @@ const ViewSpotTest = () => {
                   </div>
                 </div>
                 
-                <div className="px-6 py-4 bg-slate-50 group-hover:bg-indigo-50 transition-colors flex items-center justify-between">
-                  <span className="text-indigo-600 font-bold text-sm">Start Test</span>
-                  <ChevronRight className="h-5 w-5 text-indigo-600 transform group-hover:translate-x-1 transition-transform" />
+                <div className={`px-6 py-4 ${test.isSubmitted ? 'bg-green-50/30' : 'bg-slate-50 group-hover:bg-indigo-50'} transition-colors flex items-center justify-between`}>
+                  <span className={`${test.isSubmitted ? 'text-green-700' : 'text-indigo-600'} font-bold text-sm`}>
+                    {test.isSubmitted ? "Submission Received" : "Start Test"}
+                  </span>
+                  {!test.isSubmitted && <ChevronRight className="h-5 w-5 text-indigo-600 transform group-hover:translate-x-1 transition-transform" />}
+                  {test.isSubmitted && <CheckCircle2 className="h-5 w-5 text-green-600" />}
                 </div>
               </div>
             ))}

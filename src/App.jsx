@@ -21,6 +21,7 @@ function App() {
         {/* Admin Routes */}
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/admin/spot-test/create" element={<CreateSpotTest />} />
+        <Route path="/admin/spot-test/edit/:id" element={<CreateSpotTest />} />
 
         {/* Student Routes */}
         <Route path="/student" element={<StudentDashboard />} />
