@@ -34,11 +34,18 @@ const KEYFRAMES = `
     100%{ transform:scale(1.4); opacity:0;  }
   }
 
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    10%, 30%, 50%, 70%, 90% { transform: translateX(-4px); }
+    20%, 40%, 60%, 80% { transform: translateX(4px); }
+  }
+
   .font-syne { font-family:'Syne',sans-serif; }
   .font-dm   { font-family:'DM Sans',sans-serif; }
   .blob-a    { animation:blobA 16s ease-in-out infinite; }
   .blob-b    { animation:blobB 20s ease-in-out infinite; }
   .card-in   { animation:fadeUp .65s cubic-bezier(.22,.68,0,1.2) both; }
+  .animate-shake { animation: shake 0.5s cubic-bezier(.36, .07, .19, .97) both; }
   .success-in{ animation:fadeUp .55s ease both; }
   .shimmer-layer {
     background:linear-gradient(90deg,transparent 0%,rgba(255,255,255,.18) 50%,transparent 100%);
@@ -136,7 +143,9 @@ export default function Signup() {
       setSuccess(true);
       setTimeout(() => navigate("/login"), 2200);
     } catch (err) {
-      setError(err.response?.data?.message || "Something went wrong.");
+      console.error("Signup error:", err);
+      const msg = err.response?.data?.message || err.message || "An unexpected server error occurred.";
+      setError(msg);
     } finally {
       setLoading(false);
     }
@@ -221,7 +230,7 @@ export default function Signup() {
                 <div className="absolute inset-0 bg-blue-500/20 blur-xl rounded-full"></div>
                 {/* The actual image */}
                 <img
-                  src="/ashan.png"
+                  src="/ashan.jpeg"
                   alt="ChemOne Profile"
                   className="relative z-10 w-full object-cover rounded-2xl shadow-2xl border border-white/10 transition-transform hover:scale-105 duration-300"
                 />
@@ -250,8 +259,9 @@ export default function Signup() {
 
             {/* Error */}
             {error && (
-              <div className="flex items-center gap-2 bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded-xl px-4 py-3 mb-5">
-                <span>⚠</span> {error}
+              <div className="animate-shake flex items-center gap-3 bg-red-500/10 border border-red-500/20 text-red-400 text-sm rounded-xl px-4 py-3.5 mb-6 shadow-[0_0_20px_rgba(239,68,68,0.1)]">
+                <span className="text-lg">⚠️</span>
+                <span className="flex-1 leading-relaxed">{error}</span>
               </div>
             )}
 

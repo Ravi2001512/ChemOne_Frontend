@@ -16,6 +16,7 @@ const TakeSpotTest = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isFinished, setIsFinished] = useState(false);
   const [finalScore, setFinalScore] = useState(null);
+  const [startTime] = useState(Date.now());
 
   useEffect(() => {
     const fetchTest = async () => {
@@ -67,6 +68,8 @@ const TakeSpotTest = () => {
     if (isSubmitting || isFinished) return;
     
     setIsSubmitting(true);
+    const timeTaken = Math.floor((Date.now() - startTime) / 1000);
+
     try {
       const formattedAnswers = answers.map((ans, idx) => ({
         questionIndex: idx,
@@ -75,7 +78,8 @@ const TakeSpotTest = () => {
 
       const response = await API.post('/tests/submit', {
         testId: id,
-        answers: formattedAnswers
+        answers: formattedAnswers,
+        timeTaken
       });
 
       if (response.data.success) {
@@ -113,15 +117,23 @@ const TakeSpotTest = () => {
             <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6">
               <CheckCircle2 className="h-12 w-12" />
             </div>
-            <h2 className="text-3xl font-extrabold text-slate-900 mb-2">Test Completed!</h2>
-            <p className="text-slate-500 mb-8">Your assessment has been successfully submitted for review.</p>
+            <h2 className="text-3xl font-extrabold text-slate-900 mb-2">
+              {test?.testType === 'image' ? 'Resource Viewed!' : 'Test Completed!'}
+            </h2>
+            <p className="text-slate-500 mb-8">
+              {test?.testType === 'image' 
+                ? 'You have successfully viewed this resource material.' 
+                : 'Your assessment has been successfully submitted for review.'}
+            </p>
             
-            <div className="bg-slate-50 rounded-2xl p-6 mb-8 flex justify-around">
-              <div>
-                <p className="text-xs text-slate-400 uppercase font-bold tracking-wider mb-1">Your Score</p>
-                <p className="text-4xl font-black text-indigo-600">{finalScore?.score} / {finalScore?.totalMarks}</p>
+            {test?.testType === 'mcq' && (
+              <div className="bg-slate-50 rounded-2xl p-6 mb-8 flex justify-around">
+                <div>
+                  <p className="text-xs text-slate-400 uppercase font-bold tracking-wider mb-1">Your Score</p>
+                  <p className="text-4xl font-black text-indigo-600">{finalScore?.score} / {finalScore?.totalMarks}</p>
+                </div>
               </div>
-            </div>
+            )}
 
             <button
               onClick={() => navigate('/student')}
@@ -129,6 +141,60 @@ const TakeSpotTest = () => {
             >
               Back to Dashboard
             </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Handle Image Type content
+  if (test.testType === 'image') {
+    return (
+      <div className="min-h-screen bg-slate-50">
+        <StudentNavbar />
+        <div className="max-w-5xl mx-auto px-4 py-12">
+          <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-xl overflow-hidden">
+            <div className="p-8 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-indigo-600 text-white rounded-2xl shadow-lg shadow-indigo-200">
+                  <Flag className="h-6 w-6" />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-black text-slate-900 tracking-tight">{test.title}</h2>
+                  <p className="text-slate-500 text-sm font-medium">Resource Material</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-6">
+                <div className={`flex items-center gap-3 px-4 py-2 rounded-xl border-2 ${timeLeft < 60 ? 'border-red-200 bg-red-50 text-red-600' : 'border-indigo-100 bg-indigo-50 text-indigo-600'} transition-colors`}>
+                  <Clock className="h-5 w-5" />
+                  <span className="font-mono text-xl font-bold">{formatTime(timeLeft)}</span>
+                </div>
+                <button 
+                  onClick={handleSubmit}
+                  disabled={isSubmitting}
+                  className="px-8 py-3 bg-slate-900 text-white font-black rounded-2xl hover:bg-slate-800 transition-all shadow-lg disabled:opacity-50"
+                >
+                  {isSubmitting ? 'Recording...' : 'Mark as Viewed'}
+                </button>
+              </div>
+            </div>
+            
+            <div className="p-2 bg-slate-900 flex justify-center">
+               <img 
+                src={test.testImage} 
+                alt={test.title} 
+                className="max-w-full h-auto shadow-2xl rounded-xl"
+                onContextMenu={(e) => e.preventDefault()} // Basic protection
+              />
+            </div>
+            
+            {test.description && (
+              <div className="p-8 bg-indigo-50/30">
+                <h4 className="text-xs font-black text-indigo-400 uppercase tracking-widest mb-2">Instructor Instructions</h4>
+                <p className="text-slate-700 font-medium leading-relaxed">{test.description}</p>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -176,11 +242,11 @@ const TakeSpotTest = () => {
           </span>
           
           <h2 className="text-2xl font-bold text-slate-900 leading-snug mb-10">
-            {currentQuestion.text}
+            {currentQuestion?.text}
           </h2>
 
           <div className="space-y-4">
-            {currentQuestion.options.map((option, idx) => (
+            {currentQuestion?.options.map((option, idx) => (
               <div 
                 key={idx}
                 onClick={() => handleOptionSelect(idx)}

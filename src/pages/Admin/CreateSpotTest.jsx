@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Trash2, Clock, BookOpen, Users, Save, ArrowLeft, CheckCircle2 } from 'lucide-react';
+import { Plus, Trash2, Clock, BookOpen, Users, Save, ArrowLeft, CheckCircle2, Image as ImageIcon, Upload, X } from 'lucide-react';
 import { useNavigate, useParams } from 'react-router-dom';
 import AdminNavbar from '../../components/AdminNavbar';
 import API from '../../services/api';
@@ -13,6 +13,8 @@ const CreateSpotTest = () => {
     description: '',
     duration: '',
     batch: [],
+    testType: 'mcq',
+    testImage: null,
   });
 
   const [questions, setQuestions] = useState([
@@ -22,6 +24,7 @@ const CreateSpotTest = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(isEditMode);
+  const [selectedFile, setSelectedFile] = useState(null);
 
   // Fetch test details if in edit mode
   React.useEffect(() => {
@@ -57,6 +60,18 @@ const CreateSpotTest = () => {
   const handleTestDetailChange = (e) => {
     const { name, value } = e.target;
     setTestDetails(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setSelectedFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setTestDetails(prev => ({ ...prev, testImage: reader.result }));
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const handleBatchToggle = (batchValue) => {
@@ -113,11 +128,16 @@ const CreateSpotTest = () => {
     e.preventDefault();
 
     if (!testDetails.title || !testDetails.duration || testDetails.batch.length === 0) {
-      alert("Please fill in Title, Duration, and Select at least one Batch.");
+      alert("Please fill in Title, Duration and Select at least one Batch.");
       return;
     }
 
-    if (questions.some(q => !q.text)) {
+    if (testDetails.testType === 'image' && !testDetails.testImage) {
+      alert("Please upload an image.");
+      return;
+    }
+
+    if (testDetails.testType === 'mcq' && questions.some(q => !q.text)) {
       alert("Please fill in all question texts.");
       return;
     }
@@ -125,14 +145,28 @@ const CreateSpotTest = () => {
     setIsSubmitting(true);
     
     try {
+      let imageUrl = testDetails.testImage;
+
+      // Upload file if new one is selected
+      if (selectedFile) {
+        const formData = new FormData();
+        formData.append('image', selectedFile);
+        const uploadRes = await API.post('/upload', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
+        if (uploadRes.data.success) {
+          imageUrl = uploadRes.data.fileUrl;
+        }
+      }
+
       // Ensure numerical conversion for duration
       const finalData = {
         ...testDetails,
+        testImage: imageUrl,
         duration: Number(testDetails.duration),
-        questions: questions.map(q => ({
-          ...q,
-          marks: Number(q.marks)
-        }))
+        questions: testDetails.testType === 'mcq' 
+          ? questions.map(q => ({ ...q, marks: Number(q.marks) }))
+          : []
       };
 
       let response;
@@ -226,200 +260,332 @@ const CreateSpotTest = () => {
           </div>
         )}
 
-        <div className="bg-white shadow-sm ring-1 ring-gray-900/5 sm:rounded-xl md:col-span-2 mb-8">
-          <div className="px-4 py-6 sm:p-8">
-            <div className="grid max-w-2xl grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6">
-              
-              <div className="sm:col-span-4">
-                <label htmlFor="title" className="block text-sm font-medium leading-6 text-gray-900">
-                  Test Title
-                </label>
-                <div className="mt-2 text-gray-700">
-                  <div className="flex rounded-md shadow-sm ring-1 ring-inset ring-gray-300 focus-within:ring-2 focus-within:ring-inset focus-within:ring-indigo-600 sm:max-w-md bg-white">
-                    <span className="flex select-none items-center pl-3 text-gray-400 sm:text-sm">
-                      <BookOpen className="w-4 h-4" />
-                    </span>
-                    <input
-                      type="text"
-                      name="title"
-                      id="title"
-                      value={testDetails.title}
-                      onChange={handleTestDetailChange}
-                      className="block flex-1 border-0 bg-transparent py-2.5 pl-2 text-gray-900 placeholder:text-gray-400 focus:ring-0 sm:text-sm sm:leading-6"
-                      placeholder="e.g. Organic Chemistry Weekly Quiz"
-                    />
-                  </div>
-                </div>
-              </div>
 
-              <div className="col-span-full">
-                <label htmlFor="description" className="block text-sm font-medium leading-6 text-gray-900">
-                  Description / Instructions
-                </label>
-                <div className="mt-2 text-gray-700">
-                  <textarea
-                    id="description"
-                    name="description"
-                    rows={3}
-                    value={testDetails.description}
-                    onChange={handleTestDetailChange}
-                    className="block w-full rounded-md border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
-                    placeholder="Enter instructions for the students..."
-                  />
-                </div>
-              </div>
-
-              <div className="sm:col-span-3">
-                <label htmlFor="duration" className="block text-sm font-medium leading-6 text-gray-900">
-                  Duration (Minutes)
-                </label>
-                <div className="mt-2 text-gray-700">
-                  <div className="flex rounded-md shadow-sm ring-1 ring-inset ring-gray-300 focus-within:ring-2 focus-within:ring-inset focus-within:ring-indigo-600 sm:max-w-md bg-white">
-                    <span className="flex select-none items-center pl-3 text-gray-400 sm:text-sm">
-                      <Clock className="w-4 h-4" />
-                    </span>
-                    <input
-                      type="number"
-                      name="duration"
-                      id="duration"
-                      min="1"
-                      value={testDetails.duration}
-                      onChange={handleTestDetailChange}
-                      className="block flex-1 border-0 bg-transparent py-2.5 pl-2 text-gray-900 placeholder:text-gray-400 focus:ring-0 sm:text-sm sm:leading-6"
-                      placeholder="e.g. 15"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="col-span-full">
-                <label className="block text-sm font-medium leading-6 text-gray-900 mb-2">
-                  Target Batches
-                </label>
-                <div className="mt-2 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3 p-4 bg-gray-50 rounded-xl border border-gray-200">
-                  {['2026', '2027', '2028', '2029', '2030', 'all'].map((b) => (
-                    <label key={b} className="flex items-center gap-2 cursor-pointer group">
-                      <div className="relative flex items-center">
-                        <input
-                          type="checkbox"
-                          checked={testDetails.batch.includes(b)}
-                          onChange={() => handleBatchToggle(b)}
-                          className="peer h-5 w-5 cursor-pointer appearance-none rounded-md border border-slate-300 transition-all checked:border-indigo-600 checked:bg-indigo-600 focus:outline-none"
-                        />
-                        <span className="absolute text-white opacity-0 peer-checked:opacity-100 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none">
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor" stroke="currentColor" strokeWidth="1">
-                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"></path>
-                          </svg>
-                        </span>
-                      </div>
-                      <span className="text-sm font-medium text-gray-700 group-hover:text-indigo-600 capitalize">
-                        {b === 'all' ? 'All Students' : `${b}`}
-                      </span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
+        {/* Test Type Selection */}
+        <div className="mb-8 grid grid-cols-2 gap-4">
+          <button
+            onClick={() => setTestDetails(prev => ({ ...prev, testType: 'mcq' }))}
+            className={`flex items-center justify-center gap-3 p-5 rounded-3xl border-2 transition-all ${
+              testDetails.testType === 'mcq' 
+              ? 'border-indigo-600 bg-indigo-50/50 shadow-md transform -translate-y-0.5' 
+              : 'border-slate-100 bg-white hover:border-indigo-200'
+            }`}
+          >
+            <div className={`p-2 rounded-xl ${testDetails.testType === 'mcq' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-500'}`}>
+              <BookOpen className="h-6 w-6" />
             </div>
-          </div>
+            <div className="text-left">
+              <p className={`font-black uppercase tracking-widest text-[10px] ${testDetails.testType === 'mcq' ? 'text-indigo-600' : 'text-slate-400'}`}>Type A</p>
+              <h3 className={`text-lg font-black ${testDetails.testType === 'mcq' ? 'text-slate-900' : 'text-slate-600'}`}>MCQ Assessment</h3>
+            </div>
+          </button>
+
+          <button
+            onClick={() => setTestDetails(prev => ({ ...prev, testType: 'image' }))}
+            className={`flex items-center justify-center gap-3 p-5 rounded-3xl border-2 transition-all ${
+              testDetails.testType === 'image' 
+              ? 'border-indigo-600 bg-indigo-50/50 shadow-md transform -translate-y-0.5' 
+              : 'border-slate-100 bg-white hover:border-indigo-200'
+            }`}
+          >
+            <div className={`p-2 rounded-xl ${testDetails.testType === 'image' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-500'}`}>
+              <ImageIcon className="h-6 w-6" />
+            </div>
+            <div className="text-left">
+              <p className={`font-black uppercase tracking-widest text-[10px] ${testDetails.testType === 'image' ? 'text-indigo-600' : 'text-slate-400'}`}>Type B</p>
+              <h3 className={`text-lg font-black ${testDetails.testType === 'image' ? 'text-slate-900' : 'text-slate-600'}`}>Image Content</h3>
+            </div>
+          </button>
         </div>
 
-        <div className="mb-6 flex items-center justify-between">
-          <h2 className="text-xl font-bold text-gray-900">Questions</h2>
-          <span className="inline-flex items-center rounded-md bg-indigo-50 px-2.5 py-1 text-sm font-medium text-indigo-700 ring-1 ring-inset ring-indigo-700/10">
-            Total Questions: {questions.length}
-          </span>
-        </div>
-
-        <div className="space-y-6">
-          {questions.map((q, index) => (
-            <div key={q.id} className="bg-white shadow-sm ring-1 ring-gray-900/5 sm:rounded-xl relative overflow-hidden transition-all duration-200 hover:shadow-md">
-              <div className="absolute top-0 left-0 w-1 h-full bg-indigo-500"></div>
-              <div className="px-4 py-5 sm:p-6">
-                <div className="flex justify-between items-start mb-6">
-                  <h3 className="text-lg font-semibold text-gray-900 flex items-center">
-                    <span className="flex items-center justify-center bg-indigo-100 text-indigo-700 w-8 h-8 rounded-full mr-3 text-sm">
-                      {index + 1}
-                    </span>
-                    Question Setup
-                  </h3>
-                  <button
-                    onClick={() => removeQuestion(q.id)}
-                    className="text-gray-400 hover:text-red-500 transition-colors p-2 rounded-full hover:bg-red-50"
-                    title="Remove Question"
-                  >
-                    <Trash2 className="w-5 h-5" />
-                  </button>
-                </div>
-
-                <div className="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6 mb-6">
+        {/* Form Sections */}
+        {testDetails.testType === 'mcq' ? (
+          <>
+            <div className="bg-white shadow-sm ring-1 ring-gray-900/5 sm:rounded-xl md:col-span-2 mb-8">
+              <div className="px-4 py-6 sm:p-8">
+                <div className="grid max-w-2xl grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6">
+                  
                   <div className="sm:col-span-4">
-                    <label className="block text-sm font-medium leading-6 text-gray-700 mb-2">Question Text</label>
-                    <textarea
-                      rows={2}
-                      value={q.text}
-                      onChange={(e) => handleQuestionChange(q.id, 'text', e.target.value)}
-                      className="block w-full rounded-md border-0 py-2.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
-                      placeholder="What is the chemical formula for..."
-                    />
-                  </div>
-                  <div className="sm:col-span-2">
-                    <label className="block text-sm font-medium leading-6 text-gray-700 mb-2">Marks</label>
-                    <input
-                      type="number"
-                      min="1"
-                      value={q.marks}
-                      onChange={(e) => handleQuestionChange(q.id, 'marks', e.target.value)}
-                      className="block w-full rounded-md border-0 py-2.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
-                    />
-                  </div>
-                </div>
-
-                {q.type === 'mcq' && (
-                  <div className="bg-gray-50 rounded-lg p-5 border border-gray-100">
-                    <label className="block text-sm font-medium leading-6 text-gray-900 mb-4">
-                      Answer Options <span className="text-gray-500 font-normal ml-1">(Select the correct one)</span>
+                    <label htmlFor="title" className="block text-sm font-medium leading-6 text-gray-900">
+                      Test Title
                     </label>
-                    <div className="space-y-3">
-                      {q.options.map((option, optIdx) => (
-                        <div key={optIdx} className="flex items-center">
-                          <input
-                            type="radio"
-                            name={`correct-option-${q.id}`}
-                            checked={q.correctOption === optIdx}
-                            onChange={() => handleQuestionChange(q.id, 'correctOption', optIdx)}
-                            className="h-5 w-5 border-gray-300 text-indigo-600 focus:ring-indigo-600 cursor-pointer"
-                          />
-                          <div className="ml-3 flex-1">
+                    <div className="mt-2 text-gray-700">
+                      <div className="flex rounded-md shadow-sm ring-1 ring-inset ring-gray-300 focus-within:ring-2 focus-within:ring-inset focus-within:ring-indigo-600 sm:max-w-md bg-white">
+                        <span className="flex select-none items-center pl-3 text-gray-400 sm:text-sm">
+                          <BookOpen className="w-4 h-4" />
+                        </span>
+                        <input
+                          type="text"
+                          name="title"
+                          id="title"
+                          value={testDetails.title}
+                          onChange={handleTestDetailChange}
+                          className="block flex-1 border-0 bg-transparent py-2.5 pl-2 text-gray-900 placeholder:text-gray-400 focus:ring-0 sm:text-sm sm:leading-6"
+                          placeholder="e.g. Organic Chemistry Weekly Quiz"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="col-span-full">
+                    <label htmlFor="description" className="block text-sm font-medium leading-6 text-gray-900">
+                      Description / Instructions
+                    </label>
+                    <div className="mt-2 text-gray-700">
+                      <textarea
+                        id="description"
+                        name="description"
+                        rows={3}
+                        value={testDetails.description}
+                        onChange={handleTestDetailChange}
+                        className="block w-full rounded-md border-0 py-2.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
+                        placeholder="Enter instructions for the students..."
+                      />
+                    </div>
+                  </div>
+
+                  <div className="sm:col-span-3">
+                    <label htmlFor="duration" className="block text-sm font-medium leading-6 text-gray-900">
+                      Duration (Minutes)
+                    </label>
+                    <div className="mt-2 text-gray-700">
+                      <div className="flex rounded-md shadow-sm ring-1 ring-inset ring-gray-300 focus-within:ring-2 focus-within:ring-inset focus-within:ring-indigo-600 sm:max-w-md bg-white">
+                        <span className="flex select-none items-center pl-3 text-gray-400 sm:text-sm">
+                          <Clock className="w-4 h-4" />
+                        </span>
+                        <input
+                          type="number"
+                          name="duration"
+                          id="duration"
+                          min="1"
+                          value={testDetails.duration}
+                          onChange={handleTestDetailChange}
+                          className="block flex-1 border-0 bg-transparent py-2.5 pl-2 text-gray-900 placeholder:text-gray-400 focus:ring-0 sm:text-sm sm:leading-6"
+                          placeholder="e.g. 15"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="col-span-full">
+                    <label className="block text-sm font-medium leading-6 text-gray-900 mb-2">
+                      Target Batches
+                    </label>
+                    <div className="mt-2 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3 p-4 bg-gray-50 rounded-xl border border-gray-200">
+                      {['2026', '2027', '2028', '2029', '2030', 'all'].map((b) => (
+                        <label key={b} className="flex items-center gap-2 cursor-pointer group">
+                          <div className="relative flex items-center">
+                            <input
+                              type="checkbox"
+                              checked={testDetails.batch.includes(b)}
+                              onChange={() => handleBatchToggle(b)}
+                              className="peer h-5 w-5 cursor-pointer appearance-none rounded-md border border-slate-300 transition-all checked:border-indigo-600 checked:bg-indigo-600 focus:outline-none"
+                            />
+                            <span className="absolute text-white opacity-0 peer-checked:opacity-100 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none">
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor" stroke="currentColor" strokeWidth="1">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"></path>
+                              </svg>
+                            </span>
+                          </div>
+                          <span className="text-sm font-medium text-gray-700 group-hover:text-indigo-600 capitalize">
+                            {b === 'all' ? 'All Students' : `${b}`}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+            </div>
+
+            <div className="mb-6 flex items-center justify-between">
+              <h2 className="text-xl font-extrabold text-slate-900 tracking-tight">Questions Selection</h2>
+              <span className="inline-flex items-center px-4 py-1.5 rounded-full text-xs font-black bg-indigo-50 text-indigo-700 tracking-wider">
+                Total: {questions.length} Questions
+              </span>
+            </div>
+
+            <div className="space-y-6">
+              {questions.map((q, index) => (
+                <div key={q.id} className="bg-white shadow-xl shadow-slate-100 rounded-3xl border border-slate-100 transition-all duration-300 hover:border-indigo-100">
+                  <div className="px-6 py-8">
+                    <div className="flex justify-between items-start mb-8">
+                      <div className="flex items-center gap-4">
+                        <div className="bg-indigo-600 text-white w-10 h-10 rounded-2xl flex items-center justify-center font-black shadow-lg shadow-indigo-200">
+                          {index + 1}
+                        </div>
+                        <h3 className="text-lg font-black text-slate-900 tracking-tight">Question Setup</h3>
+                      </div>
+                      <button
+                        onClick={() => removeQuestion(q.id)}
+                        className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
+                      >
+                        <Trash2 className="w-5 h-5" />
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6 mb-6">
+                      <div className="sm:col-span-4">
+                        <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Question Prompt</label>
+                        <textarea
+                          rows={2}
+                          value={q.text}
+                          onChange={(e) => handleQuestionChange(q.id, 'text', e.target.value)}
+                          className="block w-full px-4 py-3 rounded-2xl border border-slate-200 bg-slate-50 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-slate-900 transition-all font-medium"
+                          placeholder="What is the chemical formula for..."
+                        />
+                      </div>
+                      <div className="sm:col-span-2">
+                        <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Marks Value</label>
+                        <input
+                          type="number"
+                          min="1"
+                          value={q.marks}
+                          onChange={(e) => handleQuestionChange(q.id, 'marks', e.target.value)}
+                          className="block w-full px-4 py-3 rounded-2xl border border-slate-200 bg-slate-50 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-slate-900 transition-all font-black text-lg"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="bg-slate-50/50 rounded-3xl p-6 border border-slate-100">
+                      <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-4">
+                        Answer Options <span className="text-indigo-400 lowercase font-bold ml-1">(select the correct path)</span>
+                      </label>
+                      <div className="space-y-3">
+                        {q.options.map((option, optIdx) => (
+                          <div key={optIdx} className="flex items-center gap-3">
+                            <input
+                              type="radio"
+                              name={`correct-option-${q.id}`}
+                              checked={q.correctOption === optIdx}
+                              onChange={() => handleQuestionChange(q.id, 'correctOption', optIdx)}
+                              className="h-5 w-5 border-slate-300 text-indigo-600 focus:ring-indigo-600 cursor-pointer transition-all"
+                            />
                             <input
                               type="text"
                               value={option}
                               onChange={(e) => handleOptionChange(q.id, optIdx, e.target.value)}
-                              className={`block w-full rounded-md border-0 py-2 text-gray-900 shadow-sm ring-1 ring-inset ${q.correctOption === optIdx ? 'ring-indigo-500 bg-indigo-50/30' : 'ring-gray-300'} placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 transition-all`}
+                              className={`block w-full px-4 py-3 rounded-xl border ${q.correctOption === optIdx ? 'border-indigo-600 bg-white ring-4 ring-indigo-50 shadow-sm' : 'border-slate-200 bg-white'} text-slate-900 transition-all font-medium`}
                               placeholder={`Option ${optIdx + 1}`}
                             />
                           </div>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
                     </div>
                   </div>
-                )}
+                </div>
+              ))}
+
+              <button
+                onClick={addQuestion}
+                className="w-full py-8 border-2 border-dashed border-slate-200 rounded-[2.5rem] flex flex-col items-center justify-center gap-4 hover:border-indigo-400 hover:bg-indigo-50/50 hover:text-indigo-600 transition-all group bg-white"
+              >
+                <div className="bg-slate-100 text-slate-400 p-4 rounded-2xl group-hover:bg-indigo-600 group-hover:text-white transition-all shadow-md">
+                  <Plus className="w-8 h-8 font-black" />
+                </div>
+                <span className="text-lg font-black text-slate-600 group-hover:text-indigo-900">Add Next Question</span>
+              </button>
+            </div>
+          </>
+        ) : (
+          /* Image Only Section */
+          <div className="space-y-8 animate-fade-in">
+            <div className="bg-white shadow-xl shadow-slate-100 rounded-[2.5rem] border border-slate-100 p-10">
+              <div className="grid grid-cols-1 gap-8">
+                <div>
+                   <label htmlFor="title" className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Image Assessment Title</label>
+                   <input
+                    type="text"
+                    name="title"
+                    id="title"
+                    value={testDetails.title}
+                    onChange={handleTestDetailChange}
+                    className="block w-full px-6 py-4 rounded-2xl border border-slate-200 bg-slate-50 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-slate-900 transition-all font-bold text-lg"
+                    placeholder="e.g. Periodic Table Reference / Laboratory Diagram"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div>
+                    <label htmlFor="duration" className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Timer Duration (Minutes)</label>
+                    <div className="relative">
+                      <Clock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
+                      <input
+                        type="number"
+                        name="duration"
+                        id="duration"
+                        min="1"
+                        value={testDetails.duration}
+                        onChange={handleTestDetailChange}
+                        className="block w-full pl-12 pr-6 py-4 rounded-2xl border border-slate-200 bg-slate-50 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-slate-900 transition-all font-black text-lg"
+                        placeholder="e.g. 15"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                   <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-3">Upload Resource Image</label>
+                   
+                   {!testDetails.testImage ? (
+                     <div className="relative border-4 border-dashed border-slate-200 rounded-[2.5rem] bg-slate-50/50 p-20 text-center hover:border-indigo-300 transition-all group">
+                       <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageChange}
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                      />
+                      <div className="flex flex-col items-center gap-4">
+                        <div className="bg-white p-6 rounded-3xl shadow-xl shadow-slate-200/50 text-slate-300 group-hover:text-indigo-600 transition-colors">
+                          <Upload className="h-10 w-10" />
+                        </div>
+                        <div>
+                          <p className="text-xl font-black text-slate-900 mb-1">Drag and drop test image</p>
+                          <p className="text-slate-500 font-bold text-sm">PNG, JPG or WEBP up to 5MB</p>
+                        </div>
+                        <button className="mt-2 px-6 py-3 bg-white border border-slate-200 rounded-xl font-bold text-slate-600 shadow-sm pointer-events-none">
+                          Browse Files
+                        </button>
+                      </div>
+                     </div>
+                   ) : (
+                     <div className="relative rounded-[2.5rem] overflow-hidden group border-2 border-indigo-100">
+                        <img src={testDetails.testImage} alt="Assessment" className="w-full h-auto max-h-[500px] object-contain bg-slate-900" />
+                        <div className="absolute top-4 right-4 animate-fade-in shadow-2xl">
+                          <button 
+                            onClick={() => setTestDetails(prev => ({...prev, testImage: null}))}
+                            className="bg-red-500/90 text-white p-3 rounded-2xl hover:bg-red-600 backdrop-blur-md transition-all"
+                          >
+                            <X className="h-6 w-6" />
+                          </button>
+                        </div>
+                     </div>
+                   )}
+                </div>
+
+                <div className="col-span-full">
+                  <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-4">Target Student Batches</label>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
+                    {['2026', '2027', '2028', '2029', '2030', 'all'].map((b) => (
+                      <button
+                        key={b}
+                        onClick={() => handleBatchToggle(b)}
+                        className={`px-4 py-4 rounded-2xl border-2 font-black transition-all text-sm uppercase tracking-wider ${
+                          testDetails.batch.includes(b)
+                          ? 'border-indigo-600 bg-indigo-600 text-white shadow-lg shadow-indigo-100'
+                          : 'border-slate-100 bg-white text-slate-400 hover:border-indigo-100'
+                        }`}
+                      >
+                        {b === 'all' ? 'All' : b}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
-          ))}
-        </div>
-
-        <div className="mt-8 mb-16">
-          <button
-            onClick={addQuestion}
-            className="w-full relative block w-full rounded-xl border-2 border-dashed border-gray-300 p-8 text-center hover:border-indigo-500 hover:bg-indigo-50/50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-all duration-200 group"
-          >
-            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-indigo-100 group-hover:bg-indigo-200 transition-colors">
-              <Plus className="h-6 w-6 text-indigo-600" />
-            </div>
-            <span className="mt-4 block text-sm font-semibold text-gray-900">Add another question</span>
-          </button>
-        </div>
+          </div>
+        )}
       </div>
     </div>
     </>
