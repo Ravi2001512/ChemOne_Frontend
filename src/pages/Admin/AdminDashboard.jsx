@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, BookOpen, Clock, Layout, Trash2, Search, ArrowRight, MessageSquareCheck, FileEdit, Send, EyeOff } from 'lucide-react';
+import { Plus, BookOpen, Clock, Layout, Trash2, Search, ArrowRight, MessageSquareCheck, FileEdit, Send, EyeOff, Trophy, Users, X, CheckCircle2, Flag } from 'lucide-react';
 import AdminNavbar from '../../components/AdminNavbar';
 import API from '../../services/api';
 
@@ -10,6 +10,11 @@ const AdminDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
+  
+  // Results view state
+  const [selectedTest, setSelectedTest] = useState(null);
+  const [submissions, setSubmissions] = useState([]);
+  const [loadingSubmissions, setLoadingSubmissions] = useState(false);
 
   useEffect(() => {
     const fetchTests = async () => {
@@ -49,6 +54,33 @@ const AdminDashboard = () => {
       console.error("Error toggling publish status:", error);
       alert("Failed to update publication status.");
     }
+  };
+
+  const handleViewResults = async (test) => {
+    console.log("View results for:", test._id);
+    alert("Loading results for: " + test.title);
+    setSelectedTest(test);
+    setSubmissions([]);
+    setLoadingSubmissions(true);
+    try {
+      const response = await API.get(`/tests/${test._id}/submissions`);
+      console.log("Submissions response:", response.data);
+      if (response.data.success) {
+        setSubmissions(response.data.submissions);
+      }
+    } catch (error) {
+      console.error("Error fetching submissions:", error);
+      alert("Failed to load submission results: " + (error.response?.data?.message || error.message));
+    } finally {
+      setLoadingSubmissions(false);
+    }
+  };
+
+  const formatDuration = (seconds) => {
+    if (!seconds && seconds !== 0) return "N/A";
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}m ${secs.toString().padStart(2, '0')}s`;
   };
 
   const filteredTests = tests.filter(test =>
@@ -131,6 +163,22 @@ const AdminDashboard = () => {
                 key={test._id}
                 className="group bg-white rounded-3xl border border-slate-100 shadow-sm hover:shadow-xl hover:border-indigo-100 transition-all duration-300 overflow-hidden flex flex-col"
               >
+                {test.testType === 'image' && (
+                  <div className="h-40 overflow-hidden border-b border-slate-50 relative group/img bg-slate-100 flex items-center justify-center">
+                    {test.testImage ? (
+                      <img src={test.testImage} alt={test.title} className="w-full h-full object-cover transition-transform duration-500 group-hover/img:scale-110" />
+                    ) : (
+                      <div className="flex flex-col items-center gap-2 text-slate-300">
+                        <Flag className="h-10 w-10" />
+                        <span className="text-[10px] font-black uppercase">No Preview</span>
+                      </div>
+                    )}
+                    <div className="absolute inset-0 bg-slate-900/10 group-hover/img:bg-transparent transition-colors"></div>
+                    <div className="absolute top-3 left-3 px-3 py-1 bg-white/90 backdrop-blur-sm rounded-full text-[10px] font-black text-indigo-600 shadow-sm uppercase tracking-tighter">
+                      Image Content {test.duration > 0 && `(${test.duration}m)`}
+                    </div>
+                  </div>
+                )}
                 <div className="p-6 flex-1">
                   <div className="flex items-start justify-between mb-4">
                     <div className="p-3 rounded-2xl bg-slate-50 text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-colors duration-300">
@@ -163,14 +211,30 @@ const AdminDashboard = () => {
                     </div>
                     <div className="h-1 w-1 bg-slate-300 rounded-full"></div>
                     <div className="flex items-center gap-2">
-                      <Layout className="h-4 w-4 text-indigo-500" />
-                      <span>{test.questions.length} QUES</span>
+                       {test.testType === 'mcq' ? (
+                        <>
+                          <Layout className="h-4 w-4 text-indigo-500" />
+                          <span>{test.questions.length} QUES</span>
+                        </>
+                      ) : (
+                        <>
+                          <Flag className="h-4 w-4 text-indigo-500" />
+                          <span>IMAGE RESOURCE</span>
+                        </>
+                      )}
                     </div>
                   </div>
                 </div>
 
                 <div className="px-6 py-4 bg-slate-50 group-hover:bg-indigo-50 transition-colors flex items-center justify-between border-t border-slate-100">
-                  <div className="flex gap-4">
+                  <div className="flex gap-1.5">
+                    <button
+                      onClick={() => handleViewResults(test)}
+                      className="flex items-center gap-2 px-3 py-2 bg-indigo-600 text-white rounded-xl text-xs font-bold hover:bg-indigo-700 transition-colors shadow-sm"
+                    >
+                      <Trophy className="h-3.5 w-3.5" />
+                      View Results
+                    </button>
                     <button
                       onClick={() => handleTogglePublish(test._id, test.isPublished)}
                       className={`p-2 rounded-xl transition-all ${
@@ -219,6 +283,111 @@ const AdminDashboard = () => {
           </div>
         )}
       </main>
+
+      {/* Results Modal */}
+      {selectedTest && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center px-4">
+          <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm" onClick={() => setSelectedTest(null)}></div>
+          
+          <div className="relative bg-white w-full max-w-4xl rounded-[2.5rem] shadow-2xl overflow-hidden animate-modal-in max-h-[90vh] flex flex-col">
+            {/* Modal Header */}
+            <div className="p-8 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-indigo-600 text-white rounded-2xl shadow-lg shadow-indigo-200">
+                  <Trophy className="h-6 w-6" />
+                </div>
+                <div>
+                  <h3 className="text-2xl font-black text-slate-900 tracking-tight">{selectedTest.title} Results</h3>
+                  <p className="text-slate-500 text-sm font-medium">Rankings based on score and time duration</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setSelectedTest(null)}
+                className="p-2 hover:bg-slate-200 rounded-full transition-colors"
+              >
+                <X className="h-6 w-6 text-slate-400" />
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-8 overflow-y-auto flex-1 custom-scrollbar">
+              {loadingSubmissions ? (
+                <div className="py-20 flex flex-col items-center justify-center">
+                  <div className="animate-spin rounded-full h-10 w-10 border-4 border-indigo-600 border-t-transparent mb-4"></div>
+                  <p className="text-slate-500 font-bold">Calculating rankings...</p>
+                </div>
+              ) : submissions.length > 0 ? (
+                <div className="overflow-hidden border border-slate-100 rounded-3xl">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="bg-slate-50/80">
+                        <th className="px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">Place</th>
+                        <th className="px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">Student Info</th>
+                        <th className="px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">Index Number</th>
+                        <th className="px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">Score</th>
+                        <th className="px-6 py-4 text-xs font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">Duration</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-50">
+                      {submissions.map((sub) => (
+                        <tr key={sub._id} className="hover:bg-slate-50/50 transition-colors">
+                          <td className="px-6 py-5">
+                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black ${
+                              sub.rank === 1 ? 'bg-amber-100 text-amber-600 shadow-sm' : 
+                              sub.rank === 2 ? 'bg-slate-100 text-slate-600' : 
+                              sub.rank === 3 ? 'bg-orange-50 text-orange-600' : 
+                              'bg-slate-50 text-slate-400'
+                            }`}>
+                              {sub.rank}
+                            </div>
+                          </td>
+                          <td className="px-6 py-5">
+                            <p className="font-bold text-slate-900">{sub.student?.name || "Unknown Pupil"}</p>
+                          </td>
+                          <td className="px-6 py-5">
+                            <span className="font-mono text-xs font-black text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-lg border border-indigo-100">
+                              {sub.student?.indexNumber || "N/A"}
+                            </span>
+                          </td>
+                          <td className="px-6 py-5">
+                            <div className="flex items-center gap-2">
+                              {sub.score === sub.totalMarks && <CheckCircle2 className="h-4 w-4 text-emerald-500" />}
+                              <p className="font-black text-slate-900">{sub.score} / {sub.totalMarks}</p>
+                            </div>
+                          </td>
+                          <td className="px-6 py-5">
+                            <div className="flex items-center gap-2 text-slate-500 font-bold">
+                              <Clock className="h-4 w-4" />
+                              {formatDuration(sub.timeTaken)}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="py-20 text-center">
+                  <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Users className="h-8 w-8 text-slate-200" />
+                  </div>
+                  <h4 className="text-xl font-bold text-slate-900 mb-1">Waiting for Submissions</h4>
+                  <p className="text-slate-500">No students have completed this assessment yet.</p>
+                </div>
+              )}
+            </div>
+            
+            <div className="p-8 bg-slate-50/50 border-t border-slate-100 flex justify-end">
+              <button 
+                onClick={() => setSelectedTest(null)}
+                className="px-8 py-3 bg-slate-900 text-white font-bold rounded-2xl hover:bg-slate-800 transition-all shadow-lg shadow-slate-200"
+              >
+                Close View
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

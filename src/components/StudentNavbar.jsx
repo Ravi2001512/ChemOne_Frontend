@@ -15,7 +15,7 @@ const StudentNavbar = () => {
     const navItems = [
         { name: 'Dashboard', path: '/student', icon: LayoutDashboard },
         { name: 'View Spot Test', path: '/student/spot-test', icon: FileEdit },
-        { name: 'Settings', path: '/student/settings', icon: Settings },
+        { name: 'Settings', path: '/settings', icon: Settings },
     ];
 
     return (

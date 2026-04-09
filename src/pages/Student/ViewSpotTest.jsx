@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BookOpen, Clock, ChevronRight, Search, Layout, CheckCircle2 } from 'lucide-react';
+import { BookOpen, Clock, ChevronRight, Search, Layout, CheckCircle2, Flag } from 'lucide-react';
 import StudentNavbar from '../../components/StudentNavbar';
 import API from '../../services/api';
 
@@ -91,11 +91,11 @@ const ViewSpotTest = () => {
                 <div className="p-6 flex-1">
                   <div className="flex items-start justify-between mb-4">
                     <div className={`p-3 rounded-2xl ${test.isSubmitted ? 'bg-green-50 text-green-600' : 'bg-indigo-50 text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white'} transition-colors duration-300`}>
-                      <Layout className="h-6 w-6" />
+                      {test.testType === 'image' ? <Flag className="h-6 w-6" /> : <Layout className="h-6 w-6" />}
                     </div>
                     {test.isSubmitted ? (
                       <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700">
-                        COMPLETED
+                        {test.testType === 'image' ? 'VIEWED' : 'COMPLETED'}
                       </span>
                     ) : (
                       <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-600">
@@ -109,32 +109,44 @@ const ViewSpotTest = () => {
                   <h3 className={`text-xl font-bold ${test.isSubmitted ? 'text-slate-700' : 'text-slate-900'} mb-2 group-hover:text-indigo-600 transition-colors`}>
                     {test.title}
                   </h3>
-                  {test.isSubmitted ? (
+                  {test.isSubmitted && test.testType === 'mcq' ? (
                     <div className="bg-green-50/50 rounded-xl p-3 mb-4">
                        <p className="text-xs text-green-700 font-bold uppercase tracking-wider mb-1">Your Result</p>
                        <p className="text-2xl font-black text-green-600">{test.score} / {test.totalMarks}</p>
                     </div>
                   ) : (
                     <p className="text-slate-500 text-sm line-clamp-2 mb-6">
-                      {test.description || "No description provided."}
+                      {test.description || (test.testType === 'image' ? "Reference material uploaded by your instructor." : "No description provided.")}
                     </p>
                   )}
                   
                   <div className="flex items-center gap-4 text-sm font-medium text-slate-600">
-                    <div className="flex items-center gap-1.5">
-                      <Clock className="h-4 w-4 text-slate-400" />
-                      <span>{test.duration} mins</span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <BookOpen className="h-4 w-4 text-slate-400" />
-                      <span>{test.questions.length} Questions</span>
-                    </div>
+                    {test.testType === 'mcq' && test.duration > 0 && (
+                      <div className="flex items-center gap-1.5">
+                        <Clock className="h-4 w-4 text-slate-400" />
+                        <span>{test.duration} mins</span>
+                      </div>
+                    )}
+                    {test.testType === 'mcq' && (
+                      <div className="flex items-center gap-1.5">
+                        <BookOpen className="h-4 w-4 text-slate-400" />
+                        <span>{test.questions.length} Questions</span>
+                      </div>
+                    )}
+                    {test.testType === 'image' && (
+                      <div className="flex items-center gap-1.5">
+                        <Layout className="h-4 w-4 text-slate-400" />
+                        <span>Image Resource</span>
+                      </div>
+                    )}
                   </div>
                 </div>
                 
                 <div className={`px-6 py-4 ${test.isSubmitted ? 'bg-green-50/30' : 'bg-slate-50 group-hover:bg-indigo-50'} transition-colors flex items-center justify-between`}>
                   <span className={`${test.isSubmitted ? 'text-green-700' : 'text-indigo-600'} font-bold text-sm`}>
-                    {test.isSubmitted ? "Submission Received" : "Start Test"}
+                    {test.isSubmitted 
+                      ? (test.testType === 'image' ? "Viewed" : "Submission Received") 
+                      : (test.testType === 'image' ? "View Resource" : "Start Test")}
                   </span>
                   {!test.isSubmitted && <ChevronRight className="h-5 w-5 text-indigo-600 transform group-hover:translate-x-1 transition-transform" />}
                   {test.isSubmitted && <CheckCircle2 className="h-5 w-5 text-green-600" />}
