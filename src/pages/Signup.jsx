@@ -205,10 +205,7 @@ export default function Signup() {
   const [showPw, setShowPw] = useState(false);
   const [showCpw, setShowCpw] = useState(false);
   
-  // OTP states
-  const [showOtpStep, setShowOtpStep] = useState(false);
-  const [otp, setOtp] = useState("");
-  const [focused, setFocused] = useState("");
+
 
   const change = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -233,36 +230,20 @@ export default function Signup() {
 
   const submit = async (e) => {
     e.preventDefault();
+    if (!validate()) return;
+    
+    setLoading(true);
     setError("");
-
-    if (!showOtpStep) {
-      if (!validate()) return;
-      setLoading(true);
-      try {
-        await API.post("/auth/send-signup-otp", { email: form.email });
-        setShowOtpStep(true);
-      } catch (err) {
-        const msg = err.response?.data?.message || err.message || "Failed to send OTP.";
-        setError(msg);
-      } finally {
-        setLoading(false);
-      }
-    } else {
-      if (!otp || otp.length !== 6) {
-        return setError("Please enter a valid 6-digit OTP.");
-      }
-      setLoading(true);
-      try {
-        const { confirmPassword, ...payload } = form;
-        await API.post("/auth/register", { ...payload, otp });
-        setSuccess(true);
-        setTimeout(() => navigate("/login"), 2500);
-      } catch (err) {
-        const msg = err.response?.data?.message || err.message || "Server error.";
-        setError(msg);
-      } finally {
-        setLoading(false);
-      }
+    try {
+      const { confirmPassword, ...payload } = form;
+      await API.post("/auth/register", payload);
+      setSuccess(true);
+      setTimeout(() => navigate("/login"), 2500);
+    } catch (err) {
+      const msg = err.response?.data?.message || err.message || "Registration failed.";
+      setError(msg);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -546,7 +527,6 @@ export default function Signup() {
               </div>
             )}
 
-            {!showOtpStep ? (
               <form onSubmit={submit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
 
                 {/* Name */}
@@ -682,59 +662,10 @@ export default function Signup() {
                         borderRadius: "50%",
                       }} />
                     )}
-                    {loading ? "SENDING VERIFICATION..." : "NEXT STEP →"}
+                    {loading ? "CREATING ACCOUNT..." : "CREATE ACCOUNT →"}
                   </span>
                 </button>
               </form>
-            ) : (
-              <form onSubmit={submit} className="anim-fadeslide" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                <div style={{ textAlign: "center", marginBottom: 8, color: "var(--sub)" }}>
-                  <p className="font-mono">We've sent a 6-digit code to</p>
-                  <p className="font-bebas" style={{ fontSize: "1.4rem", color: "var(--acid)", marginTop: 4 }}>{form.email}</p>
-                </div>
-
-                <Field label="Verification Code" icon="⚿" mono>
-                  <input
-                    className="input-acid font-mono"
-                    type="text"
-                    maxLength={6}
-                    placeholder="000000"
-                    value={otp} onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
-                    style={{ textAlign: "center", fontSize: "1.5rem", letterSpacing: "0.2em", paddingLeft: 14 }}
-                  />
-                </Field>
-
-                <button
-                  type="submit"
-                  className="btn-acid"
-                  disabled={loading || otp.length !== 6}
-                  style={{ marginTop: 6 }}
-                >
-                  <span style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, position: "relative", zIndex: 1 }}>
-                    {loading && (
-                      <span className="anim-spin" style={{
-                        display: "inline-block", width: 14, height: 14,
-                        border: "2px solid rgba(0,0,0,0.25)", borderTopColor: "#000",
-                        borderRadius: "50%",
-                      }} />
-                    )}
-                    {loading ? "VERIFYING & CREATING..." : "VERIFY AND CREATE ACCOUNT →"}
-                  </span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => { setShowOtpStep(false); setOtp(""); setError(""); }}
-                  style={{
-                    background: "none", border: "none", color: "var(--sub)",
-                    fontFamily: "'JetBrains Mono', monospace", fontSize: 11, cursor: "pointer",
-                    textDecoration: "underline", marginTop: 8
-                  }}
-                >
-                  ← Go back to change details
-                </button>
-              </form>
-            )}
 
             {/* Divider */}
             <div style={{
