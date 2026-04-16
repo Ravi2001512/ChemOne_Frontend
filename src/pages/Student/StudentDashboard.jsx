@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ClipboardList, Users, BarChart3, Settings, FileText, Bell } from 'lucide-react';
+import { ClipboardList, Users, BarChart3, Settings, FileText, BarChart2 } from 'lucide-react';
 import StudentNavbar from '../../components/StudentNavbar';
 
 const StudentDashboard = () => {
@@ -44,13 +44,13 @@ const StudentDashboard = () => {
       iconColor: 'text-blue-600'
     },
     {
-      title: 'Create Announcement',
-      description: 'Send announcements and alerts to users',
-      icon: Bell,
-      onClick: () => navigate('/admin/create-announcement'),
-      color: 'from-pink-500 to-rose-600',
-      iconBg: 'bg-pink-100',
-      iconColor: 'text-pink-600'
+      title: 'View Results',
+      description: 'View Results',
+      icon: BarChart2,
+      onClick: () => navigate('/student/results'),
+      color: 'from-rose-500 to-rose-600',
+      iconBg: 'bg-rose-100',
+      iconColor: 'text-rose-600'
     },
     {
       title: 'Settings',
@@ -76,6 +76,12 @@ const StudentDashboard = () => {
           <p className="text-lg text-slate-600">
             Manage and monitor student activity.
           </p>
+          <button
+            onClick={() => window.open('https://play.google.com/store/apps/details?id=com.joazco.vsper&hl=en_SG', '_blank')}
+            className="mt-4 px-6 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
+          >
+            View VSPER 3D structures
+          </button>
         </div>
 
         {/* Main Action Cards */}

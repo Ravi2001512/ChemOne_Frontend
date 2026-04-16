@@ -44,10 +44,10 @@ const AdminDashboard = () => {
       iconColor: 'text-blue-600'
     },
     {
-      title: 'Create Announcement',
-      description: 'Send announcements and alerts to users',
+      title: 'Upload exam results',
+      description: 'Upload each student exam results',
       icon: Bell,
-      onClick: () => navigate('/admin/create-announcement'),
+      onClick: () => navigate('/admin/upload-exam-results'),
       color: 'from-pink-500 to-rose-600',
       iconBg: 'bg-pink-100',
       iconColor: 'text-pink-600'

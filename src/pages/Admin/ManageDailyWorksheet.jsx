@@ -7,6 +7,53 @@ const ManageDailyWorksheet = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const [searchTerm, setSearchTerm] = useState("");
+    const [selectedWorksheet, setSelectedWorksheet] = useState(null);
+    const [submissions, setSubmissions] = useState([]);
+    const [loadingSubmissions, setLoadingSubmissions] = useState(false);
+    const [uploadingKeyId, setUploadingKeyId] = useState(null);
+
+    const handleUploadKey = async (event, worksheetId) => {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const formData = new FormData();
+        formData.append("file", file);
+
+        try {
+            setUploadingKeyId(worksheetId);
+            const response = await API.post(`/worksheets/${worksheetId}/official-answer`, formData, {
+                headers: { "Content-Type": "multipart/form-data" },
+            });
+            // Update local state to reflect successful key upload
+            setWorksheets((prev) => prev.map(ws => ws._id === worksheetId ? { ...ws, officialAnswerUrl: response.data.data.officialAnswerUrl } : ws));
+            alert("Official Answer Key uploaded successfully!");
+        } catch (err) {
+            console.error(err);
+            alert(err.response?.data?.message || "Failed to upload official answer.");
+        } finally {
+            setUploadingKeyId(null);
+            event.target.value = null; // reset input
+        }
+    };
+
+    const handleViewSubmissions = async (worksheet) => {
+        setSelectedWorksheet(worksheet);
+        setLoadingSubmissions(true);
+        try {
+            const response = await API.get(`/worksheets/${worksheet._id}/submissions`);
+            setSubmissions(response.data);
+        } catch (err) {
+            console.error("Error fetching submissions:", err);
+            alert("Failed to load submissions.");
+        } finally {
+            setLoadingSubmissions(false);
+        }
+    };
+
+    const closeSubmissionsModal = () => {
+        setSelectedWorksheet(null);
+        setSubmissions([]);
+    };
 
     // Fetch Worksheets
     const fetchWorksheets = async () => {
@@ -157,29 +204,65 @@ const ManageDailyWorksheet = () => {
                                             </p>
                                         </div>
 
-                                        <div className="flex gap-2 mt-auto">
-                                            <a
-                                                href={ws.fileUrl}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="flex-1 bg-blue-50 text-blue-600 font-semibold py-3 px-2 rounded-xl text-center hover:bg-blue-100 active:scale-95 transition-all flex items-center justify-center gap-1 text-sm border border-blue-100"
-                                            >
-                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                                </svg>
-                                                View
-                                            </a>
+                                        <div className="flex flex-col gap-2 mt-auto">
+                                            <div className="flex gap-2">
+                                                <a
+                                                    href={ws.fileUrl}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="flex-1 bg-blue-50 text-blue-600 font-semibold py-3 px-2 rounded-xl text-center hover:bg-blue-100 active:scale-95 transition-all flex items-center justify-center gap-1 text-sm border border-blue-100"
+                                                >
+                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                    </svg>
+                                                    View
+                                                </a>
+                                                <button
+                                                    onClick={() => handleViewSubmissions(ws)}
+                                                    className="flex-1 bg-indigo-50 text-indigo-600 font-semibold py-3 px-2 rounded-xl text-center hover:bg-indigo-100 active:scale-95 transition-all flex items-center justify-center gap-1 text-sm border border-indigo-100"
+                                                >
+                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                                    </svg>
+                                                    Answers
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDelete(ws._id)}
+                                                    className="w-10 flex-shrink-0 bg-white border border-red-100 text-red-500 hover:bg-red-50 hover:border-red-200 disabled:opacity-50 font-semibold py-3 flex items-center justify-center rounded-xl active:scale-95 transition-all"
+                                                    title="Delete Worksheet"
+                                                >
+                                                    <svg className="w-4 h-4 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                    </svg>
+                                                </button>
+                                            </div>
 
-                                            <button
-                                                onClick={() => handleDelete(ws._id)}
-                                                className="w-10 flex-shrink-0 bg-white border border-red-100 text-red-500 hover:bg-red-50 hover:border-red-200 disabled:opacity-50 font-semibold py-3 flex items-center justify-center rounded-xl active:scale-95 transition-all"
-                                                title="Delete Worksheet"
-                                            >
-                                                <svg className="w-4 h-4 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                                </svg>
-                                            </button>
+                                            {/* Key Upload Section */}
+                                            <div className="flex">
+                                                <input
+                                                    type="file"
+                                                    id={`upload-key-${ws._id}`}
+                                                    className="hidden"
+                                                    onChange={(e) => handleUploadKey(e, ws._id)}
+                                                    accept=".pdf,image/*"
+                                                />
+                                                <label
+                                                    htmlFor={`upload-key-${ws._id}`}
+                                                    className={`w-full bg-emerald-50 text-emerald-600 font-semibold py-3 px-2 rounded-xl text-center hover:bg-emerald-100 active:scale-95 transition-all flex items-center justify-center gap-1 text-sm border border-emerald-100 cursor-pointer ${uploadingKeyId === ws._id ? 'opacity-70 pointer-events-none' : ''}`}
+                                                >
+                                                    {uploadingKeyId === ws._id ? (
+                                                        <svg className="animate-spin h-4 w-4 text-emerald-600" fill="none" viewBox="0 0 24 24">
+                                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                        </svg>
+                                                    ) : (
+                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                                        </svg>
+                                                    )}
+                                                    {uploadingKeyId === ws._id ? 'Uploading...' : (ws.officialAnswerUrl ? 'Update Official Answer' : 'Upload Official Answer')}
+                                                </label>
+                                            </div>
                                         </div>
                                     </div>
                                 ))}
@@ -203,6 +286,75 @@ const ManageDailyWorksheet = () => {
                     </>
                 )}
             </div>
+
+            {/* Submissions Modal */}
+            {selectedWorksheet && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in">
+                    <div className="bg-white rounded-3xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl border border-slate-100">
+                        <div className="p-6 border-b border-slate-100 flex items-center justify-between">
+                            <div>
+                                <h2 className="text-2xl font-bold text-slate-900">Student Answers</h2>
+                                <p className="text-slate-500 mt-1">{selectedWorksheet.fileName}</p>
+                            </div>
+                            <button
+                                onClick={closeSubmissionsModal}
+                                className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-50 text-slate-500 hover:bg-slate-100 hover:text-slate-900 transition-colors"
+                            >
+                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto p-6 bg-slate-50">
+                            {loadingSubmissions ? (
+                                <div className="flex flex-col items-center justify-center py-20">
+                                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+                                    <p className="mt-4 text-slate-500 font-medium">Fetching submissions...</p>
+                                </div>
+                            ) : submissions.length > 0 ? (
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {submissions.map((sub, idx) => (
+                                        <div key={idx} className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col group">
+                                            <div className="flex items-start justify-between mb-4">
+                                                <div>
+                                                    <h3 className="font-bold text-slate-900">{sub.student?.name || "Unknown Student"}</h3>
+                                                    <p className="text-indigo-600 font-medium text-sm">Index: {sub.student?.indexNumber || "N/A"}</p>
+                                                </div>
+                                                <span className="text-xs font-semibold text-slate-500 bg-slate-100 px-2 py-1 rounded-lg">
+                                                    {formatDate(sub.createdAt)}
+                                                </span>
+                                            </div>
+                                            <a
+                                                href={sub.fileUrl}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="mt-auto flex items-center justify-center w-full py-3 bg-indigo-50 text-indigo-700 font-bold rounded-xl hover:bg-indigo-600 hover:text-white transition-all gap-2"
+                                            >
+                                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                </svg>
+                                                View Answer
+                                            </a>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="text-center py-20 flex flex-col items-center">
+                                    <div className="w-20 h-20 bg-indigo-50 rounded-full flex items-center justify-center mb-4">
+                                        <svg className="w-10 h-10 text-indigo-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                                        </svg>
+                                    </div>
+                                    <p className="text-xl font-bold text-slate-800">No Answers Yet</p>
+                                    <p className="text-slate-500 mt-2">Students haven't submitted any answers for this worksheet.</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
