@@ -16,6 +16,7 @@ const AdminNavbar = () => {
     { name: 'Dashboard', path: '/admin', icon: LayoutDashboard },
     { name: 'Create Spot Test', path: '/admin/spot-test/create', icon: FileEdit },
     { name: 'Daily Work Sheet', path: '/admin/daily-worksheet', icon: FileEdit },
+    { name: 'AI ChatBot', path: '/admin/ai-chatbot', icon: FileEdit },
     { name: 'Settings', path: '/settings', icon: Settings },
   ];
 
@@ -30,7 +31,7 @@ const AdminNavbar = () => {
                 <Beaker className="w-5 h-5 text-white" />
               </div>
               <span className="ml-3 font-extrabold text-xl bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-blue-400 tracking-tight">
-                ChemOne Admin
+                ChemBridge Admin
               </span>
             </div>
 

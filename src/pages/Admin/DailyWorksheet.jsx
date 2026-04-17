@@ -1,54 +1,8 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef } from "react";
 import AdminNavbar from "../../components/AdminNavbar";
+import API from "../../services/api";
 
-const CheckIcon = () => (
-    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-        <circle cx="10" cy="10" r="10" fill="#16a34a" />
-        <path d="M5.5 10.5l3 3 6-6" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-);
-
-const PdfIcon = () => (
-    <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-        <rect x="4" y="2" width="16" height="20" rx="2" fill="#fee2e2" stroke="#ef4444" strokeWidth="1.2" />
-        <path d="M16 2v5h4" stroke="#ef4444" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
-        <path d="M8 12h8M8 15h8M8 18h5" stroke="#ef4444" strokeWidth="1.2" strokeLinecap="round" />
-        <rect x="13" y="16" width="11" height="8" rx="1.5" fill="#ef4444" />
-        <path d="M15.5 18.5h1.3c.7 0 1.1.3 1.1.9s-.4.9-1.1.9H15.5v1.7" stroke="white" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" />
-        <path d="M19 18.5h1.2c.9 0 1.3.5 1.3 1.6s-.4 1.6-1.3 1.6H19" stroke="white" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" />
-        <path d="M22.5 18.5v3.2M22.5 20.2h1.5" stroke="white" strokeWidth="1" strokeLinecap="round" />
-    </svg>
-);
-
-const UploadIcon = () => (
-    <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
-        <path d="M16 6v16M16 6l-5 5M16 6l5 5" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-        <path d="M5 23v2a2 2 0 002 2h18a2 2 0 002-2v-2" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" />
-    </svg>
-);
-
-const XIcon = () => (
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-        <path d="M2 2l10 10M12 2L2 12" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-    </svg>
-);
-
-const CalendarIcon = () => (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-        <rect x="1.5" y="3" width="13" height="11.5" rx="1.5" stroke="#94a3b8" strokeWidth="1.2" />
-        <path d="M5 1.5v3M11 1.5v3M1.5 7h13" stroke="#94a3b8" strokeWidth="1.2" strokeLinecap="round" />
-    </svg>
-);
-
-const NotesIcon = () => (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-        <rect x="2" y="1.5" width="12" height="13" rx="1.5" stroke="#94a3b8" strokeWidth="1.2" />
-        <path d="M5 6h6M5 9h6M5 12h3" stroke="#94a3b8" strokeWidth="1.2" strokeLinecap="round" />
-    </svg>
-);
-
-
-export default function DailyWorksheet() {
+const DailyWorksheet = () => {
     const [file, setFile] = useState(null);
     const [dragging, setDragging] = useState(false);
     const [progress, setProgress] = useState(0);
@@ -56,86 +10,134 @@ export default function DailyWorksheet() {
     const [uploaded, setUploaded] = useState(false);
     const [submitted, setSubmitted] = useState(false);
     const [notes, setNotes] = useState("");
-    const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
+    const [date, setDate] = useState(
+        new Date().toISOString().split("T")[0]
+    );
+    const [error, setError] = useState("");
+
     const inputRef = useRef();
-    const progressRef = useRef();
 
-    const today = new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
+    const today = new Date().toLocaleDateString("en-US", {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+    });
 
-    const simulateUpload = useCallback((f) => {
-        setFile(f);
-        setUploading(true);
-        setUploaded(false);
-        setProgress(0);
-        let p = 0;
-        clearInterval(progressRef.current);
-        progressRef.current = setInterval(() => {
-            p += Math.random() * 15 + 8;
-            if (p >= 100) {
-                p = 100;
-                clearInterval(progressRef.current);
-                setUploading(false);
-                setUploaded(true);
-            }
-            setProgress(Math.min(Math.round(p), 100));
-        }, 160);
-    }, []);
-
+    // 📂 handle file select
     const handleFileChange = (e) => {
         const f = e.target.files?.[0];
-        if (f && f.type === "application/pdf") simulateUpload(f);
+        if (f) {
+            if (f.type === "application/pdf") {
+                if (f.size > 20 * 1024 * 1024) {
+                    setError("File size must be under 20MB");
+                    return;
+                }
+                setFile(f);
+                setUploaded(true);
+                setError("");
+            } else {
+                setError("Please select a PDF file only");
+            }
+        }
     };
 
+    // 📥 drag & drop
     const handleDrop = (e) => {
         e.preventDefault();
         setDragging(false);
         const f = e.dataTransfer.files?.[0];
-        if (f && f.type === "application/pdf") simulateUpload(f);
+        if (f) {
+            if (f.type === "application/pdf") {
+                if (f.size > 20 * 1024 * 1024) {
+                    setError("File size must be under 20MB");
+                    return;
+                }
+                setFile(f);
+                setUploaded(true);
+                setError("");
+            } else {
+                setError("Please drop a PDF file only");
+            }
+        }
     };
 
+    // ❌ clear file
     const clearFile = () => {
-        clearInterval(progressRef.current);
         setFile(null);
         setProgress(0);
         setUploading(false);
         setUploaded(false);
         setSubmitted(false);
+        setError("");
+        setNotes("");
         if (inputRef.current) inputRef.current.value = "";
     };
 
-    const handleSubmit = () => {
-        if (!uploaded) return;
-        setSubmitted(true);
+    // 🚀 REAL upload to backend
+    const handleSubmit = async () => {
+        if (!file) return;
+
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("date", date);
+        formData.append("notes", notes);
+
+        try {
+            setUploading(true);
+            setError("");
+
+            await API.post("/worksheets", formData, {
+                headers: {
+                    "Content-Type": "multipart/form-data",
+                },
+                onUploadProgress: (event) => {
+                    const percent = Math.round(
+                        (event.loaded * 100) / event.total
+                    );
+                    setProgress(percent);
+                },
+            });
+
+            setUploading(false);
+            setSubmitted(true);
+        } catch (err) {
+            console.error(err);
+            setError("Upload failed. Please try again.");
+            setUploading(false);
+        }
     };
 
     const formatSize = (bytes) => {
-        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+        if (!bytes) return "";
+        if (bytes < 1024) return bytes + " B";
+        if (bytes < 1024 * 1024)
+            return (bytes / 1024).toFixed(1) + " KB";
         return (bytes / (1024 * 1024)).toFixed(2) + " MB";
     };
 
+    // ✅ SUCCESS SCREEN
     if (submitted) {
         return (
-            <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6 font-sans">
-                <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-10 max-w-md w-full text-center">
-                    <div className="w-16 h-16 rounded-full bg-green-50 border border-green-100 flex items-center justify-center mx-auto mb-5">
-                        <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-                            <path d="M6 14.5l5.5 5.5 10-11" stroke="#16a34a" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+            <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center p-6">
+                <div className="bg-white/80 backdrop-blur-xl rounded-3xl p-12 text-center shadow-2xl max-w-md w-full border border-white/50">
+                    <div className="w-24 h-24 bg-green-100 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
+                        <svg className="w-12 h-12 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                         </svg>
                     </div>
-                    <h2 className="text-xl font-semibold text-slate-800 mb-2">Worksheet uploaded!</h2>
-                    <p className="text-slate-500 text-sm mb-1">{file?.name}</p>
-                    <p className="text-slate-400 text-xs mb-8">{today}</p>
-                    {notes && (
-                        <div className="bg-slate-50 rounded-xl p-4 text-left mb-8">
-                            <p className="text-xs text-slate-400 uppercase tracking-widest mb-1">Notes</p>
-                            <p className="text-sm text-slate-600">{notes}</p>
-                        </div>
-                    )}
+                    <h2 className="text-2xl font-bold text-gray-900 mb-3">
+                        Uploaded Successfully!
+                    </h2>
+                    <p className="text-sm text-gray-600 mb-6 bg-gray-50 p-3 rounded-xl">
+                        {file?.name}
+                    </p>
+
                     <button
                         onClick={clearFile}
-                        className="w-full py-2.5 rounded-xl bg-slate-800 text-white text-sm font-medium hover:bg-slate-700 transition-colors"
+                        className="px-8 py-3 bg-gradient-to-r from-slate-800 to-slate-900 text-white rounded-2xl font-medium hover:from-slate-900 hover:to-black transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
                     >
-                        Upload another
+                        📄 Upload Another
                     </button>
                 </div>
             </div>
@@ -146,32 +148,56 @@ export default function DailyWorksheet() {
         <>
             <AdminNavbar />
 
-            <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
-                <div className="bg-white rounded-2xl shadow-sm border border-slate-300 w-full max-w-5xl overflow-hidden">
+            <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex justify-center p-6">
+                <div className="bg-white/70 backdrop-blur-xl rounded-3xl w-full max-w-2xl shadow-2xl border border-white/50">
 
-                    {/* Header */}
-                    <div className="px-8 pt-8 pb-6 border-b border-slate-100">
-                        <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Daily Worksheet</h1>
-                        <p className="text-sm text-slate-400 mt-1">{today}</p>
+                    {/* HEADER */}
+                    <div className="p-8 border-b border-slate-200/50 bg-gradient-to-r from-white to-slate-50/50 rounded-t-3xl">
+                        <div className="flex items-center gap-3 mb-2">
+                            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg">
+                                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                            </div>
+                            <div>
+                                <h1 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-slate-800 bg-clip-text text-transparent">
+                                    Daily Worksheet
+                                </h1>
+                                <p className="text-sm text-slate-500 font-medium">
+                                    {today}
+                                </p>
+                            </div>
+                        </div>
                     </div>
 
+                    <div className="p-8 space-y-6">
 
-                    <div className="px-8 py-6 space-y-5">
+                        {/* ERROR */}
+                        {error && (
+                            <div className="bg-red-50 border border-red-200 rounded-2xl p-4">
+                                <div className="flex items-center gap-3">
+                                    <svg className="w-5 h-5 text-red-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                    </svg>
+                                    <p className="text-sm text-red-800">{error}</p>
+                                </div>
+                            </div>
+                        )}
 
-                        {/* Drop Zone */}
+                        {/* DROP ZONE */}
                         {!file && (
                             <div
                                 onClick={() => inputRef.current?.click()}
-                                onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+                                onDragOver={(e) => {
+                                    e.preventDefault();
+                                    setDragging(true);
+                                }}
                                 onDragLeave={() => setDragging(false)}
                                 onDrop={handleDrop}
-                                className={`
-                relative border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all duration-200
-                ${dragging
-                                        ? "border-red-300 bg-red-50"
-                                        : "border-slate-200 bg-slate-50 hover:border-slate-300 hover:bg-white"
-                                    }
-              `}
+                                className={`group relative border-2 border-dashed p-12 text-center rounded-3xl cursor-pointer transition-all duration-300 shadow-lg hover:shadow-2xl ${dragging
+                                    ? "border-blue-400 bg-blue-50/80 scale-[1.02]"
+                                    : "border-slate-200 hover:border-slate-300 bg-slate-50/50 hover:bg-slate-50"
+                                    }`}
                             >
                                 <input
                                     ref={inputRef}
@@ -180,119 +206,142 @@ export default function DailyWorksheet() {
                                     className="hidden"
                                     onChange={handleFileChange}
                                 />
-                                <div className={`w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4 transition-colors ${dragging ? "bg-red-100" : "bg-white border border-slate-200"}`}>
-                                    <UploadIcon />
+                                <div className="space-y-3">
+                                    <div className="w-20 h-20 mx-auto bg-gradient-to-br from-blue-100 to-indigo-100 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-md">
+                                        <svg className="w-10 h-10 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <p className="text-lg font-semibold text-gray-900 mb-1">
+                                            Drop your PDF here
+                                        </p>
+                                        <p className="text-sm text-slate-500">
+                                            or click to browse (Max 20MB)
+                                        </p>
+                                    </div>
                                 </div>
-                                <p className="text-sm font-medium text-slate-700 mb-1">
-                                    {dragging ? "Drop it here!" : "Drop your PDF here"}
-                                </p>
-                                <p className="text-xs text-slate-400">
-                                    or{" "}
-                                    <span className="text-red-500 underline underline-offset-2">browse files</span>
-                                </p>
-                                <p className="text-xs text-slate-300 mt-3">PDF only · max 20 MB</p>
+                                {dragging && (
+                                    <div className="absolute inset-0 bg-blue-500/10 rounded-3xl animate-pulse flex items-center justify-center">
+                                        <svg className="w-12 h-12 text-blue-500 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+                                        </svg>
+                                    </div>
+                                )}
                             </div>
                         )}
 
-                        {/* File Card */}
+                        {/* FILE CARD */}
                         {file && (
-                            <div className="border border-slate-100 rounded-xl p-4 bg-slate-50">
-                                <div className="flex items-center gap-3">
-                                    <div className="flex-shrink-0">
-                                        <PdfIcon />
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <p className="text-sm font-medium text-slate-700 truncate">{file.name}</p>
-                                        <p className="text-xs text-slate-400">{formatSize(file.size)}</p>
-                                    </div>
-                                    {uploaded && (
-                                        <div className="flex-shrink-0">
-                                            <CheckIcon />
+                            <div className="border-2 border-slate-200 p-6 rounded-3xl bg-gradient-to-r from-slate-50 to-blue-50/50 shadow-xl hover:shadow-2xl transition-all duration-300">
+                                <div className="flex items-center justify-between mb-4">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-12 h-12 bg-gradient-to-br from-red-500 to-pink-600 rounded-2xl flex items-center justify-center shadow-lg">
+                                            <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                            </svg>
                                         </div>
-                                    )}
+                                        <div>
+                                            <p className="font-bold text-lg text-gray-900 truncate max-w-[200px]">{file.name}</p>
+                                            <p className="text-sm text-slate-500">{formatSize(file.size)}</p>
+                                        </div>
+                                    </div>
                                     <button
                                         onClick={clearFile}
-                                        className="flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-200 transition-colors"
+                                        className="p-2 hover:bg-red-100 rounded-2xl text-red-500 hover:text-red-700 transition-all duration-200 hover:scale-105"
                                     >
-                                        <XIcon />
+                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                        </svg>
                                     </button>
                                 </div>
 
-                                {/* Progress bar */}
-                                {(uploading || uploaded) && (
-                                    <div className="mt-3">
-                                        <div className="h-1.5 bg-slate-200 rounded-full overflow-hidden">
-                                            <div
-                                                className="h-full bg-red-400 rounded-full transition-all duration-300"
-                                                style={{ width: `${progress}%` }}
-                                            />
+                                {/* PROGRESS */}
+                                {uploading && (
+                                    <div className="space-y-3">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-sm font-medium text-slate-700">Uploading...</span>
+                                            <span className="text-sm font-bold text-blue-600">{progress}%</span>
                                         </div>
-                                        <div className="flex justify-between items-center mt-1.5">
-                                            <p className="text-xs text-slate-400">
-                                                {uploading ? "Uploading…" : "Ready to submit"}
-                                            </p>
-                                            <p className="text-xs text-slate-400">{progress}%</p>
+                                        <div className="w-full bg-slate-200 rounded-2xl h-3 overflow-hidden shadow-inner">
+                                            <div
+                                                className="h-full bg-gradient-to-r from-blue-500 to-indigo-600 rounded-2xl shadow-lg transition-all duration-500 ease-out flex items-center justify-center"
+                                                style={{
+                                                    width: `${progress}%`,
+                                                }}
+                                            >
+                                                {progress === 100 && (
+                                                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                                                    </svg>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
                                 )}
                             </div>
                         )}
 
-                        {/* Date */}
+                        {/* DATE */}
                         <div>
-                            <label className="flex items-center gap-1.5 text-xs font-medium text-slate-500 uppercase tracking-widest mb-2">
-                                <CalendarIcon />
-                                Date
-                            </label>
+                            <label className="block text-sm font-semibold text-slate-700 mb-2">Worksheet Date</label>
                             <input
                                 type="date"
                                 value={date}
                                 onChange={(e) => setDate(e.target.value)}
-                                className="w-full px-3.5 py-2.5 text-sm text-slate-700 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-red-200 focus:border-red-300 transition-all"
+                                className="w-full border-2 border-slate-200 p-4 rounded-2xl focus:border-blue-400 focus:ring-4 focus:ring-blue-100/50 transition-all duration-200 shadow-sm hover:shadow-md bg-white/50"
                             />
                         </div>
 
-                        {/* Notes */}
+                        {/* NOTES */}
                         <div>
-                            <label className="flex items-center gap-1.5 text-xs font-medium text-slate-500 uppercase tracking-widest mb-2">
-                                <NotesIcon />
-                                Notes
-                                <span className="normal-case tracking-normal font-normal text-slate-300 ml-1">optional</span>
-                            </label>
+                            <label className="block text-sm font-semibold text-slate-700 mb-2">Notes (optional)</label>
                             <textarea
-                                rows={3}
                                 value={notes}
                                 onChange={(e) => setNotes(e.target.value)}
-                                placeholder="Add any notes about this worksheet…"
-                                className="w-full px-3.5 py-2.5 text-sm text-slate-700 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-red-200 focus:border-red-300 transition-all resize-none placeholder-slate-300"
+                                placeholder="Add any additional notes about this worksheet..."
+                                maxLength={500}
+                                rows={4}
+                                className="w-full border-2 border-slate-200 p-4 rounded-2xl resize-vertical focus:border-blue-400 focus:ring-4 focus:ring-blue-100/50 transition-all duration-200 shadow-sm hover:shadow-md bg-white/50"
                             />
+                            <p className="text-xs text-slate-500 mt-1">{notes.length}/500</p>
+                        </div>
+
+                        {/* BUTTONS */}
+                        <div className="flex gap-4 pt-4">
+                            <button
+                                onClick={clearFile}
+                                className="flex-1 bg-gradient-to-r from-slate-100 to-slate-200 py-4 px-6 rounded-2xl font-semibold text-slate-700 hover:from-slate-200 hover:to-slate-300 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 active:translate-y-0"
+                                disabled={uploading}
+                            >
+                                Cancel
+                            </button>
+
+                            <button
+                                onClick={handleSubmit}
+                                disabled={!file || uploading}
+                                className="flex-1 bg-gradient-to-r from-slate-900 to-slate-800 py-4 px-6 rounded-2xl font-semibold text-white hover:from-slate-800 hover:to-slate-700 disabled:from-slate-400 disabled:to-slate-300 transition-all duration-300 shadow-xl hover:shadow-2xl transform hover:-translate-y-1 active:translate-y-0 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                            >
+                                {uploading ? (
+                                    <>
+                                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                        Uploading...
+                                    </>
+                                ) : (
+                                    <>
+                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                                        </svg>
+                                        Upload Worksheet
+                                    </>
+                                )}
+                            </button>
                         </div>
                     </div>
-
-                    {/* Footer */}
-                    <div className="px-8 pb-8 flex gap-3">
-                        <button
-                            onClick={clearFile}
-                            className="flex-1 py-2.5 rounded-xl text-sm font-medium text-slate-500 bg-slate-100 hover:bg-slate-200 transition-colors"
-                        >
-                            Cancel
-                        </button>
-                        <button
-                            onClick={handleSubmit}
-                            disabled={!uploaded}
-                            className={`
-              flex-1 py-2.5 rounded-xl text-sm font-medium text-white transition-all
-              ${uploaded
-                                    ? "bg-slate-800 hover:bg-slate-700 active:scale-[0.98]"
-                                    : "bg-slate-200 text-slate-400 cursor-not-allowed"
-                                }
-            `}
-                        >
-                            Upload worksheet
-                        </button>
-                    </div>
                 </div>
-            </div >
+            </div>
         </>
     );
 }
+
+export default DailyWorksheet;

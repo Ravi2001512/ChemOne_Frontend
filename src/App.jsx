@@ -9,29 +9,34 @@ import ViewSpotTest from "./pages/Student/ViewSpotTest";
 import TakeSpotTest from "./pages/Student/TakeSpotTest";
 import Settings from "./pages/Settings";
 import DailyWorksheet from "./pages/Admin/DailyWorksheet";
+import ManageSpotTest from "./pages/Admin/ManageSpotTest";
+import ManageDailyWorksheet from "./pages/Admin/ManageDailyWorksheet";
+import ManageStudents from "./pages/Admin/ManageStudents";
+import Dailyworksheet from "./pages/Student/Dailyworksheet";
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Navigate to="/signup" replace />} />
+        <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/login" element={<Login />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
 
-        {/* Common Routes */}
         <Route path="/settings" element={<Settings />} />
 
-        {/* Admin Routes */}
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/admin/spot-test/create" element={<CreateSpotTest />} />
         <Route path="/admin/spot-test/edit/:id" element={<CreateSpotTest />} />
         <Route path="/admin/daily-worksheet" element={<DailyWorksheet />} />
+        <Route path="/admin/manage-spot-test" element={<ManageSpotTest />} />
+        <Route path="/admin/manage-daily-worksheet" element={<ManageDailyWorksheet />} />
+        <Route path="/admin/students" element={<ManageStudents />} />
 
-        {/* Student Routes */}
         <Route path="/student" element={<StudentDashboard />} />
         <Route path="/student/spot-test" element={<ViewSpotTest />} />
         <Route path="/student/spot-test/:id" element={<TakeSpotTest />} />
+        <Route path="/student/daily-worksheet" element={<Dailyworksheet />} />
       </Routes>
     </BrowserRouter>
   );

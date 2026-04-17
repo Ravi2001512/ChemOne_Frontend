@@ -1,47 +1,126 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LogOut, BookOpen } from 'lucide-react';
+import { ClipboardList, Users, BarChart3, Settings, FileText, BarChart2 } from 'lucide-react';
 import StudentNavbar from '../../components/StudentNavbar';
 
 const StudentDashboard = () => {
   const navigate = useNavigate();
 
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    navigate('/login');
-  };
+  const dashboardCards = [
+    {
+      title: 'View Spot Tests',
+      description: 'View and manage spot tests for students',
+      icon: ClipboardList,
+      onClick: () => navigate('/student/spot-test'),
+      color: 'from-indigo-500 to-purple-600',
+      iconBg: 'bg-indigo-100',
+      iconColor: 'text-indigo-600'
+    },
+    {
+      title: 'Daily Worksheet',
+      description: 'View and manage daily worksheet',
+      icon: Users,
+      onClick: () => navigate('/student/daily-worksheet'),
+      color: 'from-emerald-500 to-teal-600',
+      iconBg: 'bg-emerald-100',
+      iconColor: 'text-emerald-600'
+    },
+    {
+      title: 'Analytics',
+      description: 'View performance metrics and statistics',
+      icon: BarChart3,
+      onClick: () => navigate('/admin/analytics'),
+      color: 'from-orange-500 to-red-600',
+      iconBg: 'bg-orange-100',
+      iconColor: 'text-orange-600'
+    },
+    {
+      title: 'Chat with AI',
+      description: 'Chat with AI',
+      icon: FileText,
+      onClick: () => navigate('/admin/chat-with-ai'),
+      color: 'from-blue-500 to-cyan-600',
+      iconBg: 'bg-blue-100',
+      iconColor: 'text-blue-600'
+    },
+    {
+      title: 'View Results',
+      description: 'View Results',
+      icon: BarChart2,
+      onClick: () => navigate('/student/results'),
+      color: 'from-rose-500 to-rose-600',
+      iconBg: 'bg-rose-100',
+      iconColor: 'text-rose-600'
+    },
+    {
+      title: 'Settings',
+      description: 'Configure system settings and preferences',
+      icon: Settings,
+      onClick: () => navigate('/settings'),
+      color: 'from-slate-500 to-gray-600',
+      iconBg: 'bg-slate-100',
+      iconColor: 'text-slate-600'
+    }
+  ];
 
   return (
-    <>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100">
       <StudentNavbar />
-      <div className="min-h-screen bg-slate-950 font-sans text-white">
-        {/* Main Content */}
-        <div className="max-w-7xl mx-auto px-4 py-16 sm:px-6 lg:px-8 text-center relative">
-          <div className="absolute w-[400px] h-[400px] rounded-full bg-teal-500/10 blur-[100px] -top-24 -left-24 animate-pulse pointer-events-none"></div>
 
-          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight mb-4 text-transparent bg-clip-text bg-gradient-to-r from-teal-400 to-emerald-400">
-            Welcome to the Student Hub
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        {/* Header Section */}
+        <div className="mb-12">
+          <h1 className="text-4xl font-extrabold text-slate-900 mb-3 bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+            Student Dashboard
           </h1>
-          <p className="text-slate-400 text-lg max-w-2xl mx-auto mb-10">
-            Access your assessments and track your learning progress.
+          <p className="text-lg text-slate-600">
+            Manage and monitor student activity.
           </p>
+          <button
+            onClick={() => window.open('https://play.google.com/store/apps/details?id=com.joazco.vsper&hl=en_SG', '_blank')}
+            className="mt-4 px-6 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
+          >
+            View VSPER 3D structures
+          </button>
+        </div>
 
-          <div className="flex justify-center">
-            <button 
-              onClick={() => navigate('/student/spot-test')}
-              className="bg-slate-800/50 backdrop-blur-xl border border-slate-700/50 p-8 rounded-3xl hover:bg-slate-700/50 transition-all group flex flex-col items-center gap-4 w-full max-w-xs cursor-pointer"
-            >
-              <div className="w-16 h-16 bg-teal-500/20 text-teal-400 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                <BookOpen className="h-8 w-8" />
-              </div>
-              <h3 className="text-xl font-bold text-white">View Spot Tests</h3>
-              <p className="text-sm text-slate-500">Quick quizzes and assignments</p>
-            </button>
+        {/* Main Action Cards */}
+        <div className="mb-8">
+          <h2 className="text-2xl font-bold text-slate-900 mb-6">Quick Actions</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {dashboardCards.map((card, index) => {
+              const Icon = card.icon;
+              return (
+                <div
+                  key={index}
+                  onClick={card.onClick}
+                  className="group bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer transform hover:-translate-y-2"
+                >
+                  <div className={`h-2 bg-gradient-to-r ${card.color}`}></div>
+                  <div className="p-6">
+                    <div className={`${card.iconBg} w-14 h-14 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300`}>
+                      <Icon className={`w-7 h-7 ${card.iconColor}`} />
+                    </div>
+                    <h3 className="text-xl font-bold text-slate-900 mb-2 group-hover:text-indigo-600 transition-colors">
+                      {card.title}
+                    </h3>
+                    <p className="text-slate-600 text-sm leading-relaxed">
+                      {card.description}
+                    </p>
+                    <div className="mt-4 flex items-center text-indigo-600 font-semibold text-sm group-hover:translate-x-2 transition-transform duration-300">
+                      Open
+                      <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
-      </div>
-    </>
+      </main>
+    </div>
   );
 };
 

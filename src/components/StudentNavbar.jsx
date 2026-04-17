@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { LayoutDashboard, FileEdit, Settings, LogOut, Beaker } from 'lucide-react';
+import { LayoutDashboard, FileEdit, Settings, LogOut, Beaker, FileText } from 'lucide-react';
 
 const StudentNavbar = () => {
     const navigate = useNavigate();
@@ -14,8 +14,10 @@ const StudentNavbar = () => {
 
     const navItems = [
         { name: 'Dashboard', path: '/student', icon: LayoutDashboard },
-        { name: 'View Spot Test', path: '/student/spot-test', icon: FileEdit },
+        { name: 'Spot Test', path: '/student/spot-test', icon: FileEdit },
+        { name: 'Daily Worksheet', path: '/student/daily-worksheet', icon: FileText },
         { name: 'Settings', path: '/settings', icon: Settings },
+
     ];
 
     return (
@@ -23,17 +25,18 @@ const StudentNavbar = () => {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex justify-between h-16">
                     <div className="flex items-center">
-                        {/* Logo */}
-                        <div className="flex-shrink-0 flex items-center cursor-pointer transition-transform hover:scale-105" onClick={() => navigate('/student')}>
+                        <div
+                            className="flex-shrink-0 flex items-center cursor-pointer transition-transform hover:scale-105"
+                            onClick={() => navigate('/student')}
+                        >
                             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-teal-500 to-emerald-600 flex items-center justify-center shadow-lg shadow-teal-500/30">
                                 <Beaker className="w-5 h-5 text-white" />
                             </div>
                             <span className="ml-3 font-extrabold text-xl bg-clip-text text-transparent bg-gradient-to-r from-teal-400 to-emerald-400 tracking-tight">
-                                Student Hub
+                                ChemOne Student Hub
                             </span>
                         </div>
 
-                        {/* Desktop Navigation */}
                         <div className="hidden sm:ml-10 sm:flex sm:space-x-8">
                             {navItems.map((item) => {
                                 const isActive = location.pathname === item.path;
@@ -55,7 +58,6 @@ const StudentNavbar = () => {
                         </div>
                     </div>
 
-                    {/* User & Logout */}
                     <div className="hidden sm:ml-6 sm:flex sm:items-center">
                         <button
                             onClick={handleLogout}
