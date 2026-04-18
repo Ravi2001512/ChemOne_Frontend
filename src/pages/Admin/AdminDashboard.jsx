@@ -44,10 +44,10 @@ const AdminDashboard = () => {
       iconColor: 'text-blue-600'
     },
     {
-      title: 'Upload exam results',
-      description: 'Upload each student exam results',
-      icon: Bell,
-      onClick: () => navigate('/admin/upload-exam-results'),
+      title: 'Upload Exam Results',
+      description: 'Manually input and manage scores for students',
+      icon: BarChart3,
+      onClick: () => navigate('/admin/manage-results'),
       color: 'from-pink-500 to-rose-600',
       iconBg: 'bg-pink-100',
       iconColor: 'text-pink-600'

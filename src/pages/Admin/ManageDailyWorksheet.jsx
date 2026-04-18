@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import AdminNavbar from "../../components/AdminNavbar";
 import API from "../../services/api";
+import toast from 'react-hot-toast';
+import ConfirmationModal from '../../components/ConfirmationModal';
 
 const ManageDailyWorksheet = () => {
     const [worksheets, setWorksheets] = useState([]);
@@ -11,6 +13,18 @@ const ManageDailyWorksheet = () => {
     const [submissions, setSubmissions] = useState([]);
     const [loadingSubmissions, setLoadingSubmissions] = useState(false);
     const [uploadingKeyId, setUploadingKeyId] = useState(null);
+
+    // Modal state
+    const [modal, setModal] = useState({ 
+        isOpen: false, 
+        title: '', 
+        message: '', 
+        onConfirm: () => {},
+        type: 'danger'
+    });
+
+    const openModal = (config) => setModal({ ...config, isOpen: true });
+    const closeModal = () => setModal(prev => ({ ...prev, isOpen: false }));
 
     const handleUploadKey = async (event, worksheetId) => {
         const file = event.target.files[0];
@@ -26,10 +40,10 @@ const ManageDailyWorksheet = () => {
             });
             // Update local state to reflect successful key upload
             setWorksheets((prev) => prev.map(ws => ws._id === worksheetId ? { ...ws, officialAnswerUrl: response.data.data.officialAnswerUrl } : ws));
-            alert("Official Answer Key uploaded successfully!");
+            toast.success("Official Answer Key uploaded successfully!");
         } catch (err) {
             console.error(err);
-            alert(err.response?.data?.message || "Failed to upload official answer.");
+            toast.error(err.response?.data?.message || "Failed to upload official answer.");
         } finally {
             setUploadingKeyId(null);
             event.target.value = null; // reset input
@@ -37,14 +51,16 @@ const ManageDailyWorksheet = () => {
     };
 
     const handleViewSubmissions = async (worksheet) => {
+        const loadingToast = toast.loading("Loading submissions...");
         setSelectedWorksheet(worksheet);
         setLoadingSubmissions(true);
         try {
             const response = await API.get(`/worksheets/${worksheet._id}/submissions`);
             setSubmissions(response.data);
+            toast.dismiss(loadingToast);
         } catch (err) {
             console.error("Error fetching submissions:", err);
-            alert("Failed to load submissions.");
+            toast.error("Failed to load submissions.", { id: loadingToast });
         } finally {
             setLoadingSubmissions(false);
         }
@@ -85,17 +101,24 @@ const ManageDailyWorksheet = () => {
     });
 
     // Delete Logic
-    const handleDelete = async (id) => {
-        if (!window.confirm("Are you sure you want to delete this worksheet?")) return;
-
-        try {
-            await API.delete(`/worksheets/${id}`);
-            // Remove from local state
-            setWorksheets(worksheets.filter((ws) => ws._id !== id));
-        } catch (err) {
-            console.error("Error deleting worksheet:", err);
-            alert("Failed to delete worksheet.");
-        }
+    const handleDelete = (id) => {
+        openModal({
+            title: "Delete Worksheet",
+            message: "Are you sure you want to delete this worksheet? This action cannot be undone.",
+            type: "danger",
+            confirmText: "Delete",
+            onConfirm: async () => {
+                const deletingToast = toast.loading("Deleting worksheet...");
+                try {
+                    await API.delete(`/worksheets/${id}`);
+                    setWorksheets(prev => prev.filter((ws) => ws._id !== id));
+                    toast.success("Worksheet deleted successfully.", { id: deletingToast });
+                } catch (err) {
+                    console.error("Error deleting worksheet:", err);
+                    toast.error("Failed to delete worksheet.", { id: deletingToast });
+                }
+            }
+        });
     };
 
     // GCS public URLs work directly for both view and download
@@ -355,6 +378,16 @@ const ManageDailyWorksheet = () => {
                     </div>
                 </div>
             )}
+
+            <ConfirmationModal 
+                isOpen={modal.isOpen}
+                onClose={closeModal}
+                onConfirm={modal.onConfirm}
+                title={modal.title}
+                message={modal.message}
+                type={modal.type}
+                confirmText={modal.confirmText}
+            />
         </div>
     );
 };

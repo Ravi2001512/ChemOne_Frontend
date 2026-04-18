@@ -3,6 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Clock, CheckCircle2, ChevronRight, ChevronLeft, Flag } from 'lucide-react';
 import StudentNavbar from '../../components/StudentNavbar';
 import API from '../../services/api';
+import toast from 'react-hot-toast';
+import ConfirmationModal from '../../components/ConfirmationModal';
 
 const TakeSpotTest = () => {
   const { id } = useParams();
@@ -18,6 +20,18 @@ const TakeSpotTest = () => {
   const [finalScore, setFinalScore] = useState(null);
   const [startTime] = useState(Date.now());
 
+  // Modal state
+  const [modal, setModal] = useState({ 
+    isOpen: false, 
+    title: '', 
+    message: '', 
+    onConfirm: () => {},
+    type: 'info'
+  });
+
+  const openModal = (config) => setModal({ ...config, isOpen: true });
+  const closeModal = () => setModal(prev => ({ ...prev, isOpen: false }));
+
   useEffect(() => {
     const fetchTest = async () => {
       try {
@@ -30,7 +44,7 @@ const TakeSpotTest = () => {
         }
       } catch (error) {
         console.error("Error fetching test:", error);
-        alert("Failed to load test");
+        toast.error("Failed to load test");
       } finally {
         setLoading(false);
       }
@@ -61,6 +75,7 @@ const TakeSpotTest = () => {
   };
 
   const handleAutoSubmit = () => {
+    toast.error("Time's up! Submitting automatically.", { duration: 4000 });
     handleSubmit();
   };
 
@@ -68,6 +83,7 @@ const TakeSpotTest = () => {
     if (isSubmitting || isFinished) return;
     
     setIsSubmitting(true);
+    const loadingToast = toast.loading("Syncing your answers...");
     const timeTaken = Math.floor((Date.now() - startTime) / 1000);
 
     try {
@@ -85,13 +101,29 @@ const TakeSpotTest = () => {
       if (response.data.success) {
         setFinalScore(response.data);
         setIsFinished(true);
+        toast.success("Exam successfully submitted!", { id: loadingToast });
       }
     } catch (error) {
       console.error("Error submitting test:", error);
-      alert("Error submitting test. Please contact support.");
+      toast.error("Error submitting test. Please contact support.", { id: loadingToast });
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleConfirmSubmit = () => {
+    const unansweredCount = answers.filter(a => a === null).length;
+    const message = unansweredCount > 0 
+      ? `You have ${unansweredCount} unanswered questions. Are you sure you want to submit?`
+      : "Are you sure you want to complete your test and submit your answers?";
+
+    openModal({
+      title: "Final Submission",
+      message: message,
+      type: "info",
+      confirmText: "Yes, Submit",
+      onConfirm: handleSubmit
+    });
   };
 
   const formatTime = (seconds) => {
@@ -287,7 +319,7 @@ const TakeSpotTest = () => {
 
           {currentQuestionIndex === test.questions.length - 1 ? (
             <button
-              onClick={handleSubmit}
+              onClick={handleConfirmSubmit}
               disabled={isSubmitting}
               className="bg-indigo-600 text-white px-10 py-4 rounded-xl font-bold shadow-lg shadow-indigo-200 hover:bg-indigo-700 hover:shadow-indigo-300 transition-all flex items-center gap-2"
             >
@@ -305,6 +337,16 @@ const TakeSpotTest = () => {
           )}
         </div>
       </main>
+
+      <ConfirmationModal 
+          isOpen={modal.isOpen}
+          onClose={closeModal}
+          onConfirm={modal.onConfirm}
+          title={modal.title}
+          message={modal.message}
+          type={modal.type}
+          confirmText={modal.confirmText}
+      />
     </div>
   );
 };

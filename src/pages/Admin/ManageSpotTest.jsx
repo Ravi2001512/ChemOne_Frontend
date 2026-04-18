@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { Plus, BookOpen, Clock, Layout, Trash2, Search, ArrowRight, MessageSquareCheck, FileEdit, Send, EyeOff, Trophy, Users, X, CheckCircle2, Flag, Upload } from 'lucide-react';
 import AdminNavbar from '../../components/AdminNavbar';
 import API from '../../services/api';
+import toast from 'react-hot-toast';
+import ConfirmationModal from '../../components/ConfirmationModal';
 
 const ManageSpotTest = () => {
     const navigate = useNavigate();
@@ -15,6 +17,18 @@ const ManageSpotTest = () => {
     const [selectedTest, setSelectedTest] = useState(null);
     const [submissions, setSubmissions] = useState([]);
     const [loadingSubmissions, setLoadingSubmissions] = useState(false);
+
+    // Modal state
+    const [modal, setModal] = useState({ 
+        isOpen: false, 
+        title: '', 
+        message: '', 
+        onConfirm: () => {},
+        type: 'danger'
+    });
+
+    const openModal = (config) => setModal({ ...config, isOpen: true });
+    const closeModal = () => setModal(prev => ({ ...prev, isOpen: false }));
 
     useEffect(() => {
         const fetchTests = async () => {
@@ -34,42 +48,53 @@ const ManageSpotTest = () => {
         fetchTests();
     }, []);
 
-    const handleDelete = async (id) => {
-        if (!window.confirm("Are you sure you want to delete this test?")) return;
-        try {
-            await API.delete(`/tests/${id}`);
-            setTests(prev => prev.filter(t => t._id !== id));
-        } catch (error) {
-            alert("Failed to delete test.");
-        }
+    const handleDelete = (id) => {
+        openModal({
+            title: "Delete Assessment",
+            message: "Are you sure you want to delete this test? All student results for this test will be permanently lost.",
+            type: "danger",
+            confirmText: "Delete Forever",
+            onConfirm: async () => {
+                const deletingToast = toast.loading("Deleting assessment...");
+                try {
+                    await API.delete(`/tests/${id}`);
+                    setTests(prev => prev.filter(t => t._id !== id));
+                    toast.success("Assessment deleted successfully.", { id: deletingToast });
+                } catch (error) {
+                    toast.error("Failed to delete test.", { id: deletingToast });
+                }
+            }
+        });
     };
 
     const handleTogglePublish = async (id, currentStatus) => {
+        const action = !currentStatus ? "Publishing..." : "Unpublishing...";
+        const toggleToast = toast.loading(action);
         try {
             const response = await API.patch(`/tests/${id}/publish`, { isPublished: !currentStatus });
             if (response.data.success) {
                 setTests(prev => prev.map(t => t._id === id ? { ...t, isPublished: !currentStatus } : t));
+                toast.success(`Assessment ${!currentStatus ? 'is now live' : 'hidden from students'}.`, { id: toggleToast });
             }
         } catch (error) {
             console.error("Error toggling publish status:", error);
-            alert("Failed to update publication status.");
+            toast.error("Failed to update status.", { id: toggleToast });
         }
     };
 
     const handleViewResults = async (test) => {
-        console.log("View results for:", test._id);
         setSelectedTest(test);
         setSubmissions([]);
         setLoadingSubmissions(true);
         try {
             const response = await API.get(`/tests/${test._id}/submissions`);
-            console.log("Submissions response:", response.data);
             if (response.data.success) {
                 setSubmissions(response.data.submissions);
             }
         } catch (error) {
             console.error("Error fetching submissions:", error);
-            alert("Failed to load submission results: " + (error.response?.data?.message || error.message));
+            toast.error(`Failed: ${error.response?.data?.message || "Could not load results"}`);
+            setSelectedTest(null);
         } finally {
             setLoadingSubmissions(false);
         }
@@ -104,14 +129,6 @@ const ManageSpotTest = () => {
                         </p>
                     </div>
                 </div>
-                <button
-                    onClick={() => navigate('/admin/manage-spot-test')}
-                    className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-full shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all transform hover:scale-105"
-                >
-                    Manage Spot Tests
-                </button>
-
-
 
                 {/* Stats summary */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-10">
@@ -393,6 +410,16 @@ const ManageSpotTest = () => {
                     </div>
                 </div>
             )}
+
+            <ConfirmationModal 
+                isOpen={modal.isOpen}
+                onClose={closeModal}
+                onConfirm={modal.onConfirm}
+                title={modal.title}
+                message={modal.message}
+                type={modal.type}
+                confirmText={modal.confirmText}
+            />
         </div>
     );
 };

@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import StudentNavbar from "../../components/StudentNavbar";
 import API from "../../services/api";
+import toast from 'react-hot-toast';
+import ConfirmationModal from '../../components/ConfirmationModal';
 
 const Dailyworksheet = () => {
     const [worksheets, setWorksheets] = useState([]);
@@ -11,42 +13,69 @@ const Dailyworksheet = () => {
     const [deletingId, setDeletingId] = useState(null);
     const [confirmingId, setConfirmingId] = useState(null);
 
-    const handleConfirmSubmission = async (worksheetId) => {
-        if (!window.confirm("Are you sure? Once confirmed, you cannot change your answer, and the official answer will be revealed.")) return;
-        try {
-            setConfirmingId(worksheetId);
-            const response = await API.post(`/worksheets/${worksheetId}/confirm`);
-            setWorksheets((prev) =>
-                prev.map((ws) =>
-                    ws._id === worksheetId ? { ...ws, mySubmission: response.data.data } : ws
-                )
-            );
-            alert("Submission confirmed! You can now view the official answer.");
-            window.location.reload();
-        } catch (err) {
-            console.error(err);
-            alert("Failed to confirm submission.");
-        } finally {
-            setConfirmingId(null);
-        }
+    // Modal state
+    const [modal, setModal] = useState({ 
+        isOpen: false, 
+        title: '', 
+        message: '', 
+        onConfirm: () => {},
+        type: 'danger'
+    });
+
+    const openModal = (config) => setModal({ ...config, isOpen: true });
+    const closeModal = () => setModal(prev => ({ ...prev, isOpen: false }));
+
+    const handleConfirmSubmission = (worksheetId) => {
+        openModal({
+            title: "Confirm Submission",
+            message: "Are you sure? Once confirmed, you cannot change your answer, and the official answer will be revealed.",
+            type: "warning",
+            confirmText: "Yes, Confirm",
+            onConfirm: async () => {
+                try {
+                    setConfirmingId(worksheetId);
+                    const response = await API.post(`/worksheets/${worksheetId}/confirm`);
+                    setWorksheets((prev) =>
+                        prev.map((ws) =>
+                            ws._id === worksheetId ? { ...ws, mySubmission: response.data.data } : ws
+                        )
+                    );
+                    toast.success("Submission confirmed! Official answer revealed.");
+                    // Refresh if needed, but state update should be enough
+                } catch (err) {
+                    console.error(err);
+                    toast.error("Failed to confirm submission.");
+                } finally {
+                    setConfirmingId(null);
+                }
+            }
+        });
     };
 
-    const handleDeleteSubmission = async (worksheetId) => {
-        if (!window.confirm("Are you sure you want to delete your submitted answer? You can re-upload a new one.")) return;
-        try {
-            setDeletingId(worksheetId);
-            await API.delete(`/worksheets/${worksheetId}/submit`);
-            setWorksheets((prev) =>
-                prev.map((ws) =>
-                    ws._id === worksheetId ? { ...ws, mySubmission: null } : ws
-                )
-            );
-        } catch (err) {
-            console.error(err);
-            alert("Failed to delete answer.");
-        } finally {
-            setDeletingId(null);
-        }
+    const handleDeleteSubmission = (worksheetId) => {
+        openModal({
+            title: "Delete Answer",
+            message: "Are you sure you want to delete your submitted answer? You can re-upload a new one.",
+            type: "danger",
+            confirmText: "Delete",
+            onConfirm: async () => {
+                try {
+                    setDeletingId(worksheetId);
+                    await API.delete(`/worksheets/${worksheetId}/submit`);
+                    setWorksheets((prev) =>
+                        prev.map((ws) =>
+                            ws._id === worksheetId ? { ...ws, mySubmission: null } : ws
+                        )
+                    );
+                    toast.success("Answer deleted successfully.");
+                } catch (err) {
+                    console.error(err);
+                    toast.error("Failed to delete answer.");
+                } finally {
+                    setDeletingId(null);
+                }
+            }
+        });
     };
 
     const handleFileUpload = async (event, worksheetId) => {
@@ -67,10 +96,10 @@ const Dailyworksheet = () => {
                     ws._id === worksheetId ? { ...ws, mySubmission: response.data.data } : ws
                 )
             );
-            alert("Answer submitted successfully!");
+            toast.success("Answer submitted successfully!");
         } catch (err) {
             console.error(err);
-            alert(err.response?.data?.message || "Failed to submit answer.");
+            toast.error(err.response?.data?.message || "Failed to submit answer.");
         } finally {
             setUploadingId(null);
             event.target.value = null; // reset
@@ -79,7 +108,7 @@ const Dailyworksheet = () => {
 
     const now = new Date();
     const currentHour = now.getHours();
-    const isWithinTimeRange = currentHour >= 1 && currentHour < 23; // 6 AM to 11 PM
+    const isWithinTimeRange = currentHour >= 1 && currentHour < 23;
     const todayStr = new Date().toISOString().split("T")[0];
 
     // Fetch Worksheets
@@ -182,7 +211,7 @@ const Dailyworksheet = () => {
                         </div>
                         <h3 className="text-xl font-bold text-slate-900 mb-2">Outside Available Hours</h3>
                         <p className="text-slate-500 max-w-sm mx-auto">
-                            The daily worksheet is only available between <span className="font-semibold text-slate-700">6:00 AM</span> and <span className="font-semibold text-slate-700">11:00 PM</span>.
+                            The daily worksheet is only available between <span className="font-semibold text-slate-700">4:00 AM</span> and <span className="font-semibold text-slate-700">11:00 PM</span>.
                         </p>
                     </div>
                 ) : (
@@ -363,6 +392,16 @@ const Dailyworksheet = () => {
                     </>
                 )}
             </div>
+
+            <ConfirmationModal 
+                isOpen={modal.isOpen}
+                onClose={closeModal}
+                onConfirm={modal.onConfirm}
+                title={modal.title}
+                message={modal.message}
+                type={modal.type}
+                confirmText={modal.confirmText}
+            />
         </div>
     );
 };

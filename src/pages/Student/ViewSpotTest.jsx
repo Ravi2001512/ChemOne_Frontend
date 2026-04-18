@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BookOpen, Clock, ChevronRight, Search, Layout, CheckCircle2, Flag } from 'lucide-react';
+import { BookOpen, Clock, ChevronRight, Search, Layout, CheckCircle2, Flag, LogOut } from 'lucide-react';
 import StudentNavbar from '../../components/StudentNavbar';
 import API from '../../services/api';
 

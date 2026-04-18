@@ -3,6 +3,7 @@ import { Plus, Trash2, Clock, BookOpen, Users, Save, ArrowLeft, CheckCircle2, Im
 import { useNavigate, useParams } from 'react-router-dom';
 import AdminNavbar from '../../components/AdminNavbar';
 import API from '../../services/api';
+import toast from 'react-hot-toast';
 
 const CreateSpotTest = () => {
   const navigate = useNavigate();
@@ -48,7 +49,7 @@ const CreateSpotTest = () => {
           }
         } catch (error) {
           console.error("Error fetching test:", error);
-          alert("Failed to fetch test data.");
+          toast.error("Failed to fetch test data.");
         } finally {
           setLoading(false);
         }
@@ -128,17 +129,17 @@ const CreateSpotTest = () => {
     e.preventDefault();
 
     if (!testDetails.title || !testDetails.duration || testDetails.batch.length === 0) {
-      alert("Please fill in Title, Duration and Select at least one Batch.");
+      toast.error("Please fill in Title, Duration and select at least one Batch.");
       return;
     }
 
     if (testDetails.testType === 'image' && !testDetails.testImage) {
-      alert("Please upload an image.");
+      toast.error("Please upload an image.");
       return;
     }
 
     if (testDetails.testType === 'mcq' && questions.some(q => !q.text)) {
-      alert("Please fill in all question texts.");
+      toast.error("Please fill in all question texts.");
       return;
     }
 
@@ -177,6 +178,7 @@ const CreateSpotTest = () => {
       }
 
       if (response.data.success) {
+        toast.success(isEditMode ? "Test updated successfully!" : "Test created successfully!");
         setSuccess(true);
         setTimeout(() => {
           setSuccess(false);
@@ -186,7 +188,7 @@ const CreateSpotTest = () => {
     } catch (error) {
       console.error("FULL ERROR OBJECT:", error);
       const errorMsg = error.response?.data?.message || error.message || "Failed to create test. Check console.";
-      alert(`API Error: ${errorMsg}`);
+      toast.error(`API Error: ${errorMsg}`);
     } finally {
       setIsSubmitting(false);
     }

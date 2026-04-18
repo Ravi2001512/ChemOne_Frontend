@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ClipboardList, Users, BarChart3, Settings, FileText, BarChart2 } from 'lucide-react';
+import { ClipboardList, Users, BarChart3, Settings, FileText, Award } from 'lucide-react';
 import StudentNavbar from '../../components/StudentNavbar';
 
 const StudentDashboard = () => {
@@ -9,7 +9,7 @@ const StudentDashboard = () => {
   const dashboardCards = [
     {
       title: 'View Spot Tests',
-      description: 'View and manage spot tests for students',
+      description: 'Access your assigned spot tests and assessments',
       icon: ClipboardList,
       onClick: () => navigate('/student/spot-test'),
       color: 'from-indigo-500 to-purple-600',
@@ -18,7 +18,7 @@ const StudentDashboard = () => {
     },
     {
       title: 'Daily Worksheet',
-      description: 'View and manage daily worksheet',
+      description: 'Check today\'s worksheet and submit your answers',
       icon: Users,
       onClick: () => navigate('/student/daily-worksheet'),
       color: 'from-emerald-500 to-teal-600',
@@ -26,27 +26,9 @@ const StudentDashboard = () => {
       iconColor: 'text-emerald-600'
     },
     {
-      title: 'Analytics',
-      description: 'View performance metrics and statistics',
-      icon: BarChart3,
-      onClick: () => navigate('/admin/analytics'),
-      color: 'from-orange-500 to-red-600',
-      iconBg: 'bg-orange-100',
-      iconColor: 'text-orange-600'
-    },
-    {
-      title: 'Chat with AI',
-      description: 'Chat with AI',
-      icon: FileText,
-      onClick: () => navigate('/admin/chat-with-ai'),
-      color: 'from-blue-500 to-cyan-600',
-      iconBg: 'bg-blue-100',
-      iconColor: 'text-blue-600'
-    },
-    {
-      title: 'View Results',
-      description: 'View Results',
-      icon: BarChart2,
+      title: 'Physical Exam Results',
+      description: 'View your leaderboard rankings and performance in class exams',
+      icon: Award,
       onClick: () => navigate('/student/results'),
       color: 'from-rose-500 to-rose-600',
       iconBg: 'bg-rose-100',
@@ -54,7 +36,7 @@ const StudentDashboard = () => {
     },
     {
       title: 'Settings',
-      description: 'Configure system settings and preferences',
+      description: 'Manage your profile and account preferences',
       icon: Settings,
       onClick: () => navigate('/settings'),
       color: 'from-slate-500 to-gray-600',
@@ -71,10 +53,10 @@ const StudentDashboard = () => {
         {/* Header Section */}
         <div className="mb-12">
           <h1 className="text-4xl font-extrabold text-slate-900 mb-3 bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-            Student Dashboard
+            Welcome back to your learning hub!
           </h1>
           <p className="text-lg text-slate-600">
-            Manage and monitor student activity.
+            Access your tests, worksheets, and track your performance.
           </p>
           <button
             onClick={() => window.open('https://play.google.com/store/apps/details?id=com.joazco.vsper&hl=en_SG', '_blank')}

@@ -12,11 +12,15 @@ import DailyWorksheet from "./pages/Admin/DailyWorksheet";
 import ManageSpotTest from "./pages/Admin/ManageSpotTest";
 import ManageDailyWorksheet from "./pages/Admin/ManageDailyWorksheet";
 import ManageStudents from "./pages/Admin/ManageStudents";
+import ManageResults from "./pages/Admin/ManageResults";
 import Dailyworksheet from "./pages/Student/Dailyworksheet";
+import ViewPhysicalResults from "./pages/Student/ViewPhysicalResults";
+import { Toaster } from 'react-hot-toast';
 
 function App() {
   return (
     <BrowserRouter>
+      <Toaster position="top-right" reverseOrder={false} />
       <Routes>
         <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="/signup" element={<Signup />} />
@@ -32,11 +36,13 @@ function App() {
         <Route path="/admin/manage-spot-test" element={<ManageSpotTest />} />
         <Route path="/admin/manage-daily-worksheet" element={<ManageDailyWorksheet />} />
         <Route path="/admin/students" element={<ManageStudents />} />
+        <Route path="/admin/manage-results" element={<ManageResults />} />
 
         <Route path="/student" element={<StudentDashboard />} />
         <Route path="/student/spot-test" element={<ViewSpotTest />} />
         <Route path="/student/spot-test/:id" element={<TakeSpotTest />} />
         <Route path="/student/daily-worksheet" element={<Dailyworksheet />} />
+        <Route path="/student/results" element={<ViewPhysicalResults />} />
       </Routes>
     </BrowserRouter>
   );

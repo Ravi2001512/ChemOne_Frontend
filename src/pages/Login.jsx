@@ -144,7 +144,7 @@ const KEYFRAMES = `
   }
 `;
 
-const TICKER_ITEMS = ["CHEMONE", "A-LEVELS", "SIGN IN", "CHEMISTRY", "ASHAN UMAYANGA", "Best Educator", "A-LEVELS", "SIGN IN", "CHEMISTRY", "ASHAN UMAYANGA", "Best Educator"];
+const TICKER_ITEMS = ["ChemBridge", "A-LEVELS", "SIGN IN", "CHEMISTRY", "ASHAN UMAYANGA", "Best Educator", "A-LEVELS", "SIGN IN", "CHEMISTRY", "ASHAN UMAYANGA", "Best Educator"];
 
 function Field({ label, icon, children }) {
   return (
@@ -460,11 +460,11 @@ function Login() {
 
             {/* Links */}
             <div style={{ display: "flex", flexDirection: "column", gap: 10, alignItems: "center" }}>
-              <p style={{ color: "var(--sub)", fontSize: 13, margin: 0 }}>
+              <p style={{ color: "#a19f9fff", fontSize: 13, margin: 0 }}>
                 Forgot password?{" "}
                 <span
                   onClick={() => navigate("/forgot-password")}
-                  style={{ color: "var(--sub)", cursor: "pointer", fontWeight: 500, transition: "color .15s", textDecoration: "underline", textDecorationColor: "var(--muted)" }}
+                  style={{ color: "#a19f9fff", cursor: "pointer", fontWeight: 500, transition: "color .15s", textDecoration: "underline", textDecorationColor: "var(--muted)" }}
                   onMouseEnter={e => e.currentTarget.style.color = "#c6e077ff"}
                   onMouseLeave={e => e.currentTarget.style.color = "var(--sub)"}
                 >
@@ -474,7 +474,7 @@ function Login() {
             </div>
 
             {/* Footer */}
-            <p className="font-mono" style={{ textAlign: "center", color: "#222", fontSize: 10, marginTop: 20, letterSpacing: ".08em" }}>
+            <p className="font-mono" style={{ textAlign: "center", color: "#e5e4e4ff", fontSize: 10, marginTop: 20, letterSpacing: ".08em" }}>
               © 2026 ChemBridge  — ALL RIGHTS RESERVED
             </p>
           </div>
