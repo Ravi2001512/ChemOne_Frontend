@@ -15,6 +15,7 @@ import ManageStudents from "./pages/Admin/ManageStudents";
 import ManageResults from "./pages/Admin/ManageResults";
 import Dailyworksheet from "./pages/Student/Dailyworksheet";
 import ViewPhysicalResults from "./pages/Student/ViewPhysicalResults";
+import ChatBot from "./pages/Student/ChatBot";
 import { Toaster } from 'react-hot-toast';
 import { useEffect } from 'react';
 
@@ -52,6 +53,7 @@ function App() {
         <Route path="/student/spot-test/:id" element={<TakeSpotTest />} />
         <Route path="/student/daily-worksheet" element={<Dailyworksheet />} />
         <Route path="/student/results" element={<ViewPhysicalResults />} />
+        <Route path="/student/ai-chatbot" element={<ChatBot />} />
       </Routes>
     </BrowserRouter>
   );
