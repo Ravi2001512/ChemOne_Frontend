@@ -1,10 +1,28 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { LayoutDashboard, FileEdit, Settings, LogOut, Beaker, FileText } from 'lucide-react';
 
 const StudentNavbar = () => {
     const navigate = useNavigate();
     const location = useLocation();
+
+    const [isDarkMode, setIsDarkMode] = useState(false);
+
+    useEffect(() => {
+        setIsDarkMode(document.documentElement.classList.contains("dark"));
+    }, []);
+
+    const toggleDarkMode = () => {
+        if (isDarkMode) {
+            document.documentElement.classList.remove('dark');
+            localStorage.setItem('theme', 'light');
+            setIsDarkMode(false);
+        } else {
+            document.documentElement.classList.add('dark');
+            localStorage.setItem('theme', 'dark');
+            setIsDarkMode(true);
+        }
+    };
 
     const handleLogout = () => {
         localStorage.removeItem('token');
@@ -33,7 +51,7 @@ const StudentNavbar = () => {
                                 <Beaker className="w-5 h-5 text-white" />
                             </div>
                             <span className="ml-3 font-extrabold text-xl bg-clip-text text-transparent bg-gradient-to-r from-teal-400 to-emerald-400 tracking-tight">
-                                ChemOne Student Hub
+                                ChemBridge Student Hub
                             </span>
                         </div>
 
@@ -58,7 +76,14 @@ const StudentNavbar = () => {
                         </div>
                     </div>
 
-                    <div className="hidden sm:ml-6 sm:flex sm:items-center">
+                    <div className="hidden sm:ml-6 sm:flex sm:items-center gap-4">
+                        <button
+                            onClick={toggleDarkMode}
+                            className={`w-12 h-6 rounded-full transition-colors relative flex items-center px-1 ${isDarkMode ? 'bg-teal-500' : 'bg-slate-700'}`}
+                            aria-label="Toggle Dark Mode"
+                        >
+                            <div className={`w-4 h-4 bg-white rounded-full shadow-md transform transition-transform ${isDarkMode ? 'translate-x-6' : 'translate-x-0'}`} />
+                        </button>
                         <button
                             onClick={handleLogout}
                             className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-semibold rounded-lg text-rose-400 bg-rose-500/10 hover:bg-rose-500/20 hover:text-rose-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-500 transition-colors"

@@ -138,19 +138,19 @@ const ManageDailyWorksheet = () => {
     };
 
     return (
-        <div className="min-h-screen bg-slate-50">
+        <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
             <AdminNavbar />
 
             <div className="max-w-7xl mx-auto p-6 lg:p-10 space-y-8">
                 {/* HEADER SECTION */}
-                <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 bg-white p-8 rounded-3xl shadow-sm border border-slate-100">
+                <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 bg-white dark:bg-slate-900 p-8 rounded-3xl shadow-sm dark:shadow-none border border-slate-100">
                     <div>
                         <div className="inline-flex items-center justify-center p-3 bg-blue-50 rounded-2xl mb-4">
                             <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                             </svg>
                         </div>
-                        <h1 className="text-3xl font-bold text-slate-900">Manage Worksheets</h1>
+                        <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Manage Worksheets</h1>
                         <p className="text-slate-500 mt-2 text-lg">View, search, and manage uploaded daily worksheets.</p>
                     </div>
 
@@ -165,7 +165,7 @@ const ManageDailyWorksheet = () => {
                             placeholder="Search by name, date or notes..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-11 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium"
+                            className="w-full pl-11 pr-4 py-3.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 rounded-2xl text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium"
                         />
                     </div>
                 </div>
@@ -184,10 +184,10 @@ const ManageDailyWorksheet = () => {
                 {loading ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                         {[1, 2, 3, 4, 5, 6].map((i) => (
-                            <div key={i} className="animate-pulse bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
+                            <div key={i} className="animate-pulse bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-100 shadow-sm dark:shadow-none">
                                 <div className="h-4 bg-slate-200 rounded-full w-3/4 mb-4"></div>
-                                <div className="h-3 bg-slate-100 rounded-full w-1/2 mb-6"></div>
-                                <div className="h-24 bg-slate-50 rounded-2xl mb-6"></div>
+                                <div className="h-3 bg-slate-100 dark:bg-slate-800 rounded-full w-1/2 mb-6"></div>
+                                <div className="h-24 bg-slate-50 dark:bg-slate-950 rounded-2xl mb-6"></div>
                                 <div className="flex gap-3">
                                     <div className="h-10 bg-slate-200 rounded-xl flex-1"></div>
                                     <div className="h-10 bg-slate-200 rounded-xl w-12"></div>
@@ -203,14 +203,14 @@ const ManageDailyWorksheet = () => {
                                 {filteredWorksheets.map((ws) => (
                                     <div
                                         key={ws._id}
-                                        className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm hover:shadow-xl hover:border-blue-100 transition-all duration-300 group flex flex-col"
+                                        className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-100 shadow-sm dark:shadow-none hover:shadow-xl hover:border-blue-100 transition-all duration-300 group flex flex-col"
                                     >
                                         <div className="flex items-start justify-between mb-4">
                                             <div className="flex-1 min-w-0 pr-4">
-                                                <h3 className="font-bold text-slate-900 text-lg mb-1 truncate" title={ws.fileName}>
+                                                <h3 className="font-bold text-slate-900 dark:text-white text-lg mb-1 truncate" title={ws.fileName}>
                                                     {ws.fileName}
                                                 </h3>
-                                                <p className="text-sm font-medium text-slate-500 bg-slate-50 inline-block px-3 py-1 rounded-lg">
+                                                <p className="text-sm font-medium text-slate-500 bg-slate-50 dark:bg-slate-950 inline-block px-3 py-1 rounded-lg">
                                                     {formatDate(ws.date)}
                                                 </p>
                                             </div>
@@ -221,8 +221,8 @@ const ManageDailyWorksheet = () => {
                                             </div>
                                         </div>
 
-                                        <div className="flex-1 bg-slate-50 rounded-2xl p-4 mb-6 border border-slate-100 group-hover:bg-blue-50/50 transition-colors">
-                                            <p className="text-sm text-slate-600 line-clamp-3">
+                                        <div className="flex-1 bg-slate-50 dark:bg-slate-950 rounded-2xl p-4 mb-6 border border-slate-100 group-hover:bg-blue-50/50 transition-colors">
+                                            <p className="text-sm text-slate-600 dark:text-slate-400 line-clamp-3">
                                                 {ws.notes || <span className="italic text-slate-400">No notes provided.</span>}
                                             </p>
                                         </div>
@@ -251,7 +251,7 @@ const ManageDailyWorksheet = () => {
                                                 </button>
                                                 <button
                                                     onClick={() => handleDelete(ws._id)}
-                                                    className="w-10 flex-shrink-0 bg-white border border-red-100 text-red-500 hover:bg-red-50 hover:border-red-200 disabled:opacity-50 font-semibold py-3 flex items-center justify-center rounded-xl active:scale-95 transition-all"
+                                                    className="w-10 flex-shrink-0 bg-white dark:bg-slate-900 border border-red-100 text-red-500 hover:bg-red-50 hover:border-red-200 disabled:opacity-50 font-semibold py-3 flex items-center justify-center rounded-xl active:scale-95 transition-all"
                                                     title="Delete Worksheet"
                                                 >
                                                     <svg className="w-4 h-4 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -292,13 +292,13 @@ const ManageDailyWorksheet = () => {
                             </div>
                         ) : (
                             /* EMPTY STATE */
-                            <div className="bg-white rounded-3xl border border-slate-100 border-dashed p-12 text-center flex flex-col items-center justify-center min-h-[400px]">
-                                <div className="w-24 h-24 bg-slate-50 rounded-full flex items-center justify-center mb-6">
+                            <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 border-dashed p-12 text-center flex flex-col items-center justify-center min-h-[400px]">
+                                <div className="w-24 h-24 bg-slate-50 dark:bg-slate-950 rounded-full flex items-center justify-center mb-6">
                                     <svg className="w-12 h-12 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
                                     </svg>
                                 </div>
-                                <h3 className="text-xl font-bold text-slate-900 mb-2">No Worksheets Found</h3>
+                                <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">No Worksheets Found</h3>
                                 <p className="text-slate-500 max-w-sm mx-auto">
                                     {searchTerm
                                         ? "We couldn't find any worksheets matching your search term. Try a different keyword."
@@ -313,15 +313,15 @@ const ManageDailyWorksheet = () => {
             {/* Submissions Modal */}
             {selectedWorksheet && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in">
-                    <div className="bg-white rounded-3xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl border border-slate-100">
+                    <div className="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl border border-slate-100">
                         <div className="p-6 border-b border-slate-100 flex items-center justify-between">
                             <div>
-                                <h2 className="text-2xl font-bold text-slate-900">Student Answers</h2>
+                                <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Student Answers</h2>
                                 <p className="text-slate-500 mt-1">{selectedWorksheet.fileName}</p>
                             </div>
                             <button
                                 onClick={closeSubmissionsModal}
-                                className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-50 text-slate-500 hover:bg-slate-100 hover:text-slate-900 transition-colors"
+                                className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-50 dark:bg-slate-950 text-slate-500 hover:bg-slate-100 dark:bg-slate-800 hover:text-slate-900 dark:text-white transition-colors"
                             >
                                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -329,7 +329,7 @@ const ManageDailyWorksheet = () => {
                             </button>
                         </div>
 
-                        <div className="flex-1 overflow-y-auto p-6 bg-slate-50">
+                        <div className="flex-1 overflow-y-auto p-6 bg-slate-50 dark:bg-slate-950">
                             {loadingSubmissions ? (
                                 <div className="flex flex-col items-center justify-center py-20">
                                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
@@ -338,13 +338,13 @@ const ManageDailyWorksheet = () => {
                             ) : submissions.length > 0 ? (
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     {submissions.map((sub, idx) => (
-                                        <div key={idx} className="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col group">
+                                        <div key={idx} className="bg-white dark:bg-slate-900 p-5 rounded-2xl shadow-sm dark:shadow-none border border-slate-200 flex flex-col group">
                                             <div className="flex items-start justify-between mb-4">
                                                 <div>
-                                                    <h3 className="font-bold text-slate-900">{sub.student?.name || "Unknown Student"}</h3>
+                                                    <h3 className="font-bold text-slate-900 dark:text-white">{sub.student?.name || "Unknown Student"}</h3>
                                                     <p className="text-indigo-600 font-medium text-sm">Index: {sub.student?.indexNumber || "N/A"}</p>
                                                 </div>
-                                                <span className="text-xs font-semibold text-slate-500 bg-slate-100 px-2 py-1 rounded-lg">
+                                                <span className="text-xs font-semibold text-slate-500 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-lg">
                                                     {formatDate(sub.createdAt)}
                                                 </span>
                                             </div>
@@ -370,7 +370,7 @@ const ManageDailyWorksheet = () => {
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
                                         </svg>
                                     </div>
-                                    <p className="text-xl font-bold text-slate-800">No Answers Yet</p>
+                                    <p className="text-xl font-bold text-slate-800 dark:text-slate-100">No Answers Yet</p>
                                     <p className="text-slate-500 mt-2">Students haven't submitted any answers for this worksheet.</p>
                                 </div>
                             )}

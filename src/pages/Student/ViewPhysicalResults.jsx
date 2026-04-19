@@ -24,10 +24,18 @@ const ViewPhysicalResults = () => {
             setLoading(true);
             const response = await API.get("/physical-exams");
             if (response.data.success) {
-                setExams(response.data.exams);
+                const user = JSON.parse(localStorage.getItem('user'));
+                const studentBatch = user?.batch;
+                
+                // Filter to only show exams available for the student's batch
+                const filteredExams = response.data.exams.filter(exam => 
+                    exam.batch && (exam.batch.includes('all') || exam.batch.includes(studentBatch))
+                );
+
+                setExams(filteredExams);
                 // Auto select first exam if available
-                if (response.data.exams.length > 0) {
-                    setSelectedExamId(response.data.exams[0]._id);
+                if (filteredExams.length > 0) {
+                    setSelectedExamId(filteredExams[0]._id);
                 }
             }
         } catch (err) {
@@ -64,7 +72,7 @@ const ViewPhysicalResults = () => {
     const myRank = results.findIndex(r => r.student._id === currentUser?.id) + 1;
 
     return (
-        <div className="min-h-screen bg-slate-50">
+        <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
             <StudentNavbar />
 
             <div className="max-w-6xl mx-auto p-6 lg:p-10 space-y-8">
@@ -76,7 +84,7 @@ const ViewPhysicalResults = () => {
                             <p className="text-slate-400 font-medium text-lg">Track your progress and rankings in physically held exams.</p>
                             
                             {selectedExam && (
-                                <div className="mt-8 inline-flex items-center gap-4 bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/10">
+                                <div className="mt-8 inline-flex items-center gap-4 bg-white dark:bg-slate-900/10 backdrop-blur-md rounded-2xl p-4 border border-white/10">
                                     <div className="p-3 bg-rose-500 rounded-xl">
                                         <Trophy className="w-6 h-6 text-white" />
                                     </div>
@@ -92,59 +100,29 @@ const ViewPhysicalResults = () => {
                         <div className="absolute -bottom-24 left-1/2 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl"></div>
                     </div>
 
-                    <div className="bg-white rounded-[2.5rem] p-8 border border-slate-100 shadow-xl shadow-slate-200/50 flex flex-col justify-center text-center group cursor-default transition-all hover:border-rose-200">
+                    <div className="bg-white dark:bg-slate-900 rounded-[1.5rem] md:rounded-[2.5rem] p-8 border border-slate-100 shadow-xl shadow-slate-200/50 flex flex-col justify-center text-center group cursor-default transition-all hover:border-rose-200">
                         {myResult ? (
                             <>
                                 <div className="mx-auto bg-rose-50 p-4 rounded-3xl mb-4 group-hover:scale-110 transition-transform">
                                     <Award className="w-10 h-10 text-rose-600" />
                                 </div>
                                 <p className="text-slate-400 font-black uppercase text-xs tracking-widest mb-1">Your Rank</p>
-                                <h2 className="text-6xl font-black text-slate-900">#{myRank}</h2>
+                                <h2 className="text-5xl md:text-6xl font-black text-slate-900 dark:text-white">#{myRank}</h2>
                                 <p className="text-slate-500 mt-2 font-bold">out of {results.length} students</p>
                             </>
                         ) : (
                             <div className="text-slate-300">
                                 <Search className="w-12 h-12 mx-auto mb-4 opacity-50" />
                                 <p className="font-black uppercase text-xs tracking-widest">No Record Found</p>
-                                <p className="text-sm font-medium mt-2">Check another exam session</p>
+                                <p className="text-sm font-medium mt-2">No results available for you yet.</p>
                             </div>
                         )}
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-                    {/* EXAM SELECTOR SIDEBAR */}
-                    <div className="lg:col-span-1 space-y-4">
-                        <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1 mb-4">Exam Sessions</h3>
-                        {loading ? (
-                            <div className="space-y-3">
-                                {[1,2,3].map(i => <div key={i} className="h-16 bg-slate-100 rounded-2xl animate-pulse"></div>)}
-                            </div>
-                        ) : (
-                            <div className="space-y-2">
-                                {exams.map(exam => (
-                                    <button
-                                        key={exam._id}
-                                        onClick={() => setSelectedExamId(exam._id)}
-                                        className={`w-full text-left p-4 rounded-2xl transition-all border flex items-center justify-between group ${
-                                            selectedExamId === exam._id 
-                                            ? 'bg-white border-rose-200 shadow-lg shadow-rose-100 ring-2 ring-rose-500/5 transition-all outline-none translate-x-3' 
-                                            : 'bg-white/50 border-slate-100 hover:bg-white hover:border-rose-100'
-                                        }`}
-                                    >
-                                        <div className="overflow-hidden">
-                                            <p className={`font-black truncate ${selectedExamId === exam._id ? 'text-rose-600' : 'text-slate-700'}`}>{exam.title}</p>
-                                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-1">{new Date(exam.date).toLocaleDateString()}</p>
-                                        </div>
-                                        <ChevronRight className={`w-4 h-4 transition-all ${selectedExamId === exam._id ? 'text-rose-600' : 'text-slate-300 group-hover:text-rose-300'}`} />
-                                    </button>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-
+                <div className="space-y-6">
                     {/* RESULTS LEADERBOARD */}
-                    <div className="lg:col-span-3 space-y-6">
+                    <div className="space-y-6">
                         <div className="flex items-center justify-between mb-2">
                             <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Batch Performance Leaderboard</h3>
                             {selectedExam && (
@@ -155,16 +133,16 @@ const ViewPhysicalResults = () => {
                         </div>
 
                         {resultsLoading ? (
-                            <div className="bg-white rounded-[2.5rem] p-12 border border-slate-100 shadow-sm flex flex-col items-center justify-center min-h-[400px]">
+                            <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-12 border border-slate-100 shadow-sm dark:shadow-none flex flex-col items-center justify-center min-h-[400px]">
                                 <div className="animate-spin rounded-full h-10 w-10 border-4 border-rose-600 border-t-transparent mb-4"></div>
                                 <p className="text-slate-500 font-bold">Synchronizing leaderboard...</p>
                             </div>
                         ) : results.length > 0 ? (
-                            <div className="bg-white border border-slate-100 shadow-xl shadow-slate-200/40 rounded-[2.5rem] overflow-hidden">
+                            <div className="bg-white dark:bg-slate-900 border border-slate-100 shadow-xl shadow-slate-200/40 rounded-[2.5rem] overflow-hidden">
                                 <div className="overflow-x-auto">
                                     <table className="w-full text-left border-collapse">
                                         <thead>
-                                            <tr className="bg-slate-50/70 border-b border-slate-100">
+                                            <tr className="bg-slate-50 dark:bg-slate-950/70 border-b border-slate-100">
                                                 <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest w-20">Rank</th>
                                                 <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Student</th>
                                                 <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Score</th>
@@ -181,15 +159,15 @@ const ViewPhysicalResults = () => {
                                                         className={`transition-all duration-300 ${
                                                             isMovingOne 
                                                             ? 'bg-rose-50 ring-2 ring-rose-500/10 z-10 relative scale-[1.01] shadow-xl shadow-rose-900/5' 
-                                                            : 'hover:bg-slate-50/50'
+                                                            : 'hover:bg-slate-50 dark:bg-slate-950/50'
                                                         }`}
                                                     >
                                                         <td className="px-8 py-6">
-                                                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-sm shadow-sm ${
+                                                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-sm shadow-sm dark:shadow-none ${
                                                                 rank === 1 ? 'bg-amber-400 text-white' : 
                                                                 rank === 2 ? 'bg-slate-300 text-white' :
                                                                 rank === 3 ? 'bg-amber-700 text-white' :
-                                                                isMovingOne ? 'bg-rose-600 text-white' : 'bg-slate-50 text-slate-400'
+                                                                isMovingOne ? 'bg-rose-600 text-white' : 'bg-slate-50 dark:bg-slate-950 text-slate-400'
                                                             }`}>
                                                                 {rank}
                                                             </div>
@@ -197,7 +175,7 @@ const ViewPhysicalResults = () => {
                                                         <td className="px-8 py-6">
                                                             <div className="flex items-center gap-4">
                                                                 <div>
-                                                                    <div className={`font-black text-lg tracking-tight ${isMovingOne ? 'text-rose-900' : 'text-slate-800'}`}>
+                                                                    <div className={`font-black text-lg tracking-tight ${isMovingOne ? 'text-rose-900' : 'text-slate-800 dark:text-slate-100'}`}>
                                                                         {res.student.name}
                                                                         {isMovingOne && <span className="ml-2 text-[10px] bg-rose-200 text-rose-700 px-2 py-0.5 rounded-full uppercase tracking-tighter">You</span>}
                                                                     </div>
@@ -209,7 +187,7 @@ const ViewPhysicalResults = () => {
                                                         </td>
                                                         <td className="px-8 py-6 text-right">
                                                             <div className="flex flex-col items-end">
-                                                                <div className={`text-3xl font-black ${isMovingOne ? 'text-rose-600' : 'text-slate-900'}`}>
+                                                                <div className={`text-3xl font-black ${isMovingOne ? 'text-rose-600' : 'text-slate-900 dark:text-white'}`}>
                                                                     {res.score}
                                                                 </div>
                                                                 <div className="text-[10px] font-black text-slate-400 uppercase tracking-tighter">
@@ -225,11 +203,11 @@ const ViewPhysicalResults = () => {
                                 </div>
                             </div>
                         ) : (
-                            <div className="bg-white rounded-[2.5rem] border border-dashed border-slate-200 p-20 flex flex-col items-center text-center">
-                                <div className="w-20 h-20 bg-slate-50 text-slate-200 rounded-full flex items-center justify-center mb-6">
+                            <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-dashed border-slate-200 p-20 flex flex-col items-center text-center">
+                                <div className="w-20 h-20 bg-slate-50 dark:bg-slate-950 text-slate-200 rounded-full flex items-center justify-center mb-6">
                                     <BookOpen className="h-10 w-10" />
                                 </div>
-                                <h3 className="text-2xl font-black text-slate-900 mb-2">No Results Found</h3>
+                                <h3 className="text-2xl font-black text-slate-900 dark:text-white mb-2">No Results Found</h3>
                                 <p className="text-slate-500 max-w-sm mx-auto font-medium">Results for this exam session haven't been published yet. Check back soon!</p>
                             </div>
                         )}

@@ -16,8 +16,17 @@ import ManageResults from "./pages/Admin/ManageResults";
 import Dailyworksheet from "./pages/Student/Dailyworksheet";
 import ViewPhysicalResults from "./pages/Student/ViewPhysicalResults";
 import { Toaster } from 'react-hot-toast';
+import { useEffect } from 'react';
 
 function App() {
+  useEffect(() => {
+    if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, []);
+
   return (
     <BrowserRouter>
       <Toaster position="top-right" reverseOrder={false} />

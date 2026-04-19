@@ -41,19 +41,19 @@ const ManageStudents = () => {
     });
 
     return (
-        <div className="min-h-screen bg-slate-50">
+        <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
             <AdminNavbar />
 
             <div className="max-w-7xl mx-auto p-6 lg:p-10 space-y-8">
                 {/* HEADER SECTION */}
-                <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 bg-white p-8 rounded-3xl shadow-sm border border-slate-100">
+                <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 bg-white dark:bg-slate-900 p-8 rounded-3xl shadow-sm dark:shadow-none border border-slate-100">
                     <div>
                         <div className="inline-flex items-center justify-center p-3 bg-blue-50 rounded-2xl mb-4">
                             <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                             </svg>
                         </div>
-                        <h1 className="text-3xl font-bold text-slate-900">Registered Students</h1>
+                        <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Registered Students</h1>
                         <p className="text-slate-500 mt-2 text-lg">View and search for registered student details.</p>
                         <button
                             onClick={() => navigate("/signup")}
@@ -77,7 +77,7 @@ const ManageStudents = () => {
                             placeholder="Search by name, index, batch or email..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-11 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium"
+                            className="w-full pl-11 pr-4 py-3.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 rounded-2xl text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium"
                         />
                     </div>
                 </div>
@@ -94,18 +94,18 @@ const ManageStudents = () => {
 
                 {/* CONTENT AREA */}
                 {loading ? (
-                    <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm animate-pulse space-y-4">
-                        <div className="h-10 bg-slate-100 rounded-xl w-full"></div>
-                        <div className="h-10 bg-slate-100 rounded-xl w-full"></div>
-                        <div className="h-10 bg-slate-100 rounded-xl w-full"></div>
-                        <div className="h-10 bg-slate-100 rounded-xl w-full"></div>
-                        <div className="h-10 bg-slate-100 rounded-xl w-full"></div>
+                    <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-slate-100 shadow-sm dark:shadow-none animate-pulse space-y-4">
+                        <div className="h-10 bg-slate-100 dark:bg-slate-800 rounded-xl w-full"></div>
+                        <div className="h-10 bg-slate-100 dark:bg-slate-800 rounded-xl w-full"></div>
+                        <div className="h-10 bg-slate-100 dark:bg-slate-800 rounded-xl w-full"></div>
+                        <div className="h-10 bg-slate-100 dark:bg-slate-800 rounded-xl w-full"></div>
+                        <div className="h-10 bg-slate-100 dark:bg-slate-800 rounded-xl w-full"></div>
                     </div>
                 ) : (
-                    <div className="bg-white border border-slate-100 shadow-sm rounded-3xl overflow-hidden">
+                    <div className="bg-white dark:bg-slate-900 border border-slate-100 shadow-sm dark:shadow-none rounded-3xl overflow-hidden">
                         <div className="overflow-x-auto">
                             <table className="w-full text-left">
-                                <thead className="bg-slate-50 border-b border-slate-100">
+                                <thead className="bg-slate-50 dark:bg-slate-950 border-b border-slate-100">
                                     <tr>
                                         <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Student Name</th>
                                         <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Index Number</th>
@@ -117,9 +117,9 @@ const ManageStudents = () => {
                                 <tbody className="divide-y divide-slate-100">
                                     {filteredStudents.length > 0 ? (
                                         filteredStudents.map((student) => (
-                                            <tr key={student._id} className="hover:bg-slate-50/50 transition-colors group">
+                                            <tr key={student._id} className="hover:bg-slate-50 dark:bg-slate-950/50 transition-colors group">
                                                 <td className="px-6 py-4 whitespace-nowrap">
-                                                    <div className="font-semibold text-slate-900">{student.name}</div>
+                                                    <div className="font-semibold text-slate-900 dark:text-white">{student.name}</div>
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap">
                                                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-50 text-indigo-700 border border-indigo-100">
@@ -127,7 +127,7 @@ const ManageStudents = () => {
                                                     </span>
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap">
-                                                    <div className="text-sm text-slate-600 font-medium">Batch {student.batch || "N/A"}</div>
+                                                    <div className="text-sm text-slate-600 dark:text-slate-400 font-medium">Batch {student.batch || "N/A"}</div>
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
                                                     {student.email}
@@ -144,7 +144,7 @@ const ManageStudents = () => {
                                                     <svg className="w-12 h-12 mb-4 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                                                     </svg>
-                                                    <p className="text-lg font-medium text-slate-600">No students found</p>
+                                                    <p className="text-lg font-medium text-slate-600 dark:text-slate-400">No students found</p>
                                                     <p className="text-sm">Try adjusting your search term.</p>
                                                 </div>
                                             </td>
