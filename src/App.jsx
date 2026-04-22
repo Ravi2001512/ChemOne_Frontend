@@ -20,6 +20,7 @@ import About from "./pages/Student/About";
 import Games from "./pages/Student/Games";
 import { Toaster } from 'react-hot-toast';
 import { useEffect } from 'react';
+//import VesakDecorations from "./components/VesakDecorations";
 
 const GuestRestrictRoute = ({ children }) => {
   const user = JSON.parse(localStorage.getItem('user') || '{}');
@@ -40,7 +41,7 @@ function App() {
 
   return (
     <BrowserRouter>
-      <Toaster position="top-right" reverseOrder={false} />
+      {/* <VesakDecorations /> */}
       <Routes>
         <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="/signup" element={<Signup />} />
@@ -57,6 +58,7 @@ function App() {
         <Route path="/admin/manage-daily-worksheet" element={<ManageDailyWorksheet />} />
         <Route path="/admin/students" element={<ManageStudents />} />
         <Route path="/admin/manage-results" element={<ManageResults />} />
+
 
         <Route path="/student" element={<StudentDashboard />} />
         <Route path="/student/spot-test" element={<GuestRestrictRoute><ViewSpotTest /></GuestRestrictRoute>} />

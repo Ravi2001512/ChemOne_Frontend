@@ -77,10 +77,10 @@ const About = () => {
                 </div>
 
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
-                    <h1 className="text-5xl md:text-6xl font-extrabold text-slate-900 dark:text-white mb-6 tracking-tight">
+                    <h1 className="text-3xl sm:text-5xl md:text-6xl font-extrabold text-slate-900 dark:text-white mb-6 tracking-tight">
                         About <span className="bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">ChemBridge</span>
                     </h1>
-                    <p className="text-xl text-slate-600 dark:text-slate-400 max-w-2xl mx-auto leading-relaxed">
+                    <p className="text-lg sm:text-xl text-slate-600 dark:text-slate-400 max-w-2xl mx-auto leading-relaxed">
                         Empowering students to achieve excellence through cutting-edge learning platforms, dedicated mentorship, and proven strategies.
                     </p>
                 </div>
@@ -153,9 +153,9 @@ const About = () => {
                 {/* Class Locations & Schedules Section */}
                 <div className="mb-10">
                     <div className="flex items-center gap-4 mb-8">
-                        <div className="h-10 w-2 bg-indigo-600 rounded-full"></div>
-                        <h2 className="text-3xl font-extrabold text-slate-900 dark:text-white flex items-center gap-3">
-                            <MapPin className="text-indigo-600 h-8 w-8" />
+                        <div className="h-8 sm:h-10 w-1.5 sm:w-2 bg-indigo-600 rounded-full"></div>
+                        <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white flex items-center gap-3">
+                            <MapPin className="text-indigo-600 h-6 w-6 sm:h-8 sm:w-8" />
                             Class Locations & Schedules
                         </h2>
                     </div>

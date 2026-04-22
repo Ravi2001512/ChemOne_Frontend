@@ -291,15 +291,15 @@ const ManageResults = () => {
 
             <div className="max-w-7xl mx-auto p-6 lg:p-10 space-y-8">
                 {/* HEADER */}
-                <div className="bg-white dark:bg-slate-900 p-8 rounded-[2.5rem] shadow-sm dark:shadow-none border border-slate-100 dark:border-slate-800">
+                <div className="bg-white dark:bg-slate-900 p-6 sm:p-8 rounded-2xl sm:rounded-[2.5rem] shadow-sm dark:shadow-none border border-slate-100 dark:border-slate-800">
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                         <div className="flex items-center gap-4">
-                            <div className="inline-flex items-center justify-center p-3 bg-rose-50 dark:bg-rose-500/10 rounded-2xl">
-                                <Trophy className="w-8 h-8 text-rose-600" />
+                            <div className="inline-flex items-center justify-center p-2.5 sm:p-3 bg-rose-50 dark:bg-rose-500/10 rounded-xl sm:rounded-2xl">
+                                <Trophy className="w-6 h-6 sm:w-8 sm:h-8 text-rose-600" />
                             </div>
                             <div>
-                                <h1 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">Manage Results</h1>
-                                <p className="text-slate-500 font-medium tracking-tight">Create exams, enter marks, and notify students.</p>
+                                <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">Manage Results</h1>
+                                <p className="text-sm sm:text-base text-slate-500 font-medium tracking-tight">Create exams, enter marks, and notify students.</p>
                             </div>
                         </div>
                     </div>
@@ -484,47 +484,49 @@ const ManageResults = () => {
 
                 {/* ACTION BAR */}
                 <div className="bg-white dark:bg-slate-900 p-6 rounded-[2rem] border border-slate-100 dark:border-slate-800 shadow-sm dark:shadow-none">
-                    <div className="flex flex-col lg:flex-row lg:items-center gap-4">
+                    <div className="flex flex-col lg:flex-row lg:items-center gap-6">
                         <div className="flex flex-wrap items-center gap-2 flex-1">
                             <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest mr-1">Filter Batch:</span>
-                            {batches.map(batch => (
-                                <button
-                                    key={batch}
-                                    onClick={() => setSelectedBatch(batch)}
-                                    className={`px-4 py-2 rounded-xl text-xs font-black transition-all border ${selectedBatch === batch
-                                        ? "bg-rose-600 text-white border-rose-600 shadow-lg shadow-rose-200 dark:shadow-none"
-                                        : "bg-slate-50 dark:bg-slate-800 text-slate-500 border-slate-100 dark:border-slate-700 hover:border-rose-200 hover:text-rose-500"
-                                        }`}
-                                >
-                                    {batch}
-                                </button>
-                            ))}
+                            <div className="flex flex-wrap gap-2">
+                                {batches.map(batch => (
+                                    <button
+                                        key={batch}
+                                        onClick={() => setSelectedBatch(batch)}
+                                        className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs font-black transition-all border ${selectedBatch === batch
+                                            ? "bg-rose-600 text-white border-rose-600 shadow-lg shadow-rose-200 dark:shadow-none"
+                                            : "bg-slate-50 dark:bg-slate-800 text-slate-500 border-slate-100 dark:border-slate-700 hover:border-rose-200 hover:text-rose-500"
+                                            }`}
+                                    >
+                                        {batch}
+                                    </button>
+                                ))}
+                            </div>
                         </div>
 
-                        <div className="flex items-center gap-3 flex-shrink-0">
+                        <div className="flex flex-col sm:flex-row items-center gap-3 flex-shrink-0">
                             <button
                                 onClick={handleSendEmails}
                                 disabled={sending || selectedExamIds.length === 0}
-                                className="flex items-center gap-2 px-6 py-3.5 bg-teal-600 text-white font-black rounded-2xl hover:bg-teal-700 active:scale-95 transition-all shadow-lg shadow-teal-200 dark:shadow-none disabled:opacity-50 text-sm"
+                                className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3.5 bg-teal-600 text-white font-black rounded-2xl hover:bg-teal-700 active:scale-95 transition-all shadow-lg shadow-teal-200 dark:shadow-none disabled:opacity-50 text-sm"
                             >
                                 {sending ? (
                                     <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
                                 ) : (
                                     <Send className="w-4 h-4" />
                                 )}
-                                <span>{sending ? "Sending..." : `Email Results (${selectedExamIds.length})`}</span>
+                                <span>{sending ? "Sending..." : "Notify"}</span>
                             </button>
                             <button
                                 onClick={handleSaveResults}
                                 disabled={saving || selectedExamIds.length === 0}
-                                className="flex items-center gap-2 px-6 py-3.5 bg-rose-600 text-white font-black rounded-2xl hover:bg-rose-700 active:scale-95 transition-all shadow-lg shadow-rose-200 dark:shadow-none disabled:opacity-50 text-sm"
+                                className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3.5 bg-rose-600 text-white font-black rounded-2xl hover:bg-rose-700 active:scale-95 transition-all shadow-lg shadow-rose-200 dark:shadow-none disabled:opacity-50 text-sm"
                             >
                                 {saving ? (
                                     <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
                                 ) : (
                                     <Save className="w-4 h-4" />
                                 )}
-                                <span>{saving ? "Saving..." : `Save All Results`}</span>
+                                <span>{saving ? "Saving..." : "Save All"}</span>
                             </button>
                         </div>
                     </div>

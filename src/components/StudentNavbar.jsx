@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { LayoutDashboard, FileEdit, Settings, LogOut, Beaker, FileText, Info } from 'lucide-react';
+import { LayoutDashboard, FileEdit, Settings, LogOut, Beaker, FileText, Info, Menu, X, Sun, Moon } from 'lucide-react';
 
 const StudentNavbar = () => {
     const navigate = useNavigate();
@@ -8,6 +8,7 @@ const StudentNavbar = () => {
 
     const [isDarkMode, setIsDarkMode] = useState(false);
     const [userRole, setUserRole] = useState(null);
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
 
     useEffect(() => {
         setIsDarkMode(document.documentElement.classList.contains("dark"));
@@ -53,7 +54,7 @@ const StudentNavbar = () => {
     });
 
     return (
-        <nav className="bg-slate-950 border-b border-slate-800 sticky top-0 z-50">
+        <nav className="bg-ink border-b border-white/5 sticky top-0 z-50 backdrop-blur-md">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex justify-between h-16">
                     <div className="flex items-center">
@@ -61,15 +62,16 @@ const StudentNavbar = () => {
                             className="flex-shrink-0 flex items-center cursor-pointer transition-transform hover:scale-105"
                             onClick={() => navigate('/student')}
                         >
-                            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-teal-500 to-emerald-600 flex items-center justify-center shadow-lg shadow-teal-500/30">
-                                <Beaker className="w-5 h-5 text-white" />
+                            <div className="w-9 h-9 rounded-xl bg-acid flex items-center justify-center shadow-lg shadow-acid/20">
+                                <Beaker className="w-5 h-5 text-black" />
                             </div>
-                            <span className="ml-3 font-extrabold text-xl bg-clip-text text-transparent bg-gradient-to-r from-teal-400 to-emerald-400 tracking-tight">
-                                ChemBridge Student Hub
+                            <span className="ml-3 font-bebas text-xl sm:text-2xl text-white tracking-wider whitespace-nowrap">
+                                ChemBridge
                             </span>
                         </div>
 
-                        <div className="hidden sm:ml-10 sm:flex sm:space-x-8">
+                        {/* Desktop Navigation */}
+                        <div className="hidden md:ml-10 md:flex md:space-x-8">
                             {navItems.map((item) => {
                                 const isActive = location.pathname === item.path;
                                 const Icon = item.icon;
@@ -77,12 +79,12 @@ const StudentNavbar = () => {
                                     <Link
                                         key={item.name}
                                         to={item.path}
-                                        className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-semibold transition-all duration-200 ${isActive
-                                            ? 'border-teal-400 text-teal-400'
-                                            : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-300'
+                                        className={`inline-flex items-center px-1 pt-1 border-b-2 text-[13px] font-mono tracking-wider uppercase transition-all duration-200 ${isActive
+                                            ? 'border-acid text-acid'
+                                            : 'border-transparent text-sub hover:border-white/20 hover:text-white'
                                             }`}
                                     >
-                                        <Icon className={`w-4 h-4 mr-2 ${isActive ? 'text-teal-400' : 'text-gray-500'}`} />
+                                        <Icon className={`w-3.5 h-3.5 mr-2 ${isActive ? 'text-acid' : 'text-sub'}`} />
                                         {item.name}
                                     </Link>
                                 );
@@ -90,24 +92,75 @@ const StudentNavbar = () => {
                         </div>
                     </div>
 
-                    <div className="hidden sm:ml-6 sm:flex sm:items-center gap-4">
+                    <div className="hidden md:flex md:items-center md:gap-4">
                         <button
                             onClick={toggleDarkMode}
-                            className={`w-12 h-6 rounded-full transition-colors relative flex items-center px-1 ${isDarkMode ? 'bg-teal-500' : 'bg-slate-700'}`}
-                            aria-label="Toggle Dark Mode"
+                            className="p-2 rounded-lg text-sub hover:text-acid transition-colors"
+                            title="Toggle Dark Mode"
                         >
-                            <div className={`w-4 h-4 bg-white rounded-full shadow-md transform transition-transform ${isDarkMode ? 'translate-x-6' : 'translate-x-0'}`} />
+                            {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
                         </button>
                         <button
                             onClick={handleLogout}
-                            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-semibold rounded-lg text-rose-400 bg-rose-500/10 hover:bg-rose-500/20 hover:text-rose-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-rose-500 transition-colors"
+                            className="font-mono text-[11px] tracking-widest uppercase px-4 py-2 border border-white/10 rounded-lg text-white hover:bg-white/5 transition-colors"
                         >
-                            <LogOut className="w-4 h-4 mr-2" />
                             Sign Out
+                        </button>
+                    </div>
+
+                    {/* Mobile Menu Button */}
+                    <div className="flex md:hidden items-center gap-2">
+                        <button
+                            onClick={toggleDarkMode}
+                            className="p-2 rounded-lg text-sub hover:text-acid"
+                        >
+                            {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+                        </button>
+                        <button
+                            onClick={() => setIsMenuOpen(!isMenuOpen)}
+                            className="p-2 rounded-lg text-sub hover:bg-white/5 focus:outline-none"
+                        >
+                            {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
                         </button>
                     </div>
                 </div>
             </div>
+
+            {/* Mobile Navigation Menu */}
+            {isMenuOpen && (
+                <div className="md:hidden bg-ink border-t border-white/5 animate-in slide-in-from-top duration-300">
+                    <div className="px-2 pt-2 pb-3 space-y-1">
+                        {navItems.map((item) => {
+                            const isActive = location.pathname === item.path;
+                            const Icon = item.icon;
+                            return (
+                                <Link
+                                    key={item.name}
+                                    to={item.path}
+                                    onClick={() => setIsMenuOpen(false)}
+                                    className={`flex items-center px-3 py-3 rounded-xl text-sm font-mono tracking-widest uppercase transition-colors ${isActive
+                                        ? 'bg-acid/10 text-acid'
+                                        : 'text-sub hover:bg-white/5 hover:text-white'
+                                        }`}
+                                >
+                                    <Icon className={`w-4 h-4 mr-3 ${isActive ? 'text-acid' : 'text-sub'}`} />
+                                    {item.name}
+                                </Link>
+                            );
+                        })}
+                        <button
+                            onClick={() => {
+                                handleLogout();
+                                setIsMenuOpen(false);
+                            }}
+                            className="w-full flex items-center px-3 py-3 rounded-xl text-sm font-mono tracking-widest uppercase text-rose-500 hover:bg-rose-500/5 transition-colors"
+                        >
+                            <LogOut className="w-4 h-4 mr-3" />
+                            Sign Out
+                        </button>
+                    </div>
+                </div>
+            )}
         </nav>
     );
 };

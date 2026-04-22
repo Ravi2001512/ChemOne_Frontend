@@ -230,23 +230,23 @@ const TakeSpotTest = () => {
       
       {/* Test Progress & Timer Header */}
       <div className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 sticky top-16 z-20 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="h-10 w-10 bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 rounded-xl flex items-center justify-center font-bold">
-              {test.testType === 'mcq' ? currentQuestionIndex + 1 : <Flag className="h-5 w-5" />}
+        <div className="max-w-7xl mx-auto px-4 py-3 sm:py-4 flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4">
+          <div className="flex items-center gap-3 sm:gap-4 w-full sm:w-auto">
+            <div className="h-8 w-8 sm:h-10 sm:w-10 bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 rounded-lg sm:rounded-xl flex items-center justify-center font-bold text-sm sm:text-base">
+              {test.testType === 'mcq' ? currentQuestionIndex + 1 : <Flag className="h-4 w-4 sm:h-5 sm:w-5" />}
             </div>
-            <div>
-              <h3 className="text-sm font-bold text-slate-900 dark:text-white line-clamp-1">{test.title}</h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                {test.testType === 'mcq' ? `Question ${currentQuestionIndex + 1} of ${test.questions.length}` : 'Resource Material'}
+            <div className="min-w-0 flex-1">
+              <h3 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white truncate">{test.title}</h3>
+              <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400">
+                {test.testType === 'mcq' ? `Question ${currentQuestionIndex + 1}/ ${test.questions.length}` : 'Resource'}
               </p>
             </div>
           </div>
 
-          <div className={`flex items-center gap-3 px-4 py-2 rounded-xl border-2 ${timeLeft < 60 ? 'border-red-200 bg-red-50 text-red-600 dark:border-red-900/50 dark:bg-red-900/20 dark:text-red-400' : 'border-indigo-100 bg-indigo-50 text-indigo-600 dark:border-indigo-900/50 dark:bg-indigo-900/20 dark:text-indigo-400'} transition-colors relative overflow-hidden group`}>
+          <div className={`flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg sm:rounded-xl border-2 w-full sm:w-auto justify-center ${timeLeft < 60 ? 'border-red-200 bg-red-50 text-red-600 dark:border-red-900/50 dark:bg-red-900/20 dark:text-red-400' : 'border-indigo-100 bg-indigo-50 text-indigo-600 dark:border-indigo-900/50 dark:bg-indigo-900/20 dark:text-indigo-400'} transition-colors relative overflow-hidden group`}>
             <div className={`absolute inset-0 bg-white/20 w-1/2 -skew-x-12 -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]`}></div>
-            <Clock className={`h-5 w-5 ${timeLeft < 60 ? 'animate-pulse' : ''}`} />
-            <span className="font-mono text-xl font-bold">{formatTime(timeLeft)}</span>
+            <Clock className={`h-4 w-4 sm:h-5 sm:w-5 ${timeLeft < 60 ? 'animate-pulse' : ''}`} />
+            <span className="font-mono text-base sm:text-xl font-bold">{formatTime(timeLeft)}</span>
           </div>
         </div>
         
@@ -336,38 +336,38 @@ const TakeSpotTest = () => {
             </div>
           ) : (
             <div className="space-y-6">
-              <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-xl p-8 md:p-12 animate-in fade-in">
-                <span className="inline-block px-3 py-1 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-lg text-xs font-bold mb-6 border border-indigo-100 dark:border-indigo-800">
-                  MULTIPLE CHOICE QUESTION
+              <div className="bg-white dark:bg-slate-900 rounded-2xl sm:rounded-3xl border border-slate-100 dark:border-slate-800 shadow-xl p-6 sm:p-12 animate-in fade-in">
+                <span className="inline-block px-3 py-1 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-lg text-xs font-bold mb-4 sm:mb-6 border border-indigo-100 dark:border-indigo-800 uppercase">
+                  Multiple Choice
                 </span>
                 
-                <h2 className="text-2xl font-bold text-slate-900 dark:text-white leading-snug mb-10">
+                <h2 className="text-lg sm:text-2xl font-bold text-slate-900 dark:text-white leading-snug mb-6 sm:mb-10">
                   {currentQuestion?.text}
                 </h2>
-
-                <div className="space-y-4">
+|
+                <div className="space-y-3 sm:space-y-4">
                   {currentQuestion?.options.map((option, idx) => (
                     <div 
                       key={idx}
                       onClick={() => handleOptionSelect(idx)}
-                      className={`group flex items-center p-5 rounded-2xl border-2 cursor-pointer transition-all ${
+                      className={`group flex items-center p-4 sm:p-5 rounded-xl sm:rounded-2xl border-2 cursor-pointer transition-all ${
                         answers[currentQuestionIndex] === idx 
                         ? 'border-indigo-600 bg-indigo-50/50 dark:bg-indigo-900/20 shadow-md transform -translate-y-0.5' 
                         : 'border-slate-100 dark:border-slate-700 hover:border-indigo-200 dark:hover:border-indigo-700 hover:bg-slate-50 dark:hover:bg-slate-800'
                       }`}
                     >
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm mr-4 transition-colors shadow-sm ${
+                      <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center font-bold text-xs sm:text-sm mr-3 sm:mr-4 transition-colors shadow-sm flex-shrink-0 ${
                         answers[currentQuestionIndex] === idx 
                         ? 'bg-indigo-600 text-white' 
                         : 'bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 group-hover:bg-slate-100 dark:group-hover:bg-slate-700 border border-slate-200 dark:border-slate-600'
                       }`}>
                         {String.fromCharCode(65 + idx)}
                       </div>
-                      <span className={`text-lg font-medium ${answers[currentQuestionIndex] === idx ? 'text-indigo-900 dark:text-indigo-300' : 'text-slate-700 dark:text-slate-300'}`}>
+                      <span className={`text-base sm:text-lg font-medium flex-1 ${answers[currentQuestionIndex] === idx ? 'text-indigo-900 dark:text-indigo-300' : 'text-slate-700 dark:text-slate-300'}`}>
                         {option}
                       </span>
                       {answers[currentQuestionIndex] === idx && (
-                        <CheckCircle2 className="h-6 w-6 text-indigo-600 dark:text-indigo-400 ml-auto" />
+                        <CheckCircle2 className="h-5 w-5 sm:h-6 sm:w-6 text-indigo-600 dark:text-indigo-400 ml-2" />
                       )}
                     </div>
                   ))}

@@ -6,12 +6,15 @@ import StudentNavbar from '../../components/StudentNavbar';
 const StudentDashboard = () => {
   const navigate = useNavigate();
   const [userRole, setUserRole] = useState(null);
+  const [userName, setUserName] = useState('');
 
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
       try {
-        setUserRole(JSON.parse(storedUser).role);
+        const user = JSON.parse(storedUser);
+        setUserRole(user.role);
+        setUserName(user.name);
       } catch (e) { }
     }
   }, []);
@@ -84,18 +87,18 @@ const StudentDashboard = () => {
     <div className="min-h-screen bg-blue-50 dark:bg-slate-900">
       <StudentNavbar />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-10">
         {/* Header Section */}
-        <div className="mb-12">
-          <h1 className="text-4xl font-extrabold text-slate-900 dark:text-white mb-3 bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent dark:bg-gradient-to-r dark:from-indigo-600 dark:to-purple-600 dark:bg-clip-text dark:text-transparent">
-            Welcome back to your learning hub!
+        <div className="mb-8 md:mb-12">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-slate-900 dark:text-white mb-3 bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+            Welcome back, {userName || 'Student'} 👋
           </h1>
-          <p className="text-lg text-slate-600 dark:text-slate-400">
-            Access your tests, worksheets, and track your performance.
+          <p className="text-base sm:text-lg text-slate-600 dark:text-slate-400">
+            Ready to continue learning? Jump into your latest test, practice with worksheets, and track how far you've come.
           </p>
           <button
             onClick={() => window.open('https://play.google.com/store/apps/details?id=com.joazco.vsper&hl=en_SG', '_blank')}
-            className="mt-4 px-6 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
+            className="mt-6 px-6 py-3 w-full sm:w-auto bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
           >
             View VSPER 3D structures
           </button>

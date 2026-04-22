@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import AdminNavbar from "../../components/AdminNavbar";
 import API from "../../services/api";
 import { useNavigate } from "react-router-dom";
+import { Users, Plus } from "lucide-react";
 
 const ManageStudents = () => {
     const navigate = useNavigate();
@@ -120,22 +121,18 @@ const ManageStudents = () => {
 
             <div className="max-w-7xl mx-auto p-6 lg:p-10 space-y-8">
                 {/* HEADER SECTION */}
-                <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 bg-white dark:bg-slate-900 p-8 rounded-3xl shadow-sm dark:shadow-none border border-slate-100 dark:border-slate-800">
-                    <div>
-                        <div className="inline-flex items-center justify-center p-3 bg-blue-50 dark:bg-blue-950/50 rounded-2xl mb-4">
-                            <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                            </svg>
+                <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 bg-white dark:bg-slate-900 p-6 sm:p-8 rounded-2xl sm:rounded-3xl shadow-sm dark:shadow-none border border-slate-100 dark:border-slate-800">
+                    <div className="w-full">
+                        <div className="inline-flex items-center justify-center p-2.5 sm:p-3 bg-blue-50 dark:bg-blue-950/50 rounded-xl sm:rounded-2xl mb-4 text-blue-600">
+                            <Users className="w-6 h-6 sm:w-8 sm:h-8" />
                         </div>
-                        <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Manage Students</h1>
-                        <p className="text-slate-500 mt-2 text-lg">View, search, block, or remove student accounts.</p>
+                        <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white">Manage Students</h1>
+                        <p className="text-slate-500 mt-2 text-base sm:text-lg">View, search, block, or remove student accounts.</p>
                         <button
                             onClick={() => navigate("/signup")}
-                            className="mt-4 inline-flex items-center px-6 py-3 bg-blue-600 text-white font-semibold rounded-2xl hover:bg-blue-700 transition-all shadow-md hover:shadow-lg active:scale-95"
+                            className="mt-4 w-full sm:w-auto inline-flex items-center justify-center px-6 py-3 bg-blue-600 text-white font-semibold rounded-xl sm:rounded-2xl hover:bg-blue-700 transition-all shadow-md hover:shadow-lg active:scale-95"
                         >
-                            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-                            </svg>
+                            <Plus className="w-5 h-5 mr-2" />
                             Create New Account
                         </button>
                     </div>
@@ -310,11 +307,10 @@ const ManageStudents = () => {
                                                         {/* Block / Unblock Button */}
                                                         <button
                                                             onClick={() => setBlockModal({ open: true, student })}
-                                                            className={`inline-flex items-center px-4 py-2 rounded-xl text-xs font-bold transition-all duration-200 ${
-                                                                student.isBlocked
+                                                            className={`inline-flex items-center px-4 py-2 rounded-xl text-xs font-bold transition-all duration-200 ${student.isBlocked
                                                                     ? "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 hover:bg-emerald-100 dark:hover:bg-emerald-950/60"
                                                                     : "bg-amber-50 dark:bg-amber-950/30 text-amber-600 hover:bg-amber-100 dark:hover:bg-amber-950/60"
-                                                            }`}
+                                                                }`}
                                                         >
                                                             {student.isBlocked ? (
                                                                 <>
@@ -369,10 +365,9 @@ const ManageStudents = () => {
 
             {/* ═══════════════════════════════════ DELETE CONFIRMATION MODAL ═══════════════════════════════════ */}
             {deleteModal.open && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ backgroundColor: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }}>
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
                     <div
-                        className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-700 w-full max-w-md overflow-hidden"
-                        style={{ animation: "modalPop 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) both" }}
+                        className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-700 w-full max-w-md overflow-hidden animate-fade-slide"
                     >
                         {/* Red header zone */}
                         <div className="bg-gradient-to-br from-red-500 to-red-600 p-6 text-center">
@@ -439,10 +434,9 @@ const ManageStudents = () => {
 
             {/* ═══════════════════════════════════ BLOCK / UNBLOCK MODAL ═══════════════════════════════════ */}
             {blockModal.open && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ backgroundColor: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }}>
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
                     <div
-                        className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-700 w-full max-w-md overflow-hidden"
-                        style={{ animation: "modalPop 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) both" }}
+                        className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-700 w-full max-w-md overflow-hidden animate-fade-slide"
                     >
                         {/* Header zone */}
                         <div className={`p-6 text-center bg-gradient-to-br ${blockModal.student?.isBlocked ? "from-emerald-500 to-emerald-600" : "from-amber-500 to-orange-500"}`}>
@@ -506,11 +500,10 @@ const ManageStudents = () => {
                                 <button
                                     onClick={handleToggleBlock}
                                     disabled={actionLoading}
-                                    className={`flex-1 px-4 py-3 text-sm font-semibold text-white rounded-xl transition-all disabled:opacity-50 flex items-center justify-center gap-2 ${
-                                        blockModal.student?.isBlocked
+                                    className={`flex-1 px-4 py-3 text-sm font-semibold text-white rounded-xl transition-all disabled:opacity-50 flex items-center justify-center gap-2 ${blockModal.student?.isBlocked
                                             ? "bg-emerald-500 hover:bg-emerald-600 shadow-lg shadow-emerald-500/25"
                                             : "bg-amber-500 hover:bg-amber-600 shadow-lg shadow-amber-500/25"
-                                    }`}
+                                        }`}
                                 >
                                     {actionLoading ? (
                                         <>
@@ -542,12 +535,11 @@ const ManageStudents = () => {
                 </div>
             )}
 
-            {/* ═══════════════════════════════════ PERFORMANCE DETAILS MODAL ═══════════════════════════════════ */}
+            {/* PERFORMANCE DETAILS MODAL */}
             {perfModal.open && perfModal.data && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md">
-                    <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl border border-slate-200 dark:border-slate-800 w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col"
-                         style={{ animation: "modalPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both" }}>
-                        
+                    <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl border border-slate-200 dark:border-slate-800 w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col animate-fade-slide">
+
                         <div className="p-8 bg-slate-900 text-white flex items-center justify-between">
                             <div className="flex items-center gap-6">
                                 <div className="w-20 h-20 bg-rose-600 rounded-3xl flex items-center justify-center text-3xl font-black shadow-xl shadow-rose-900/20">
@@ -562,11 +554,11 @@ const ManageStudents = () => {
                                     </div>
                                 </div>
                             </div>
-                            <button 
+                            <button
                                 onClick={() => setPerfModal({ open: false, student: null, data: null })}
                                 className="p-3 bg-white/10 hover:bg-white/20 rounded-2xl transition-colors"
                             >
-                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round"/></svg>
+                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" /></svg>
                             </button>
                         </div>
 
@@ -579,7 +571,7 @@ const ManageStudents = () => {
                                 <div className="bg-rose-50 p-6 rounded-3xl border border-rose-100">
                                     <p className="text-[10px] font-black text-rose-400 uppercase tracking-[0.2em] mb-2">Average Percentage</p>
                                     <div className="text-4xl font-black text-rose-600">
-                                        {perfModal.data.length > 0 
+                                        {perfModal.data.length > 0
                                             ? (perfModal.data.reduce((acc, curr) => acc + (curr.score / (curr.exam?.totalMarks || 100)), 0) / perfModal.data.length * 100).toFixed(1)
                                             : 0}%
                                     </div>
@@ -611,7 +603,7 @@ const ManageStudents = () => {
                                                             {res.score} <span className="text-slate-400 text-[10px]">/ {res.exam?.totalMarks}</span>
                                                         </div>
                                                         <div className="text-[10px] font-black text-rose-500 uppercase tracking-tighter">
-                                                            {((res.score/(res.exam?.totalMarks || 100))*100).toFixed(0)}%
+                                                            {((res.score / (res.exam?.totalMarks || 100)) * 100).toFixed(0)}%
                                                         </div>
                                                     </td>
                                                 </tr>
@@ -623,7 +615,7 @@ const ManageStudents = () => {
                         </div>
 
                         <div className="p-6 bg-slate-50 dark:bg-slate-950 border-t border-slate-200 dark:border-slate-800 flex justify-end">
-                            <button 
+                            <button
                                 onClick={() => setPerfModal({ open: false, student: null, data: null })}
                                 className="px-8 py-3 bg-slate-900 text-white font-black rounded-2xl hover:bg-black transition-all"
                             >
@@ -633,15 +625,6 @@ const ManageStudents = () => {
                     </div>
                 </div>
             )}
-
-
-            {/* Modal animation keyframes */}
-            <style>{`
-                @keyframes modalPop {
-                    0% { opacity: 0; transform: scale(0.9) translateY(10px); }
-                    100% { opacity: 1; transform: scale(1) translateY(0); }
-                }
-            `}</style>
         </div>
     );
 };
