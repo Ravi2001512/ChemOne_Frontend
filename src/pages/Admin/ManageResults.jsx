@@ -263,7 +263,7 @@ const ManageResults = () => {
     });
 
     const selectedExams = exams.filter(e => selectedExamIds.includes(e._id));
-    
+
     // Aggregated stats
     const totalSelectedMarks = selectedExams.reduce((sum, e) => sum + e.totalMarks, 0);
     let totalMarkedCount = 0;
@@ -286,7 +286,7 @@ const ManageResults = () => {
     const highestScore = totalMarkedCount > 0 ? globalHighest : "—";
 
     return (
-        <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
+        <div className="min-h-screen bg-blue-50 dark:bg-black">
             <AdminNavbar />
 
             <div className="max-w-7xl mx-auto p-6 lg:p-10 space-y-8">
@@ -314,7 +314,7 @@ const ManageResults = () => {
                                     <h2 className="text-sm font-black text-slate-900 dark:text-white tracking-tight uppercase">Active Exam Sessions</h2>
                                     <p className="text-xs text-slate-400 font-medium">Select sessions to manage results</p>
                                 </div>
-                                
+
                                 <div className="flex items-center gap-3 bg-slate-50 dark:bg-slate-800 p-1 rounded-2xl border border-slate-100 dark:border-slate-700">
                                     <button
                                         onClick={() => {

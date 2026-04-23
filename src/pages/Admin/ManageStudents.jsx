@@ -116,7 +116,7 @@ const ManageStudents = () => {
     const activeStudents = totalStudents - blockedStudents;
 
     return (
-        <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
+        <div className="min-h-screen bg-blue-50 dark:bg-black">
             <AdminNavbar />
 
             <div className="max-w-7xl mx-auto p-6 lg:p-10 space-y-8">
@@ -308,8 +308,8 @@ const ManageStudents = () => {
                                                         <button
                                                             onClick={() => setBlockModal({ open: true, student })}
                                                             className={`inline-flex items-center px-4 py-2 rounded-xl text-xs font-bold transition-all duration-200 ${student.isBlocked
-                                                                    ? "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 hover:bg-emerald-100 dark:hover:bg-emerald-950/60"
-                                                                    : "bg-amber-50 dark:bg-amber-950/30 text-amber-600 hover:bg-amber-100 dark:hover:bg-amber-950/60"
+                                                                ? "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 hover:bg-emerald-100 dark:hover:bg-emerald-950/60"
+                                                                : "bg-amber-50 dark:bg-amber-950/30 text-amber-600 hover:bg-amber-100 dark:hover:bg-amber-950/60"
                                                                 }`}
                                                         >
                                                             {student.isBlocked ? (
@@ -501,8 +501,8 @@ const ManageStudents = () => {
                                     onClick={handleToggleBlock}
                                     disabled={actionLoading}
                                     className={`flex-1 px-4 py-3 text-sm font-semibold text-white rounded-xl transition-all disabled:opacity-50 flex items-center justify-center gap-2 ${blockModal.student?.isBlocked
-                                            ? "bg-emerald-500 hover:bg-emerald-600 shadow-lg shadow-emerald-500/25"
-                                            : "bg-amber-500 hover:bg-amber-600 shadow-lg shadow-amber-500/25"
+                                        ? "bg-emerald-500 hover:bg-emerald-600 shadow-lg shadow-emerald-500/25"
+                                        : "bg-amber-500 hover:bg-amber-600 shadow-lg shadow-amber-500/25"
                                         }`}
                                 >
                                     {actionLoading ? (

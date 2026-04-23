@@ -66,7 +66,7 @@ const About = () => {
     ];
 
     return (
-        <div className="min-h-screen bg-blue-50 dark:bg-slate-950 font-sans">
+        <div className="min-h-screen bg-blue-50 dark:bg-black font-sans">
             <StudentNavbar />
 
             {/* Hero Section */}

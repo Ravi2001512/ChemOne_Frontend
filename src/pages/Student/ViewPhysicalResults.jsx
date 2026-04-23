@@ -125,7 +125,7 @@ const ViewPhysicalResults = () => {
     const maxChartPercentage = chartData.length > 0 ? Math.max(...chartData.map(d => d.percentage)) : 100;
 
     return (
-        <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
+        <div className="min-h-screen bg-blue-50 dark:bg-black ">
             <StudentNavbar />
 
             <div className="max-w-6xl mx-auto p-6 lg:p-10 space-y-8">

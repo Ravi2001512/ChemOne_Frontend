@@ -25,11 +25,11 @@ const ManageSpotTest = () => {
     const [loadingSubmissions, setLoadingSubmissions] = useState(false);
 
     // Modal state
-    const [modal, setModal] = useState({ 
-        isOpen: false, 
-        title: '', 
-        message: '', 
-        onConfirm: () => {},
+    const [modal, setModal] = useState({
+        isOpen: false,
+        title: '',
+        message: '',
+        onConfirm: () => { },
         type: 'danger'
     });
 
@@ -128,7 +128,7 @@ const ManageSpotTest = () => {
     );
 
     return (
-        <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
+        <div className="min-h-screen bg-blue-50 dark:bg-black">
             <AdminNavbar />
 
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
@@ -248,8 +248,8 @@ const ManageSpotTest = () => {
                                             <Clock className="h-4 w-4 text-indigo-500" />
                                             {test.isPublished && test.publishedAt ? (
                                                 <span className={`${getRemainingTime(test.publishedAt, test.duration) <= 60 && getRemainingTime(test.publishedAt, test.duration) > 0 ? 'text-red-500 animate-pulse' : 'text-indigo-600'} font-mono font-black`}>
-                                                    {getRemainingTime(test.publishedAt, test.duration) > 0 
-                                                        ? formatDuration(getRemainingTime(test.publishedAt, test.duration)) 
+                                                    {getRemainingTime(test.publishedAt, test.duration) > 0
+                                                        ? formatDuration(getRemainingTime(test.publishedAt, test.duration))
                                                         : 'TIME UP'}
                                                 </span>
                                             ) : (
@@ -434,7 +434,7 @@ const ManageSpotTest = () => {
                 </div>
             )}
 
-            <ConfirmationModal 
+            <ConfirmationModal
                 isOpen={modal.isOpen}
                 onClose={closeModal}
                 onConfirm={modal.onConfirm}

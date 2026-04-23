@@ -195,7 +195,7 @@ const CreateSpotTest = () => {
   };
 
   return (
-    <div className="min-h-screen bg-blue-50 dark:bg-slate-950">
+    <div className="min-h-screen bg-blue-50 dark:bg-black">
       <AdminNavbar />
       <div className="py-8 px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto">

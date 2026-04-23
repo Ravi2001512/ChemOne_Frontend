@@ -15,11 +15,11 @@ const ManageDailyWorksheet = () => {
     const [uploadingKeyId, setUploadingKeyId] = useState(null);
 
     // Modal state
-    const [modal, setModal] = useState({ 
-        isOpen: false, 
-        title: '', 
-        message: '', 
-        onConfirm: () => {},
+    const [modal, setModal] = useState({
+        isOpen: false,
+        title: '',
+        message: '',
+        onConfirm: () => { },
         type: 'danger'
     });
 
@@ -138,7 +138,7 @@ const ManageDailyWorksheet = () => {
     };
 
     return (
-        <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
+        <div className="min-h-screen bg-blue-50 dark:bg-black">
             <AdminNavbar />
 
             <div className="max-w-7xl mx-auto p-6 lg:p-10 space-y-8">
@@ -379,7 +379,7 @@ const ManageDailyWorksheet = () => {
                 </div>
             )}
 
-            <ConfirmationModal 
+            <ConfirmationModal
                 isOpen={modal.isOpen}
                 onClose={closeModal}
                 onConfirm={modal.onConfirm}

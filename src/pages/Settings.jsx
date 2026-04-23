@@ -64,7 +64,7 @@ function Settings() {
   const isStudent = user?.role === "student";
 
   return (
-    <div className="min-h-screen bg-blue-50 dark:bg-slate-900 font-sans pb-12 transition-colors duration-300">
+    <div className="min-h-screen bg-blue-50 dark:bg-black font-sans pb-12 transition-colors duration-300">
       {isStudent ? <StudentNavbar /> : <AdminNavbar />}
 
       <main className="max-w-4xl mx-auto px-6 pt-24 text-slate-900 dark:text-slate-100">
