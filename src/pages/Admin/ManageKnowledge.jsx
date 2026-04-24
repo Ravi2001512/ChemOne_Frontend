@@ -35,6 +35,24 @@ const ManageKnowledge = () => {
     fetchKnowledge();
   }, []);
 
+  // Poll for updates if any file is indexing or uploading
+  useEffect(() => {
+    const hasPendingFiles = files.some(
+      (f) => f.status === "uploading" || f.status === "indexing"
+    );
+
+    let intervalId;
+    if (hasPendingFiles) {
+      intervalId = setInterval(() => {
+        fetchKnowledge();
+      }, 5000); // Check every 5 seconds
+    }
+
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [files]);
+
   const handleDrag = (e) => {
     e.preventDefault();
     e.stopPropagation();
