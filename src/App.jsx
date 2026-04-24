@@ -16,6 +16,7 @@ import ManageResults from "./pages/Admin/ManageResults";
 import Dailyworksheet from "./pages/Student/Dailyworksheet";
 import ViewPhysicalResults from "./pages/Student/ViewPhysicalResults";
 import ChatWithAI from "./pages/Admin/ChatWithAI";
+import ManageKnowledge from "./pages/Admin/ManageKnowledge";
 import { Toaster } from 'react-hot-toast';
 
 function App() {
@@ -32,6 +33,7 @@ function App() {
 
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/admin/chat-with-ai" element={<ChatWithAI />} />
+        <Route path="/admin/manage-knowledge" element={<ManageKnowledge />} />
         <Route path="/admin/spot-test/create" element={<CreateSpotTest />} />
         <Route path="/admin/spot-test/edit/:id" element={<CreateSpotTest />} />
         <Route path="/admin/daily-worksheet" element={<DailyWorksheet />} />

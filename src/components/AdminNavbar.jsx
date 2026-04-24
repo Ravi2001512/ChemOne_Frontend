@@ -16,7 +16,8 @@ const AdminNavbar = () => {
     { name: 'Dashboard', path: '/admin', icon: LayoutDashboard },
     { name: 'Create Spot Test', path: '/admin/spot-test/create', icon: FileEdit },
     { name: 'Daily Work Sheet', path: '/admin/daily-worksheet', icon: FileEdit },
-    { name: 'AI ChatBot', path: '/admin/chat-with-ai', icon: FileEdit },
+    { name: 'Knowledge Base', path: '/admin/manage-knowledge', icon: FileEdit },
+    { name: 'AI ChatBot', path: '/admin/chat-with-ai', icon: Beaker },
     { name: 'Settings', path: '/settings', icon: Settings },
   ];
 
