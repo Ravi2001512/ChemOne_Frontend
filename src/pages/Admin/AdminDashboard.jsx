@@ -1,7 +1,8 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Outlet } from 'react-router-dom';
 import { ClipboardList, Users, BarChart3, Settings, FileText, Bell } from 'lucide-react';
 import AdminNavbar from '../../components/AdminNavbar';
+
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
