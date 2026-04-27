@@ -120,7 +120,7 @@ const DailyWorksheet = () => {
     if (submitted) {
         return (
             <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center p-6">
-                <div className="bg-white/80 backdrop-blur-xl rounded-3xl p-12 text-center shadow-2xl max-w-md w-full border border-white/50">
+                <div className="bg-white dark:bg-slate-900/80 backdrop-blur-xl rounded-3xl p-12 text-center shadow-2xl max-w-md w-full border border-white/50">
                     <div className="w-24 h-24 bg-green-100 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
                         <svg className="w-12 h-12 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -145,14 +145,14 @@ const DailyWorksheet = () => {
     }
 
     return (
-        <>
+        <div className="min-h-screen bg-blue-50 dark:bg-slate-950">
             <AdminNavbar />
 
-            <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex justify-center p-6">
-                <div className="bg-white/70 backdrop-blur-xl rounded-3xl w-full max-w-2xl shadow-2xl border border-white/50">
+            <div className="min-h-screen bg-blue-50 dark:bg-slate-950 flex justify-center p-6">
+                <div className="bg-white dark:bg-slate-900/70 backdrop-blur-xl rounded-3xl w-full max-w-2xl shadow-2xl border border-white/50">
 
                     {/* HEADER */}
-                    <div className="p-8 border-b border-slate-200/50 bg-gradient-to-r from-white to-slate-50/50 rounded-t-3xl">
+                    <div className="p-8 border-b border-slate-200/50 bg-white rounded-t-3xl dark:bg-black">
                         <div className="flex items-center gap-3 mb-2">
                             <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg">
                                 <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -160,7 +160,7 @@ const DailyWorksheet = () => {
                                 </svg>
                             </div>
                             <div>
-                                <h1 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-slate-800 bg-clip-text text-transparent">
+                                <h1 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-slate-800 bg-clip-text text-transparent dark:text-white">
                                     Daily Worksheet
                                 </h1>
                                 <p className="text-sm text-slate-500 font-medium">
@@ -196,7 +196,7 @@ const DailyWorksheet = () => {
                                 onDrop={handleDrop}
                                 className={`group relative border-2 border-dashed p-12 text-center rounded-3xl cursor-pointer transition-all duration-300 shadow-lg hover:shadow-2xl ${dragging
                                     ? "border-blue-400 bg-blue-50/80 scale-[1.02]"
-                                    : "border-slate-200 hover:border-slate-300 bg-slate-50/50 hover:bg-slate-50"
+                                    : "border-slate-200 hover:border-slate-300 bg-slate-50 dark:bg-slate-950/50 hover:bg-slate-50 dark:bg-slate-950"
                                     }`}
                             >
                                 <input
@@ -260,7 +260,7 @@ const DailyWorksheet = () => {
                                 {uploading && (
                                     <div className="space-y-3">
                                         <div className="flex items-center justify-between">
-                                            <span className="text-sm font-medium text-slate-700">Uploading...</span>
+                                            <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Uploading...</span>
                                             <span className="text-sm font-bold text-blue-600">{progress}%</span>
                                         </div>
                                         <div className="w-full bg-slate-200 rounded-2xl h-3 overflow-hidden shadow-inner">
@@ -284,26 +284,26 @@ const DailyWorksheet = () => {
 
                         {/* DATE */}
                         <div>
-                            <label className="block text-sm font-semibold text-slate-700 mb-2">Worksheet Date</label>
+                            <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Worksheet Date</label>
                             <input
                                 type="date"
                                 value={date}
                                 onChange={(e) => setDate(e.target.value)}
-                                className="w-full border-2 border-slate-200 p-4 rounded-2xl focus:border-blue-400 focus:ring-4 focus:ring-blue-100/50 transition-all duration-200 shadow-sm hover:shadow-md bg-white/50"
+                                className="w-full border-2 border-slate-200 p-4 rounded-2xl focus:border-blue-400 focus:ring-4 focus:ring-blue-100/50 transition-all duration-200 shadow-sm dark:shadow-none hover:shadow-md bg-white dark:bg-slate-900/50 text-slate-700 dark:text-slate-300"
                             />
                         </div>
 
                         {/* NOTES */}
                         <div>
-                            <label className="block text-sm font-semibold text-slate-700 mb-2">Notes (optional)</label>
+                            <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Notes (optional)</label>
                             <textarea
                                 value={notes}
                                 onChange={(e) => setNotes(e.target.value)}
                                 placeholder="Add any additional notes about this worksheet..."
                                 maxLength={500}
                                 rows={4}
-                                className="w-full border-2 border-slate-200 p-4 rounded-2xl resize-vertical focus:border-blue-400 focus:ring-4 focus:ring-blue-100/50 transition-all duration-200 shadow-sm hover:shadow-md bg-white/50"
-                            />
+                                className="w-full border-2 border-slate-200 p-4 rounded-2xl resize-vertical focus:border-blue-400 focus:ring-4 focus:ring-blue-100/50 transition-all duration-200 shadow-sm dark:shadow-none hover:shadow-md bg-white dark:bg-slate-900/50"
+                            ></textarea>
                             <p className="text-xs text-slate-500 mt-1">{notes.length}/500</p>
                         </div>
 
@@ -311,7 +311,7 @@ const DailyWorksheet = () => {
                         <div className="flex gap-4 pt-4">
                             <button
                                 onClick={clearFile}
-                                className="flex-1 bg-gradient-to-r from-slate-100 to-slate-200 py-4 px-6 rounded-2xl font-semibold text-slate-700 hover:from-slate-200 hover:to-slate-300 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 active:translate-y-0"
+                                className="flex-1 bg-gradient-to-r from-slate-100 to-slate-200 py-4 px-6 rounded-2xl font-semibold text-slate-700 dark:text-slate-600 hover:from-slate-200 hover:to-slate-300 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 active:translate-y-0"
                                 disabled={uploading}
                             >
                                 Cancel
@@ -337,10 +337,10 @@ const DailyWorksheet = () => {
                                 )}
                             </button>
                         </div>
-                    </div>
-                </div>
-            </div>
-        </>
+                    </div >
+                </div >
+            </div >
+        </div >
     );
 }
 

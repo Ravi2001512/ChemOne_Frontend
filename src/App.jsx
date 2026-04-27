@@ -17,19 +17,40 @@ import Dailyworksheet from "./pages/Student/Dailyworksheet";
 import ViewPhysicalResults from "./pages/Student/ViewPhysicalResults";
 import ChatWithAI from "./pages/Admin/ChatWithAI";
 import ManageKnowledge from "./pages/Admin/ManageKnowledge";
+import AIChatbot from "./pages/Student/AIChatbot";
+import About from "./pages/Student/About"
+import Games from "./pages/Student/Games"
 import { Toaster } from 'react-hot-toast';
+import { useEffect } from 'react';
+
+const GuestRestrictRoute = ({ children }) => {
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  if (user.role === 'guest') {
+    return <Navigate to="/student" replace />;
+  }
+  return children;
+};
 
 function App() {
+  useEffect(() => {
+    if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, []);
+
   return (
     <BrowserRouter>
-      <Toaster position="top-right" reverseOrder={false} />
+      <Toaster position="top-center" reverseOrder={false} />
+      {/*<VesakDecorations />*/}
       <Routes>
         <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/login" element={<Login />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
 
-        <Route path="/settings" element={<Settings />} />
+        <Route path="/settings" element={<GuestRestrictRoute><Settings /></GuestRestrictRoute>} />
 
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/admin/chat-with-ai" element={<ChatWithAI />} />
@@ -41,14 +62,15 @@ function App() {
         <Route path="/admin/manage-daily-worksheet" element={<ManageDailyWorksheet />} />
         <Route path="/admin/students" element={<ManageStudents />} />
         <Route path="/admin/manage-results" element={<ManageResults />} />
-       
 
         <Route path="/student" element={<StudentDashboard />} />
         <Route path="/student/spot-test" element={<ViewSpotTest />} />
         <Route path="/student/spot-test/:id" element={<TakeSpotTest />} />
         <Route path="/student/daily-worksheet" element={<Dailyworksheet />} />
         <Route path="/student/results" element={<ViewPhysicalResults />} />
-        
+        <Route path="/student/ai-chatbot" element={<AIChatbot />} />
+        <Route path="/student/about" element={<About />} />
+        <Route path="/student/games" element={<Games />} />
       </Routes>
     </BrowserRouter>
   );

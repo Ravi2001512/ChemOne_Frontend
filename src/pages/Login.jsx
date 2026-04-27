@@ -2,171 +2,23 @@ import { useState } from "react";
 import API from "../services/api";
 import { useNavigate } from "react-router-dom";
 
-const KEYFRAMES = `
-  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Bebas+Neue&family=JetBrains+Mono:wght@400;500&display=swap');
 
-  :root {
-    --acid: #c8f230;
-    --acid-dim: rgba(200,242,48,0.12);
-    --acid-glow: rgba(200,242,48,0.35);
-    --ink: #0a0a0a;
-    --ink2: #111111;
-    --surface: rgba(255,255,255,0.03);
-    --border: rgba(255,255,255,0.07);
-    --muted: #3a3a3a;
-    --sub: #555;
-  }
-
-  @keyframes floatOrb {
-    0%,100%{ transform:translate(0,0) scale(1); }
-    33%    { transform:translate(40px,-60px) scale(1.1); }
-    66%    { transform:translate(-30px,30px) scale(0.9); }
-  }
-  @keyframes fadeSlide {
-    from{ opacity:0; transform:translateY(16px); }
-    to  { opacity:1; transform:translateY(0); }
-  }
-  @keyframes spinCW { to { transform:rotate(360deg); } }
-  @keyframes shake {
-    0%,100%{ transform:translateX(0); }
-    15%,45%,75%{ transform:translateX(-5px); }
-    30%,60%,90%{ transform:translateX(5px); }
-  }
-  @keyframes ticker {
-    0%  { transform:translateX(0); }
-    100%{ transform:translateX(-50%); }
-  }
-  @keyframes pulseAcid {
-    0%,100%{ box-shadow: 0 0 0 0 rgba(200,242,48,0.35); }
-    50%    { box-shadow: 0 0 0 8px rgba(200,242,48,0); }
-  }
-  @keyframes blink { 0%,49%{opacity:1;} 50%,100%{opacity:0;} }
-  @keyframes revealDown {
-    from{ opacity:0; transform:translateY(-8px); max-height:0; }
-    to  { opacity:1; transform:translateY(0);    max-height:120px; }
-  }
-  @keyframes scanline {
-    0%  { transform: translateY(-100%); }
-    100%{ transform: translateY(300%); }
-  }
-
-  .font-bebas  { font-family:'Bebas Neue',sans-serif; }
-  .font-grotesk{ font-family:'Space Grotesk',sans-serif; }
-  .font-mono   { font-family:'JetBrains Mono',monospace; }
-
-  .anim-fadeslide { animation:fadeSlide .5s cubic-bezier(.22,.68,0,1.15) both; }
-  .anim-shake     { animation:shake .45s ease both; }
-  .anim-spin      { animation:spinCW .7s linear infinite; }
-  .anim-reveal    { animation:revealDown .3s cubic-bezier(.22,.68,0,1.1) both; }
-
-  .ticker-inner { display:inline-flex; animation:ticker 22s linear infinite; }
-
-  .orb { position:absolute; border-radius:50%; filter:blur(80px); pointer-events:none; animation:floatOrb 18s ease-in-out infinite; }
-
-  .input-acid {
-    width:100%;
-    padding: 13px 14px 13px 42px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    color: #fff;
-    font-family: 'Space Grotesk',sans-serif;
-    font-size: 14px;
-    outline: none;
-    transition: border-color .2s, background .2s, box-shadow .2s;
-    caret-color: var(--acid);
-    box-sizing: border-box;
-  }
-  .input-acid::placeholder { color: var(--sub); }
-  .input-acid:hover { background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.14); }
-  .input-acid:focus {
-    border-color: var(--acid);
-    background: rgba(200,242,48,0.04);
-    box-shadow: 0 0 0 3px var(--acid-dim), inset 0 1px 0 rgba(200,242,48,0.06);
-  }
-  select.input-acid option { background:#111; color:#fff; }
-
-  .btn-acid {
-    position:relative;
-    width:100%;
-    padding: 15px;
-    border:none;
-    border-radius:8px;
-    background: var(--acid);
-    color: #0a0a0a;
-    font-family:'Bebas Neue',sans-serif;
-    font-size:1.05rem;
-    letter-spacing:.1em;
-    cursor:pointer;
-    overflow:hidden;
-    transition: transform .15s, box-shadow .15s, opacity .2s;
-  }
-  .btn-acid::before {
-    content:'';
-    position:absolute;
-    inset:0;
-    background:linear-gradient(105deg,transparent 40%,rgba(255,255,255,0.35) 50%,transparent 60%);
-    transform:translateX(-100%);
-    transition:transform .4s ease;
-  }
-  .btn-acid:hover::before { transform:translateX(100%); }
-  .btn-acid:hover {
-    transform:translateY(-2px);
-    box-shadow:0 8px 32px var(--acid-glow), 0 0 60px rgba(200,242,48,0.15);
-  }
-  .btn-acid:active { transform:translateY(0); }
-  .btn-acid:disabled { opacity:.55; cursor:not-allowed; transform:none; }
-
-  .checkbox-acid {
-    appearance:none;
-    -webkit-appearance:none;
-    width:16px; height:16px;
-    border:1px solid var(--border);
-    border-radius:4px;
-    background:var(--surface);
-    cursor:pointer;
-    flex-shrink:0;
-    position:relative;
-    transition:border-color .2s, background .2s;
-  }
-  .checkbox-acid:checked {
-    background:var(--acid);
-    border-color:var(--acid);
-  }
-  .checkbox-acid:checked::after {
-    content:'';
-    position:absolute;
-    left:4px; top:1.5px;
-    width:5px; height:9px;
-    border:2px solid #000;
-    border-top:none; border-left:none;
-    transform:rotate(45deg);
-  }
-`;
-
-const TICKER_ITEMS = ["ChemBridge", "A-LEVELS", "SIGN IN", "CHEMISTRY", "ASHAN UMAYANGA", "Best Educator", "A-LEVELS", "SIGN IN", "CHEMISTRY", "ASHAN UMAYANGA", "Best Educator"];
 
 function Field({ label, icon, children }) {
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-      <label className="font-mono" style={{
-        fontSize: 10, fontWeight: 600, letterSpacing: ".14em",
-        textTransform: "uppercase", color: "var(--sub)",
-      }}>
+    <div className="flex flex-col gap-1.5">
+      <label className="font-mono text-[10px] font-semibold tracking-[0.14em] uppercase text-sub">
         {`// ${label}`}
       </label>
-      <div style={{ position: "relative" }}>
-        <span style={{
-          position: "absolute", left: 13, top: "50%", transform: "translateY(-50%)",
-          fontSize: "0.82rem", opacity: .4, pointerEvents: "none", userSelect: "none",
-        }}>{icon}</span>
+      <div className="relative">
+        <span className="absolute left-[13px] top-1/2 -translate-y-1/2 text-[0.82rem] opacity-40 pointer-events-none select-none">{icon}</span>
         {children}
       </div>
     </div>
   );
 }
 
-function Login() {
+export default function Login() {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [loading, setLoading] = useState(false);
@@ -199,211 +51,103 @@ function Login() {
     }
   };
 
+  const handleGuestLogin = () => {
+    localStorage.setItem("token", "guest-token");
+    localStorage.setItem("user", JSON.stringify({ name: "Guest User", role: "guest", email: "guest@chembridge.com" }));
+    navigate("/student");
+  };
+
   return (
-    <>
-      <style>{KEYFRAMES}</style>
-      <div className="font-grotesk" style={{
-        minHeight: "100vh",
-        background: "var(--ink)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: 16,
-        position: "relative",
-        overflow: "hidden",
-      }}>
-        {/* Orbs */}
-        <div className="orb" style={{ width: 500, height: 500, top: -180, left: -150, background: "rgba(200,242,48,0.06)", animationDelay: "0s" }} />
-        <div className="orb" style={{ width: 380, height: 380, bottom: -120, right: -100, background: "rgba(99,102,241,0.1)", animationDelay: "-7s" }} />
-        <div className="orb" style={{ width: 260, height: 260, top: "40%", right: "25%", background: "rgba(200,242,48,0.04)", animationDelay: "-12s" }} />
+    <div className="font-grotesk min-h-screen bg-ink flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Orbs */}
+      <div className="animate-float-orb w-[500px] h-[500px] absolute -top-[180px] -left-[150px] rounded-full blur-[80px] pointer-events-none bg-acid/5" />
+      <div className="animate-float-orb w-[380px] h-[380px] absolute -bottom-[120px] -right-[100px] rounded-full blur-[80px] pointer-events-none bg-indigo-500/10 [animation-delay:-7s]" />
+      <div className="animate-float-orb w-[260px] h-[260px] absolute top-[40%] right-[25%] rounded-full blur-[80px] pointer-events-none bg-acid/5 [animation-delay:-12s]" />
 
-        {/* Noise grain */}
-        <div style={{
-          position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0, opacity: .025,
-          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
-          backgroundSize: "256px",
-        }} />
+      {/* Noise grain overlay */}
+      <div className="fixed inset-0 pointer-events-none z-0 opacity-[0.025] bg-[url('data:image/svg+xml,%3Csvg_viewBox=%270_0_256_256%27_xmlns=%27http://www.w3.org/2000/svg%27%3E%3Cfilter_id=%27n%27%3E%3CfeTurbulence_type=%27fractalNoise%27_baseFrequency=%270.9%27_numOctaves=%274%27_stitchTiles=%27stitch%27/%3E%3C/filter%3E%3Crect_width=%27100%25%27_height=%27100%25%27_filter=%27url(%23n)%27/%3E%3C/svg%3E')] bg-[length:256px_256px]" />
 
-        {/* Card */}
-        <div className="anim-fadeslide" style={{
-          position: "relative", zIndex: 10,
-          width: "100%", maxWidth: 920,
-          borderRadius: 16,
-          border: "1px solid var(--border)",
-          overflow: "hidden",
-          display: "flex",
-          boxShadow: "0 40px 120px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.05)",
-        }}>
+      {/* Card */}
+      <div className="animate-fade-slide relative z-10 w-full max-w-[920px] h-full max-h-[calc(100vh-32px)] rounded-2xl border border-white/10 overflow-hidden flex shadow-[0_40px_120px_rgba(0,0,0,0.7),inset_0_1px_0_rgba(255,255,255,0.05)]">
 
-          {/* ═══ LEFT PANEL ═══ */}
-          <div className="left-panel" style={{
-            width: "44%",
-            display: "none",
-            flexDirection: "column",
-            background: "#0d0d0d",
-            borderRight: "1px solid var(--border)",
-            position: "relative",
-            overflow: "hidden",
-          }}>
-            {/* Grid lines */}
-            <div style={{
-              position: "absolute", inset: 0, pointerEvents: "none",
-              backgroundImage: `
-                linear-gradient(rgba(200,242,48,0.04) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(200,242,48,0.04) 1px, transparent 1px)
-              `,
-              backgroundSize: "36px 36px",
-            }} />
+        {/* LEFT PANEL */}
+        <div className="hidden md:flex w-[44%] flex-col bg-[#0d0d0d] border-r border-white/10 relative overflow-hidden">
+          <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(rgba(200,242,48,0.04)_1px,transparent_1px),linear-gradient(90deg,rgba(200,242,48,0.04)_1px,transparent_1px)] bg-[length:36px_36px]" />
 
-            {/* Corner brackets */}
-            {[
-              { top: 20, left: 20, borderTop: "1.5px solid var(--acid)", borderLeft: "1.5px solid var(--acid)", width: 20, height: 20 },
-              { top: 20, right: 20, borderTop: "1.5px solid var(--acid)", borderRight: "1.5px solid var(--acid)", width: 20, height: 20 },
-              { bottom: 20, left: 20, borderBottom: "1.5px solid var(--acid)", borderLeft: "1.5px solid var(--acid)", width: 20, height: 20 },
-              { bottom: 20, right: 20, borderBottom: "1.5px solid var(--acid)", borderRight: "1.5px solid var(--acid)", width: 20, height: 20 },
-            ].map((s, i) => <div key={i} style={{ position: "absolute", ...s }} />)}
+          <div className="absolute top-5 left-5 w-5 h-5 border-t-[1.5px] border-l-[1.5px] border-acid" />
+          <div className="absolute top-5 right-5 w-5 h-5 border-t-[1.5px] border-r-[1.5px] border-acid" />
+          <div className="absolute bottom-5 left-5 w-5 h-5 border-b-[1.5px] border-l-[1.5px] border-acid" />
+          <div className="absolute bottom-5 right-5 w-5 h-5 border-b-[1.5px] border-r-[1.5px] border-acid" />
 
-            <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "space-between", padding: "40px 36px", position: "relative", zIndex: 1 }}>
-              {/* Badge */}
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <div style={{
-                  width: 8, height: 8, borderRadius: "50%", background: "var(--acid)",
-                  boxShadow: "0 0 10px var(--acid-glow)",
-                  animation: "pulseAcid 2s ease-in-out infinite",
-                }} />
-                <span className="font-mono" style={{ fontSize: 11, color: "var(--sub)", letterSpacing: ".1em" }}>CHEMONE // v2.0</span>
+          <div className="flex-1 flex flex-col justify-between p-9 relative z-10">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-acid shadow-[0_0_10px_rgba(200,242,48,0.35)] animate-pulse-acid" />
+              <span className="font-mono text-[11px] text-sub tracking-widest">CHEMONE // v2.0</span>
+            </div>
+
+            <div>
+              <div className="font-bebas text-[5.5rem] leading-[0.88] text-white tracking-wider mb-6">
+                <div>WELCOME</div>
+                <div className="text-acid [text-shadow:0_0_40px_rgba(200,242,48,0.35)]">BACK</div>
               </div>
 
-              {/* Main headline */}
-              <div>
-                <div className="font-bebas" style={{
-                  fontSize: "5.5rem", lineHeight: .88, color: "#fff", letterSpacing: ".02em", marginBottom: 24,
-                }}>
-                  <div>WELCOME</div>
-                  <div style={{ color: "var(--acid)", textShadow: "0 0 40px var(--acid-glow)" }}>BACK</div>
-                </div>
-
-                {/* Photo */}
-                <div style={{ position: "relative", marginBottom: 28 }}>
-                  <div style={{
-                    position: "absolute", inset: -3, borderRadius: 10,
-                    background: "linear-gradient(135deg, var(--acid), transparent, var(--acid))",
-                    opacity: .5,
-                  }} />
-                  <img
-                    src="/ashan.jpeg"
-                    alt="Ashan Umayanga"
-                    style={{
-                      position: "relative", zIndex: 1,
-                      width: "100%", borderRadius: 8,
-                      objectFit: "cover", maxHeight: 220,
-                      filter: "contrast(1.05) brightness(0.95)",
-                    }}
-                  />
-                  {/* Scanline */}
-                  <div style={{
-                    position: "absolute", inset: 0, zIndex: 2, borderRadius: 8, pointerEvents: "none",
-                    background: "repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.08) 2px, rgba(0,0,0,0.08) 4px)",
-                  }} />
-                </div>
-
-                <div className="font-bebas" style={{ fontSize: "1.45rem", letterSpacing: ".12em", color: "var(--acid)" }}>
-                  ASHAN UMAYANGA
-                </div>
-                <div className="font-mono" style={{ fontSize: 11, color: "var(--sub)", marginTop: 4 }}>
-                  // chemistry educator
-                </div>
+              <div className="relative mb-7">
+                <div className="absolute -inset-[3px] rounded-[10px] bg-gradient-to-br from-acid via-transparent to-acid opacity-50" />
+                <img src="/ashan.jpeg" alt="Ashan Umayanga" className="relative z-10 w-full rounded-lg object-cover max-h-[220px] contrast-[1.05] brightness-95" />
+                <div className="absolute inset-0 z-20 rounded-lg pointer-events-none bg-[repeating-linear-gradient(0deg,transparent,transparent_2px,rgba(0,0,0,0.08)_2px,rgba(0,0,0,0.08)_4px)]" />
               </div>
 
-              {/* Stats */}
-              <div style={{ display: "flex", gap: 20, borderTop: "1px solid var(--border)", paddingTop: 24 }}>
-                {[["A/L", "CHEMISTRY"], ["🏆", "TOP RESULTS"]].map(([v, l], i) => (
-                  <div key={i} style={{ flex: 1 }}>
-                    <div className="font-bebas" style={{ fontSize: "1.4rem", color: "var(--acid)", letterSpacing: ".05em" }}>{v}</div>
-                    <div className="font-mono" style={{ fontSize: 9, color: "var(--sub)", letterSpacing: ".1em" }}>{l}</div>
-                  </div>
-                ))}
-              </div>
+              <div className="font-bebas text-[1.45rem] tracking-[0.12em] text-acid">ASHAN UMAYANGA</div>
+              <div className="font-mono text-[11px] text-sub mt-1">// chemistry educator</div>
+            </div>
+
+            <div className="flex gap-5 border-t border-white/10 pt-6">
+              {[["A/L", "CHEMISTRY"], ["🏆", "TOP RESULTS"]].map(([v, l], i) => (
+                <div key={i} className="flex-1">
+                  <div className="font-bebas text-[1.4rem] text-acid tracking-wider">{v}</div>
+                  <div className="font-mono text-[9px] text-sub tracking-widest">{l}</div>
+                </div>
+              ))}
             </div>
           </div>
+        </div>
 
-          {/* ═══ RIGHT PANEL ═══ */}
-          <div style={{
-            flex: 1,
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "center",
-            padding: "44px 40px",
-            background: "rgba(10,10,10,0.85)",
-            backdropFilter: "blur(20px)",
-            maxHeight: "100vh",
-            overflowY: "auto",
-          }}>
+        {/* RIGHT PANEL */}
+        <div className="flex-1 flex flex-col justify-center p-10 bg-ink/85 backdrop-blur-[20px] h-full overflow-y-auto">
 
-            {/* Ticker */}
-            <div style={{
-              marginBottom: 32, overflow: "hidden",
-              borderTop: "1px solid var(--border)", borderBottom: "1px solid var(--border)",
-              padding: "7px 0", marginLeft: -40, marginRight: -40,
-            }}>
-              <div className="ticker-inner font-bebas" style={{
-                fontSize: "0.72rem", letterSpacing: ".15em", color: "var(--sub)", gap: 0,
-              }}>
-                {TICKER_ITEMS.concat(TICKER_ITEMS).map((t, i) => (
-                  <span key={i} style={{ paddingRight: 32 }}>{t}</span>
-                ))}
-              </div>
+
+          <div className="mb-7">
+            <div className="flex items-baseline gap-3 mb-1.5">
+              <span className="font-bebas text-[3rem] text-white tracking-wider leading-none">SIGN IN</span>
+              <span className="font-mono text-[10px] text-acid tracking-widest pb-1">_02</span>
             </div>
+            <p className="text-sub text-[13px]">Continue your chemistry journey</p>
+          </div>
 
-            {/* Header */}
-            <div style={{ marginBottom: 28 }}>
-              <div style={{ display: "flex", alignItems: "baseline", gap: 12, marginBottom: 6 }}>
-                <span className="font-bebas" style={{ fontSize: "3rem", color: "#fff", letterSpacing: ".04em", lineHeight: 1 }}>
-                  SIGN IN
-                </span>
-                <span className="font-mono" style={{ fontSize: 10, color: "var(--acid)", letterSpacing: ".1em", paddingBottom: 4 }}>
-                  _02
-                </span>
-              </div>
-              <p style={{ color: "var(--sub)", fontSize: 13 }}>
-                Continue your chemistry journey
-              </p>
+          {error && (
+            <div className="animate-shake font-mono flex items-start gap-2.5 bg-red-500/10 border border-red-500/25 text-red-400 text-[12px] rounded-lg p-3.5 mb-5 tracking-tight">
+              <span className="opacity-70 shrink-0">!</span>
+              <span>{error}</span>
             </div>
+          )}
 
-            {/* Error */}
-            {error && (
-              <div className="anim-shake font-mono" style={{
-                display: "flex", alignItems: "flex-start", gap: 10,
-                background: "rgba(239,68,68,0.08)",
-                border: "1px solid rgba(239,68,68,0.25)",
-                color: "#f87171", fontSize: 12, borderRadius: 8,
-                padding: "12px 14px", marginBottom: 20, letterSpacing: ".02em",
-              }}>
-                <span style={{ opacity: .7, flexShrink: 0 }}>!</span>
-                <span>{error}</span>
-              </div>
-            )}
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            <Field label="Email Address" icon="◉">
+              <input
+                className="input-acid"
+                type="email" name="email"
+                placeholder="you@example.com"
+                value={formData.email}
+                onChange={handleChange}
+                autoComplete="email"
+                required
+              />
+            </Field>
 
-            <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-
-              {/* Email */}
-              <Field label="Email Address" icon="◉">
+            <Field label="Password" icon="⬡">
+              <div className="relative">
                 <input
-                  className="input-acid"
-                  type="email" name="email"
-                  placeholder="you@example.com"
-                  value={formData.email}
-                  onChange={handleChange}
-                  autoComplete="email"
-                  required
-                />
-              </Field>
-
-              {/* Password */}
-              <Field label="Password" icon="⬡">
-                <input
-                  className="input-acid"
-                  style={{ paddingRight: 36 }}
+                  className="input-acid pr-9"
                   type={showPassword ? "text" : "password"}
                   name="password"
                   placeholder="Enter your password"
@@ -415,83 +159,52 @@ function Login() {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  style={{
-                    position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)",
-                    background: "none", border: "none", cursor: "pointer",
-                    fontSize: 12, opacity: .35, color: "#fff", padding: 0,
-                    transition: "opacity .15s",
-                  }}
-                  onMouseEnter={e => e.currentTarget.style.opacity = ".75"}
-                  onMouseLeave={e => e.currentTarget.style.opacity = ".35"}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 bg-none border-none cursor-pointer text-[12px] opacity-35 text-white p-0 transition-opacity hover:opacity-75"
                 >
                   {showPassword ? "●" : "○"}
                 </button>
-              </Field>
+              </div>
+            </Field>
 
-              {/* Submit */}
-              <button
-                type="submit"
-                className="btn-acid"
-                disabled={loading}
-                style={{ marginTop: 6 }}
+            <button type="submit" className="btn-acid mt-1.5" disabled={loading}>
+              <div className="flex items-center justify-center gap-2.5 relative z-10">
+                {loading && <span className="animate-spin-cw w-3.5 h-3.5 border-2 border-black/25 border-t-black rounded-full" />}
+                {loading ? "SIGNING IN..." : "SIGN IN →"}
+              </div>
+            </button>
+          </form>
+
+          <div className="flex items-center gap-3 my-5 text-muted">
+            <div className="flex-1 h-[1px] bg-white/10" />
+            <span className="font-mono text-[10px] tracking-widest">OR</span>
+            <div className="flex-1 h-[1px] bg-white/10" />
+          </div>
+
+          <button
+            type="button"
+            onClick={handleGuestLogin}
+            className="w-full p-4 border border-acid rounded-lg bg-transparent text-acid font-bebas text-lg tracking-widest cursor-pointer transition-all hover:bg-acid/5 mb-4"
+          >
+            LOGIN AS GUEST →
+          </button>
+
+          <div className="flex flex-col gap-2.5 items-center">
+            <p className="text-[#a19f9fff] text-[13px] m-0">
+              Forgot password?{" "}
+              <span
+                onClick={() => navigate("/forgot-password")}
+                className="text-[#a19f9fff] cursor-pointer font-medium transition-colors underline decoration-muted hover:text-[#c6e077ff]"
               >
-                <span style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, position: "relative", zIndex: 1 }}>
-                  {loading && (
-                    <span className="anim-spin" style={{
-                      display: "inline-block", width: 14, height: 14,
-                      border: "2px solid rgba(0,0,0,0.25)", borderTopColor: "#000",
-                      borderRadius: "50%",
-                    }} />
-                  )}
-                  {loading ? "SIGNING IN..." : "SIGN IN →"}
-                </span>
-              </button>
-            </form>
-
-            {/* Divider */}
-            <div style={{
-              display: "flex", alignItems: "center", gap: 12, margin: "22px 0 18px",
-              color: "var(--muted)",
-            }}>
-              <div style={{ flex: 1, height: 1, background: "var(--border)" }} />
-              <span className="font-mono" style={{ fontSize: 10, letterSpacing: ".1em" }}>OR</span>
-              <div style={{ flex: 1, height: 1, background: "var(--border)" }} />
-            </div>
-
-            {/* Links */}
-            <div style={{ display: "flex", flexDirection: "column", gap: 10, alignItems: "center" }}>
-              <p style={{ color: "#a19f9fff", fontSize: 13, margin: 0 }}>
-                Forgot password?{" "}
-                <span
-                  onClick={() => navigate("/forgot-password")}
-                  style={{ color: "#a19f9fff", cursor: "pointer", fontWeight: 500, transition: "color .15s", textDecoration: "underline", textDecorationColor: "var(--muted)" }}
-                  onMouseEnter={e => e.currentTarget.style.color = "#c6e077ff"}
-                  onMouseLeave={e => e.currentTarget.style.color = "var(--sub)"}
-                >
-                  Reset Password ↗
-                </span>
-              </p>
-            </div>
-
-            {/* Footer */}
-            <p className="font-mono" style={{ textAlign: "center", color: "#e5e4e4ff", fontSize: 10, marginTop: 20, letterSpacing: ".08em" }}>
-              © 2026 ChemBridge  — ALL RIGHTS RESERVED
+                Reset Password ↗
+              </span>
             </p>
           </div>
-        </div>
 
-        <style>{`
-          @media(min-width:768px){
-            .left-panel{ display:flex !important; }
-          }
-          @keyframes pulseAcid {
-            0%,100%{ box-shadow: 0 0 0 0 rgba(200,242,48,0.35); }
-            50%    { box-shadow: 0 0 0 8px rgba(200,242,48,0); }
-          }
-        `}</style>
+          <p className="font-mono text-center text-[#e5e4e4ff] text-[10px] mt-5 tracking-widest">
+            © 2026 ChemBridge — ALL RIGHTS RESERVED
+          </p>
+        </div>
       </div>
-    </>
+    </div>
   );
 }
-
-export default Login;

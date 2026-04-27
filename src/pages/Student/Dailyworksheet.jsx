@@ -3,6 +3,7 @@ import StudentNavbar from "../../components/StudentNavbar";
 import API from "../../services/api";
 import toast from 'react-hot-toast';
 import ConfirmationModal from '../../components/ConfirmationModal';
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, CheckCircle2, Lock, FileText, Search, Clock, Eye, Send, Trash2, CheckCircle } from "lucide-react";
 
 const Dailyworksheet = () => {
     const [worksheets, setWorksheets] = useState([]);
@@ -12,13 +13,14 @@ const Dailyworksheet = () => {
     const [uploadingId, setUploadingId] = useState(null);
     const [deletingId, setDeletingId] = useState(null);
     const [confirmingId, setConfirmingId] = useState(null);
+    const [selectedDate, setSelectedDate] = useState(new Date());
 
     // Modal state
-    const [modal, setModal] = useState({ 
-        isOpen: false, 
-        title: '', 
-        message: '', 
-        onConfirm: () => {},
+    const [modal, setModal] = useState({
+        isOpen: false,
+        title: '',
+        message: '',
+        onConfirm: () => { },
         type: 'danger'
     });
 
@@ -40,8 +42,8 @@ const Dailyworksheet = () => {
                             ws._id === worksheetId ? { ...ws, mySubmission: response.data.data } : ws
                         )
                     );
+                    await fetchWorksheets();
                     toast.success("Submission confirmed! Official answer revealed.");
-                    // Refresh if needed, but state update should be enough
                 } catch (err) {
                     console.error(err);
                     toast.error("Failed to confirm submission.");
@@ -90,7 +92,6 @@ const Dailyworksheet = () => {
             const response = await API.post(`/worksheets/${worksheetId}/submit`, formData, {
                 headers: { "Content-Type": "multipart/form-data" },
             });
-            // Immediately show the new submission in UI
             setWorksheets((prev) =>
                 prev.map((ws) =>
                     ws._id === worksheetId ? { ...ws, mySubmission: response.data.data } : ws
@@ -102,14 +103,14 @@ const Dailyworksheet = () => {
             toast.error(err.response?.data?.message || "Failed to submit answer.");
         } finally {
             setUploadingId(null);
-            event.target.value = null; // reset
+            event.target.value = null;
         }
     };
 
     const now = new Date();
     const currentHour = now.getHours();
-    const isWithinTimeRange = currentHour >= 1 && currentHour < 23;
-    const todayStr = new Date().toISOString().split("T")[0];
+    const isWithinTimeRange = currentHour >= 4 && currentHour < 23.59;
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
     // Fetch Worksheets
     const fetchWorksheets = async () => {
@@ -130,25 +131,59 @@ const Dailyworksheet = () => {
         fetchWorksheets();
     }, []);
 
+    // Calendar Helpers
+    const getDaysInMonth = (year, month) => new Date(year, month + 1, 0).getDate();
+    const getFirstDayOfMonth = (year, month) => new Date(year, month, 1).getDay();
+
+    const [currentCalDate, setCurrentCalDate] = useState(new Date());
+
+    const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
+    const currentYear = currentCalDate.getFullYear();
+    const currentMonth = currentCalDate.getMonth();
+    const daysInMonth = getDaysInMonth(currentYear, currentMonth);
+    const firstDayOfMonth = getFirstDayOfMonth(currentYear, currentMonth);
+
+    const prevMonth = () => setCurrentCalDate(new Date(currentYear, currentMonth - 1, 1));
+    const nextMonth = () => setCurrentCalDate(new Date(currentYear, currentMonth + 1, 1));
+
+    const isToday = (year, month, day) => {
+        const d = new Date();
+        return d.getFullYear() === year && d.getMonth() === month && d.getDate() === day;
+    };
+
+    const isDateSelected = (year, month, day) => {
+        return selectedDate.getFullYear() === year && selectedDate.getMonth() === month && selectedDate.getDate() === day;
+    };
+
+    const hasWorksheet = (year, month, day) => {
+        const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        return worksheets.some(ws => (ws.date || ws.createdAt.split('T')[0]) === dateStr);
+    };
+
+    const hasSubmission = (year, month, day) => {
+        const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        return worksheets.some(ws => (ws.date || ws.createdAt.split('T')[0]) === dateStr && ws.mySubmission);
+    };
+
+    const isTodayAllowed = () => {
+        const selectedDateStr = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}`;
+        return selectedDateStr === todayStr;
+    };
+
     // Filter Logic
     const filteredWorksheets = worksheets.filter((ws) => {
-        const isToday = ws.date === todayStr || (!ws.date && formatDate(ws.createdAt) === formatDate(now));
+        const wsDateStr = ws.date || ws.createdAt.split('T')[0];
+        const selectedDateStr = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}`;
+        const isSameDay = wsDateStr === selectedDateStr;
         const term = searchTerm.toLowerCase();
-        return isToday && (
+        return isSameDay && (
             ws.fileName?.toLowerCase().includes(term) ||
             ws.notes?.toLowerCase().includes(term)
         );
     });
 
-
-
-    // GCS public URLs work directly for both view and download
-    const getDownloadUrl = (url) => {
-        if (!url) return "#";
-        return url;
-    };
-
-    // Date Formatter
     const formatDate = (dateStr) => {
         if (!dateStr) return "Unknown Date";
         return new Date(dateStr).toLocaleDateString("en-US", {
@@ -159,190 +194,240 @@ const Dailyworksheet = () => {
     };
 
     return (
-        <div className="min-h-screen bg-slate-50">
+        <div className="min-h-screen bg-blue-50 dark:bg-black ">
             <StudentNavbar />
 
-            <div className="max-w-7xl mx-auto p-6 lg:p-10 space-y-8">
+            <div className="max-w-7xl mx-auto p-4 lg:p-10 space-y-8">
                 {/* HEADER SECTION */}
-                <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 bg-white p-8 rounded-3xl shadow-sm border border-slate-100">
-                    <div>
-                        <div className="inline-flex items-center justify-center p-3 bg-blue-50 rounded-2xl mb-4">
-                            <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                            </svg>
+                <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-8 shadow-sm dark:shadow-none border border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-6 overflow-hidden relative">
+                    <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 bg-teal-50 rounded-full opacity-50 blur-3xl"></div>
+                    <div className="relative z-10">
+                        <div className="inline-flex items-center justify-center p-3 bg-teal-50 rounded-2xl mb-4 group ring-1 ring-teal-100">
+                            <CalendarIcon className="w-8 h-8 text-teal-600 transition-transform group-hover:rotate-12" />
                         </div>
-                        <h1 className="text-3xl font-bold text-slate-900">Today's Worksheet</h1>
-                        <p className="text-slate-500 mt-2 text-lg">View your daily worksheet.</p>
+                        <h1 className="text-4xl font-black text-slate-900 dark:text-white tracking-tight">Daily Worksheets</h1>
+                        <p className="text-slate-500 mt-2 text-lg font-medium">Navigate through your learning journey.</p>
                     </div>
 
-                    <div className="w-full md:w-96 relative">
+                    <div className="w-full md:w-96 relative z-10">
                         <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                            <svg className="h-5 w-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                            </svg>
+                            <Search className="h-5 w-5 text-slate-400" />
                         </div>
                         <input
                             type="text"
-                            placeholder="Search by name, date or notes..."
+                            placeholder="Search worksheets..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-11 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium"
+                            className="w-full pl-11 pr-4 py-4 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 rounded-2xl text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-4 focus:ring-teal-500/10 focus:border-teal-500 transition-all font-semibold"
                         />
                     </div>
                 </div>
 
-                {/* ERROR STATE */}
-                {error && (
-                    <div className="bg-red-50 border border-red-200 p-6 rounded-2xl text-red-700 flex items-center gap-3">
-                        <svg className="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        <p className="font-medium">{error}</p>
-                    </div>
-                )}
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                    {/* CALENDAR COLUMN */}
+                    <div className="lg:col-span-4 space-y-6">
+                        <div className="bg-white dark:bg-slate-900 p-6 rounded-[2.5rem] shadow-sm dark:shadow-none border border-slate-100 lg:sticky lg:top-24">
+                            <div className="flex items-center justify-between mb-8">
+                                <h3 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                                    {months[currentMonth]} <span className="text-slate-400 font-medium">{currentYear}</span>
+                                </h3>
+                                <div className="flex gap-2">
+                                    <button onClick={prevMonth} className="p-2 hover:bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-100 transition-colors">
+                                        <ChevronLeft className="w-5 h-5 text-slate-600 dark:text-slate-400" />
+                                    </button>
+                                    <button onClick={nextMonth} className="p-2 hover:bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-100 transition-colors">
+                                        <ChevronRight className="w-5 h-5 text-slate-600 dark:text-slate-400" />
+                                    </button>
+                                </div>
+                            </div>
 
-                {/* TIME RESTRICTION STATE */}
-                {!isWithinTimeRange ? (
-                    <div className="bg-white rounded-3xl border border-slate-100 p-12 text-center flex flex-col items-center justify-center min-h-[400px]">
-                        <div className="w-24 h-24 bg-orange-50 rounded-full flex items-center justify-center mb-6">
-                            <svg className="w-12 h-12 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                        </div>
-                        <h3 className="text-xl font-bold text-slate-900 mb-2">Outside Available Hours</h3>
-                        <p className="text-slate-500 max-w-sm mx-auto">
-                            The daily worksheet is only available between <span className="font-semibold text-slate-700">4:00 AM</span> and <span className="font-semibold text-slate-700">11:00 PM</span>.
-                        </p>
-                    </div>
-                ) : (
-                    <>
-                        {/* LOADING STATE */}
-                        {loading ? (
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                                {[1, 2, 3, 4].map((i) => (
-                                    <div key={i} className="animate-pulse bg-white p-6 rounded-3xl border border-slate-100 shadow-sm">
-                                        <div className="h-4 bg-slate-200 rounded-full w-3/4 mb-4"></div>
-                                        <div className="h-3 bg-slate-100 rounded-full w-1/2 mb-6"></div>
-                                        <div className="h-24 bg-slate-50 rounded-2xl mb-6"></div>
-                                        <div className="flex gap-3">
-                                            <div className="h-10 bg-slate-200 rounded-xl flex-1"></div>
-                                        </div>
+                            <div className="grid grid-cols-7 gap-2 mb-4">
+                                {days.map(day => (
+                                    <div key={day} className="text-center text-xs font-bold text-slate-400 uppercase tracking-widest py-2">
+                                        {day}
                                     </div>
                                 ))}
-                            </div>
-                        ) : (
-                            <>
-                                {/* WORKSHEETS GRID */}
-                                {filteredWorksheets.length > 0 ? (
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                                        {filteredWorksheets.map((ws) => (
-                                            <div
-                                                key={ws._id}
-                                                className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm hover:shadow-xl hover:border-blue-100 transition-all duration-300 group flex flex-col"
-                                            >
-                                                <div className="flex items-start justify-between mb-4">
-                                                    <div className="flex-1 min-w-0 pr-4">
-                                                        <h3 className="font-bold text-slate-900 text-lg mb-1 truncate" title={ws.fileName}>
-                                                            {ws.fileName}
-                                                        </h3>
-                                                        <p className="text-sm font-medium text-slate-500 bg-slate-50 inline-block px-3 py-1 rounded-lg">
-                                                            {formatDate(ws.date)}
-                                                        </p>
-                                                    </div>
-                                                </div>
+                                {[...Array(firstDayOfMonth)].map((_, i) => (
+                                    <div key={`empty-${i}`} className="p-2"></div>
+                                ))}
+                                {[...Array(daysInMonth)].map((_, i) => {
+                                    const day = i + 1;
+                                    const selected = isDateSelected(currentYear, currentMonth, day);
+                                    const today = isToday(currentYear, currentMonth, day);
+                                    const highlighted = hasWorksheet(currentYear, currentMonth, day);
+                                    const submitted = hasSubmission(currentYear, currentMonth, day);
 
-                                                <div className="flex-1 bg-slate-50 rounded-2xl p-4 mb-6 border border-slate-100 group-hover:bg-blue-50/50 transition-colors">
-                                                    <p className="text-sm text-slate-600 line-clamp-3">
-                                                        {ws.notes || <span className="italic text-slate-400">No notes provided.</span>}
+                                    return (
+                                        <button
+                                            key={day}
+                                            onClick={() => setSelectedDate(new Date(currentYear, currentMonth, day))}
+                                            className={`
+                                                relative p-2 rounded-2xl transition-all duration-300 aspect-square flex flex-col items-center justify-center group
+                                                ${selected ? 'bg-teal-600 text-white shadow-lg shadow-teal-500/30 scale-105 z-10' : 'hover:bg-teal-50'}
+                                                ${today && !selected ? 'ring-2 ring-teal-500/20 bg-teal-50/30' : ''}
+                                            `}
+                                        >
+                                            <span className={`text-sm font-bold ${selected ? 'text-white' : 'text-slate-700 dark:text-slate-300'}`}>{day}</span>
+
+                                            {highlighted && !selected && (
+                                                <div className="absolute bottom-1.5 flex gap-0.5">
+                                                    <div className={`w-1.5 h-1.5 rounded-full ${submitted ? 'bg-blue-600' : 'bg-teal-400 shadow-[0_0_8px_rgba(45,212,191,0.6)] animate-pulse'}`}></div>
+                                                </div>
+                                            )}
+
+                                            {submitted && selected && (
+                                                <CheckCircle2 className="w-3 h-3 text-emerald-200 mt-1" strokeWidth={3} />
+                                            )}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+
+                            <div className="mt-8 pt-8 border-t border-slate-50 grid grid-cols-2 gap-4">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-3 h-3 rounded-full bg-emerald-500"></div>
+                                    <span className="text-xs font-bold text-slate-500 uppercase tracking-tighter">Available</span>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    <div className="w-3 h-3 rounded-full bg-blue-600"></div>
+                                    <span className="text-xs font-bold text-slate-500 uppercase tracking-tighter">Submitted</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* CONTENT COLUMN */}
+                    <div className="lg:col-span-8 space-y-6">
+                        {/* SELECT DATE INFO */}
+                        <div className="bg-white dark:bg-slate-900 p-6 rounded-[2.5rem] shadow-sm dark:shadow-none border border-slate-100 flex items-center justify-between overflow-hidden relative">
+                            <div className="flex items-center gap-4 relative z-10">
+                                <div className="p-3 bg-teal-50 rounded-2xl">
+                                    <Clock className="w-6 h-6 text-teal-600" />
+                                </div>
+                                <div>
+                                    <h2 className="text-xl font-bold text-slate-900 dark:text-white">{formatDate(selectedDate)}</h2>
+                                    <div className="flex items-center gap-2">
+                                        <p className="text-slate-400 text-sm font-semibold uppercase tracking-widest">{isTodayAllowed() ? "Viewing Today's Content" : "History View"}</p>
+                                        {isTodayAllowed() && !isWithinTimeRange && (
+                                            <span className="text-[10px] bg-rose-50 text-rose-600 px-2 py-0.5 rounded-full font-black border border-rose-100">LOCKED UNTIL 4AM</span>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                            {!isTodayAllowed() && (
+                                <div className="px-5 py-2.5 bg-amber-50 rounded-2xl border border-amber-100 flex items-center gap-2 group">
+                                    <Lock className="w-4 h-4 text-amber-500 group-hover:scale-110 transition-transform" />
+                                    <span className="text-xs font-black text-amber-600 uppercase tracking-tight">Historical View Only</span>
+                                </div>
+                            )}
+                        </div>
+
+                        {loading ? (
+                            <div className="space-y-4">
+                                {[1, 2].map(i => (
+                                    <div key={i} className="animate-pulse bg-white dark:bg-slate-900 p-8 rounded-[2.5rem] border border-slate-100 h-48"></div>
+                                ))}
+                            </div>
+                        ) : filteredWorksheets.length > 0 ? (
+                            <div className="space-y-4">
+                                {filteredWorksheets.map((ws) => (
+                                    <div
+                                        key={ws._id}
+                                        className="bg-white dark:bg-slate-900 rounded-[2.5rem] p-8 border border-slate-100 shadow-sm dark:shadow-none hover:shadow-xl hover:border-teal-100 transition-all duration-500 group relative overflow-hidden"
+                                    >
+                                        <div className="absolute top-0 right-0 p-8 opacity-[0.03] group-hover:scale-125 transition-transform duration-700">
+                                            <FileText className="w-32 h-32 text-teal-900" />
+                                        </div>
+
+                                        <div className="relative z-10">
+                                            <div className="flex flex-col md:flex-row md:items-start justify-between gap-6 mb-8">
+                                                <div className="flex-1">
+                                                    <div className="flex items-center gap-3 mb-2">
+                                                        <span className="text-xs font-black text-teal-600 bg-teal-50 px-3 py-1 rounded-full uppercase tracking-widest">
+                                                            {ws.date ? "Fixed Schedule" : "Standard Entry"}
+                                                        </span>
+                                                        {ws.mySubmission && (
+                                                            <span className="text-xs font-black text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full uppercase tracking-widest flex items-center gap-1">
+                                                                <CheckCircle className="w-3 h-3" /> Submitted
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <h3 className="text-2xl font-black text-slate-900 dark:text-white mb-3 group-hover:text-teal-700 transition-colors">
+                                                        {ws.fileName}
+                                                    </h3>
+                                                    <p className="text-slate-500 leading-relaxed font-medium">
+                                                        {ws.notes || "Master the chemistry concepts through this hands-on daily challenge."}
                                                     </p>
                                                 </div>
 
-                                                <div className="flex gap-2 mt-auto">
-                                                    <a
-                                                        href={ws.fileUrl}
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        className="flex-1 bg-blue-50 text-blue-600 font-semibold py-3 px-2 rounded-xl text-center hover:bg-blue-100 active:scale-95 transition-all flex items-center justify-center gap-1 text-sm border border-blue-100"
-                                                    >
-                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                                        </svg>
-                                                        View
-                                                    </a>
+                                                <div className="flex flex-col gap-3 min-w-[200px]">
+                                                    {isTodayAllowed() && isWithinTimeRange ? (
+                                                        <a
+                                                            href={ws.fileUrl}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="flex items-center justify-center gap-3 bg-slate-900 text-white font-bold py-4 px-6 rounded-2xl hover:bg-teal-600 hover:shadow-lg hover:shadow-teal-500/30 active:scale-95 transition-all duration-300"
+                                                        >
+                                                            <Eye className="w-5 h-5" /> View Worksheet
+                                                        </a>
+                                                    ) : (
+                                                        <div className="flex flex-col gap-1 items-center justify-center bg-slate-100 dark:bg-slate-800 text-slate-400 font-bold py-4 px-6 rounded-2xl cursor-not-allowed border border-slate-200">
+                                                            <div className="flex items-center gap-2">
+                                                                <Lock className="w-4 h-4" />
+                                                                <span>{isTodayAllowed() && !isWithinTimeRange ? "Closed (4AM-12PM)" : "Access Locked"}</span>
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
 
-                                                    {ws.mySubmission ? (
-                                                        <div className="flex flex-col gap-2 flex-1">
-                                                            <div className="flex gap-2">
+                                            {/* ACTION FOOTER */}
+                                            <div className="pt-8 border-t border-slate-50 flex flex-col md:flex-row gap-4 items-center">
+                                                {ws.mySubmission ? (
+                                                    <div className="flex flex-wrap items-center gap-3 w-full">
+                                                        <a
+                                                            href={ws.mySubmission.fileUrl}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="flex items-center gap-2 px-6 py-3 bg-teal-50 text-teal-700 font-bold rounded-2xl hover:bg-teal-100 transition-all"
+                                                        >
+                                                            <Eye className="w-4 h-4" /> My Submission
+                                                        </a>
+
+                                                        {!ws.mySubmission.isConfirmed && (
+                                                            <button
+                                                                onClick={() => handleDeleteSubmission(ws._id)}
+                                                                disabled={deletingId === ws._id}
+                                                                className="p-3 bg-rose-50 text-rose-500 rounded-2xl hover:bg-rose-100 transition-all border border-rose-100"
+                                                            >
+                                                                <Trash2 className="w-5 h-5" />
+                                                            </button>
+                                                        )}
+
+                                                        {!ws.mySubmission.isConfirmed ? (
+                                                            <button
+                                                                onClick={() => handleConfirmSubmission(ws._id)}
+                                                                disabled={confirmingId === ws._id}
+                                                                className="flex-1 md:flex-none flex items-center justify-center gap-2 px-8 py-3 bg-amber-500 text-white font-black rounded-2xl hover:bg-amber-600 hover:shadow-lg hover:shadow-amber-500/20 transition-all"
+                                                            >
+                                                                <CheckCircle2 className="w-5 h-5" /> Confirm & Get Key
+                                                            </button>
+                                                        ) : (
+                                                            ws.officialAnswerUrl && (
                                                                 <a
-                                                                    href={ws.mySubmission.fileUrl}
+                                                                    href={ws.officialAnswerUrl}
                                                                     target="_blank"
                                                                     rel="noopener noreferrer"
-                                                                    className="flex-1 bg-blue-600 text-white font-semibold py-3 px-2 rounded-xl text-center hover:bg-blue-700 active:scale-95 transition-all shadow-md hover:shadow-blue-500/25 flex items-center justify-center gap-1 text-sm"
+                                                                    className="flex-1 md:flex-none flex items-center justify-center gap-2 px-8 py-3 bg-emerald-600 text-white font-black rounded-2xl hover:bg-emerald-700 hover:shadow-lg hover:shadow-emerald-500/20 transition-all animate-in fade-in slide-in-from-bottom-2"
                                                                 >
-                                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                                                    </svg>
-                                                                    View My Answer
+                                                                    <Send className="w-5 h-5" /> View Official Answer
                                                                 </a>
-                                                                {!ws.mySubmission.isConfirmed && (
-                                                                    <button
-                                                                        onClick={() => handleDeleteSubmission(ws._id)}
-                                                                        disabled={deletingId === ws._id}
-                                                                        className="w-10 flex-shrink-0 bg-white border border-red-100 text-red-500 hover:bg-red-50 hover:border-red-200 disabled:opacity-50 font-semibold py-3 flex items-center justify-center rounded-xl active:scale-95 transition-all shadow-md"
-                                                                        title="Delete Answer"
-                                                                    >
-                                                                        {deletingId === ws._id ? (
-                                                                            <svg className="animate-spin h-4 w-4 text-red-500" fill="none" viewBox="0 0 24 24">
-                                                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                                                            </svg>
-                                                                        ) : (
-                                                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                                                            </svg>
-                                                                        )}
-                                                                    </button>
-                                                                )}
-                                                            </div>
-
-                                                            {!ws.mySubmission.isConfirmed ? (
-                                                                <button
-                                                                    onClick={() => handleConfirmSubmission(ws._id)}
-                                                                    disabled={confirmingId === ws._id}
-                                                                    className="w-full bg-orange-500 text-white font-bold py-3 px-2 rounded-xl text-center hover:bg-orange-600 active:scale-95 transition-all flex items-center justify-center gap-2 text-sm shadow-md"
-                                                                >
-                                                                    {confirmingId === ws._id ? (
-                                                                        <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                                                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                                                        </svg>
-                                                                    ) : (
-                                                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                                                        </svg>
-                                                                    )}
-                                                                    Confirm Submission
-                                                                </button>
-                                                            ) : (
-                                                                ws.officialAnswerUrl && (
-                                                                    <a
-                                                                        href={ws.officialAnswerUrl}
-                                                                        target="_blank"
-                                                                        rel="noopener noreferrer"
-                                                                        className="w-full bg-emerald-50 text-emerald-600 font-bold py-3 px-2 rounded-xl text-center hover:bg-emerald-100 active:scale-95 transition-all flex items-center justify-center gap-2 text-sm border border-emerald-200 shadow-sm"
-                                                                    >
-                                                                        <svg className="w-5 h-5 font-bold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                                                        </svg>
-                                                                        View Official Answer
-                                                                    </a>
-                                                                )
-                                                            )}
-                                                        </div>
-                                                    ) : (
-                                                        <div className="flex-1">
+                                                            )
+                                                        )}
+                                                    </div>
+                                                ) : (
+                                                    isTodayAllowed() && isWithinTimeRange ? (
+                                                        <div className="w-full">
                                                             <input
                                                                 type="file"
                                                                 id={`upload-${ws._id}`}
@@ -352,48 +437,42 @@ const Dailyworksheet = () => {
                                                             />
                                                             <label
                                                                 htmlFor={`upload-${ws._id}`}
-                                                                className={`w-full bg-emerald-600 text-white font-semibold py-3 px-2 rounded-xl text-center hover:bg-emerald-700 active:scale-95 transition-all shadow-md hover:shadow-emerald-500/25 flex items-center justify-center gap-1 text-sm cursor-pointer ${uploadingId === ws._id ? 'opacity-70 pointer-events-none' : ''}`}
+                                                                className={`w-full flex items-center justify-center gap-3 py-4 px-8 bg-emerald-100 text-emerald-700 font-black rounded-[1.5rem] border-2 border-emerald-200 border-dashed hover:bg-emerald-200 hover:border-emerald-300 transition-all cursor-pointer ${uploadingId === ws._id ? 'opacity-50 pointer-events-none' : ''}`}
                                                             >
-                                                                {uploadingId === ws._id ? (
-                                                                    <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                                                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                                                    </svg>
-                                                                ) : (
-                                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                                                                    </svg>
-                                                                )}
-                                                                {uploadingId === ws._id ? 'Uploading...' : 'Submit Answer'}
+                                                                {uploadingId === ws._id ? <div className="animate-spin rounded-full h-5 w-5 border-2 border-emerald-700 border-t-transparent" /> : <Send className="w-5 h-5" />}
+                                                                {uploadingId === ws._id ? 'SUBMITTING...' : 'UPLOAD YOUR ANSWER'}
                                                             </label>
                                                         </div>
-                                                    )}
-
-                                                </div>
+                                                    ) : (
+                                                        <div className="w-full py-4 px-8 bg-slate-50 dark:bg-slate-950 text-slate-400 font-bold rounded-[1.5rem] border-2 border-dashed border-slate-200 text-center uppercase tracking-widest text-xs">
+                                                            {isTodayAllowed() && !isWithinTimeRange ? "Wait for Available Hours" : "Submissions Closed"}
+                                                        </div>
+                                                    )
+                                                )}
                                             </div>
-                                        ))}
-                                    </div>
-                                ) : (
-                                    /* EMPTY STATE */
-                                    <div className="bg-white rounded-3xl border border-slate-100 border-dashed p-12 text-center flex flex-col items-center justify-center min-h-[400px]">
-                                        <div className="w-24 h-24 bg-slate-50 rounded-full flex items-center justify-center mb-6">
-                                            <svg className="w-12 h-12 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
-                                            </svg>
                                         </div>
-                                        <h3 className="text-xl font-bold text-slate-900 mb-2">No Worksheet Today</h3>
-                                        <p className="text-slate-500 max-w-sm mx-auto">
-                                            There is no daily worksheet uploaded for today yet. Check back later!
-                                        </p>
                                     </div>
-                                )}
-                            </>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-100 border-dashed p-20 text-center flex flex-col items-center justify-center min-h-[500px] relative overflow-hidden">
+                                <div className="absolute inset-0 bg-teal-50/10 opacity-50"></div>
+                                <div className="w-32 h-32 bg-teal-50/50 rounded-full flex items-center justify-center mb-8 relative z-10 group">
+                                    <FileText className="w-16 h-16 text-teal-200 group-hover:scale-110 transition-transform duration-500" />
+                                </div>
+                                <h3 className="text-2xl font-black text-slate-900 dark:text-white mb-3 relative z-10">No Worksheet Found</h3>
+                                <p className="text-slate-500 max-w-sm mx-auto font-medium relative z-10">
+                                    {isTodayAllowed()
+                                        ? "There is no worksheet scheduled for today. Take a breather or review past lessons!"
+                                        : "You didn't have any worksheets assigned for this specific date."}
+                                </p>
+                            </div>
                         )}
-                    </>
-                )}
+                    </div>
+                </div>
             </div>
 
-            <ConfirmationModal 
+            <ConfirmationModal
                 isOpen={modal.isOpen}
                 onClose={closeModal}
                 onConfirm={modal.onConfirm}
