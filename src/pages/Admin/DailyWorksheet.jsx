@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import AdminNavbar from "../../components/AdminNavbar";
 import API from "../../services/api";
 
@@ -13,9 +13,24 @@ const DailyWorksheet = () => {
     const [date, setDate] = useState(
         new Date().toISOString().split("T")[0]
     );
+    const [batch, setBatch] = useState("All");
+    const [availableBatches, setAvailableBatches] = useState([]);
     const [error, setError] = useState("");
 
     const inputRef = useRef();
+
+    useEffect(() => {
+        const fetchBatches = async () => {
+            try {
+                const res = await API.get("/auth/students");
+                const uniqueBatches = [...new Set(res.data.map(s => s.batch).filter(Boolean).sort())];
+                setAvailableBatches(uniqueBatches);
+            } catch (err) {
+                console.error("Failed to fetch batches:", err);
+            }
+        };
+        fetchBatches();
+    }, []);
 
     const today = new Date().toLocaleDateString("en-US", {
         weekday: "long",
@@ -71,6 +86,7 @@ const DailyWorksheet = () => {
         setSubmitted(false);
         setError("");
         setNotes("");
+        setBatch("All");
         if (inputRef.current) inputRef.current.value = "";
     };
 
@@ -82,6 +98,7 @@ const DailyWorksheet = () => {
         formData.append("file", file);
         formData.append("date", date);
         formData.append("notes", notes);
+        formData.append("batch", batch);
 
         try {
             setUploading(true);
@@ -291,6 +308,21 @@ const DailyWorksheet = () => {
                                 onChange={(e) => setDate(e.target.value)}
                                 className="w-full border-2 border-slate-200 p-4 rounded-2xl focus:border-blue-400 focus:ring-4 focus:ring-blue-100/50 transition-all duration-200 shadow-sm dark:shadow-none hover:shadow-md bg-white dark:bg-slate-900/50 text-slate-700 dark:text-slate-300"
                             />
+                        </div>
+
+                        {/* BATCH */}
+                        <div>
+                            <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Select Batch</label>
+                            <select
+                                value={batch}
+                                onChange={(e) => setBatch(e.target.value)}
+                                className="w-full border-2 border-slate-200 p-4 rounded-2xl focus:border-blue-400 focus:ring-4 focus:ring-blue-100/50 transition-all duration-200 shadow-sm dark:shadow-none hover:shadow-md bg-white dark:bg-slate-900/50 text-slate-700 dark:text-slate-300 appearance-none"
+                            >
+                                <option value="All">All Batches</option>
+                                {availableBatches.map(b => (
+                                    <option key={b} value={b}>{b}</option>
+                                ))}
+                            </select>
                         </div>
 
                         {/* NOTES */}
