@@ -1,17 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-  ClipboardList,
-  BookOpen,
-  Users,
-  BarChart3,
-  Settings,
-  ArrowRight,
-  ShieldCheck,
-  Activity,
-  Database,
-} from 'lucide-react';
+import { ClipboardList, Users, BarChart3, Settings, FileText, Bell } from 'lucide-react';
 import AdminNavbar from '../../components/AdminNavbar';
+
 
 /* ─── Theme Token Helper ─────────────────────────────────────── */
 const getTokens = (dark) => ({

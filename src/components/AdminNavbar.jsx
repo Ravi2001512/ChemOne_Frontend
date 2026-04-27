@@ -34,8 +34,8 @@ const AdminNavbar = () => {
   const navItems = [
     { name: 'Dashboard', path: '/admin', icon: LayoutDashboard },
     { name: 'Create Spot Test', path: '/admin/spot-test/create', icon: FileEdit },
-    { name: 'Manage Students', path: '/admin/students', icon: Users },
-    { name: 'Manage Results', path: '/admin/manage-results', icon: BarChart3 },
+    { name: 'Daily Work Sheet', path: '/admin/daily-worksheet', icon: FileEdit },
+    { name: 'AI ChatBot', path: '/admin/ai-chatbot', icon: FileEdit },
     { name: 'Settings', path: '/settings', icon: Settings },
   ];
 
