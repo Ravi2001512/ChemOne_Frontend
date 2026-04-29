@@ -1,10 +1,29 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { LayoutDashboard, FileEdit, Users, Settings, LogOut, Beaker } from 'lucide-react';
+import { LayoutDashboard, FileEdit, Users, Settings, LogOut, Beaker, Menu, X, Sun, Moon, BarChart3 } from 'lucide-react';
 
 const AdminNavbar = () => {
   const navigate = useNavigate();
   const location = useLocation();
+
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  useEffect(() => {
+    setIsDarkMode(document.documentElement.classList.contains("dark"));
+  }, []);
+
+  const toggleDarkMode = () => {
+    if (isDarkMode) {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+      setIsDarkMode(false);
+    } else {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+      setIsDarkMode(true);
+    }
+  };
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -15,27 +34,28 @@ const AdminNavbar = () => {
   const navItems = [
     { name: 'Dashboard', path: '/admin', icon: LayoutDashboard },
     { name: 'Create Spot Test', path: '/admin/spot-test/create', icon: FileEdit },
-    { name: 'Students', path: '/admin/students', icon: Users },
-    { name: 'Settings', path: '/admin/settings', icon: Settings },
+    { name: 'Daily Work Sheet', path: '/admin/daily-worksheet', icon: FileEdit },
+    { name: 'AI ChatBot', path: '/admin/chat-with-ai', icon: FileEdit },
+    { name: 'Settings', path: '/settings', icon: Settings },
   ];
 
   return (
-    <nav className="bg-white border-b border-gray-200 sticky top-0 z-50">
+    <nav className="bg-ink/90 border-b border-white/5 sticky top-0 z-50 backdrop-blur-md">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           <div className="flex items-center">
             {/* Logo */}
             <div className="flex-shrink-0 flex items-center cursor-pointer transition-transform hover:scale-105" onClick={() => navigate('/admin')}>
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-600 to-blue-500 flex items-center justify-center shadow-lg shadow-indigo-500/30">
-                <Beaker className="w-5 h-5 text-white" />
+              <div className="w-9 h-9 rounded-xl bg-acid flex items-center justify-center shadow-lg shadow-acid/20">
+                <img src="/logo.png" alt="ChemOne Logo" />
               </div>
-              <span className="ml-3 font-extrabold text-xl bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-blue-500 tracking-tight">
-                ChemOne Admin
+              <span className="ml-3 font-bebas text-xl sm:text-2xl text-white tracking-wider whitespace-nowrap drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]">
+                ChemBridge <span className="text-acid [text-shadow:0_0_20px_rgba(200,242,48,0.3)]">ADMIN</span>
               </span>
             </div>
 
             {/* Desktop Navigation */}
-            <div className="hidden sm:ml-10 sm:flex sm:space-x-8">
+            <div className="hidden md:ml-10 md:flex md:space-x-8">
               {navItems.map((item) => {
                 const isActive = location.pathname === item.path;
                 const Icon = item.icon;
@@ -43,13 +63,12 @@ const AdminNavbar = () => {
                   <Link
                     key={item.name}
                     to={item.path}
-                    className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-semibold transition-all duration-200 ${
-                      isActive
-                        ? 'border-indigo-600 text-indigo-600'
-                        : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-900'
-                    }`}
+                    className={`inline-flex items-center px-1 pt-1 border-b-2 text-[13px] font-mono tracking-wider uppercase transition-all duration-200 ${isActive
+                      ? 'border-acid text-acid'
+                      : 'border-transparent text-slate-400 hover:border-white/40 hover:text-white'
+                      }`}
                   >
-                    <Icon className={`w-4 h-4 mr-2 ${isActive ? 'text-indigo-600' : 'text-gray-400'}`} />
+                    <Icon className={`w-3.5 h-3.5 mr-2 ${isActive ? 'text-acid' : 'text-slate-400'}`} />
                     {item.name}
                   </Link>
                 );
@@ -58,19 +77,78 @@ const AdminNavbar = () => {
           </div>
 
           {/* User & Logout */}
-          <div className="hidden sm:ml-6 sm:flex sm:items-center">
+          <div className="hidden md:flex md:items-center md:gap-4">
+            <button
+              onClick={toggleDarkMode}
+              className="p-2 rounded-lg text-slate-400 hover:text-acid transition-colors"
+              aria-label="Toggle Dark Mode"
+            >
+              {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+            </button>
             <button
               onClick={handleLogout}
-              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-semibold rounded-lg text-red-600 bg-red-50 hover:bg-red-100 hover:text-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors"
+              className="font-mono text-[11px] tracking-widest uppercase px-4 py-2 border border-white/10 rounded-lg text-white hover:bg-white/5 transition-colors"
             >
-              <LogOut className="w-4 h-4 mr-2" />
               Sign Out
+            </button>
+          </div>
+
+          {/* Mobile Menu Button */}
+          <div className="flex md:hidden items-center gap-2">
+            <button
+              onClick={toggleDarkMode}
+              className="p-2 rounded-lg text-slate-400 hover:text-acid"
+            >
+              {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+            </button>
+            <button
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              className="p-2 rounded-lg text-slate-400 hover:bg-white/5 focus:outline-none"
+            >
+              {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>
           </div>
         </div>
       </div>
+
+      {/* Mobile Navigation Menu */}
+      {isMenuOpen && (
+        <div className="md:hidden bg-ink border-t border-white/5 animate-in slide-in-from-top duration-300">
+          <div className="px-2 pt-2 pb-3 space-y-1">
+            {navItems.map((item) => {
+              const isActive = location.pathname === item.path;
+              const Icon = item.icon;
+              return (
+                <Link
+                  key={item.name}
+                  to={item.path}
+                  onClick={() => setIsMenuOpen(false)}
+                  className={`flex items-center px-3 py-3 rounded-xl text-sm font-mono tracking-widest uppercase transition-colors ${isActive
+                    ? 'bg-acid/10 text-acid'
+                    : 'text-slate-400 hover:bg-white/5 hover:text-white'
+                    }`}
+                >
+                  <Icon className={`w-4 h-4 mr-3 ${isActive ? 'text-acid' : 'text-slate-400'}`} />
+                  {item.name}
+                </Link>
+              );
+            })}
+            <button
+              onClick={() => {
+                handleLogout();
+                setIsMenuOpen(false);
+              }}
+              className="w-full flex items-center px-3 py-3 rounded-xl text-sm font-mono tracking-widest uppercase text-rose-500 hover:bg-rose-500/5 transition-colors"
+            >
+              <LogOut className="w-4 h-4 mr-3" />
+              Sign Out
+            </button>
+          </div>
+        </div>
+      )}
     </nav>
   );
 };
 
 export default AdminNavbar;
+

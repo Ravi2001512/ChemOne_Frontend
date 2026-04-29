@@ -1,0 +1,204 @@
+/* Vesak Decoration Styles - Premium Version */
+
+:root {
+  --buddhist-blue: #0033ad;
+  --buddhist-yellow: #f9d71c;
+  --buddhist-red: #ff0000;
+  --buddhist-white: #ffffff;
+  --buddhist-orange: #ff9800;
+}
+
+.vesak-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 9999;
+  overflow: hidden;
+}
+
+/* The string/wire connecting lanterns */
+.lantern-string {
+  position: absolute;
+  top: -10px;
+  width: 110%;
+  left: -5%;
+  height: 100px;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  display: flex;
+  justify-content: space-around;
+  align-items: flex-end;
+  padding: 0 10%;
+}
+
+.lantern {
+  position: relative;
+  width: 80px;
+  height: 120px;
+  transform-origin: top center;
+  animation: sway 4s ease-in-out infinite;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.lantern::before {
+  content: '';
+  position: absolute;
+  top: -40px;
+  width: 1px;
+  height: 40px;
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.lantern-body {
+  width: 50px;
+  height: 60px;
+  background: var(--lantern-color, #ffeb3b);
+  position: relative;
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  box-shadow: inset 0 0 15px rgba(0,0,0,0.2);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.lantern-body::before {
+  content: '';
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background-image: 
+    radial-gradient(circle at 50% 50%, transparent 20%, rgba(255,255,255,0.1) 21%, transparent 25%),
+    linear-gradient(45deg, transparent 48%, rgba(255,255,255,0.1) 50%, transparent 52%);
+  background-size: 10px 10px;
+  opacity: 0.5;
+}
+
+.lantern-body::after {
+  content: '';
+  width: 70%;
+  height: 70%;
+  background: white;
+  opacity: 0.3;
+  filter: blur(8px);
+  border-radius: 50%;
+  animation: pulse-glow 2s ease-in-out infinite alternate;
+}
+
+.lantern-tassels {
+  display: flex;
+  gap: 3px;
+  margin-top: -5px;
+}
+
+.tassel {
+  width: 3px;
+  height: 40px;
+  background: var(--lantern-color, #ffeb3b);
+  opacity: 0.8;
+  border-radius: 0 0 2px 2px;
+  transform-origin: top center;
+  animation: tassel-sway 4s ease-in-out infinite;
+}
+
+.tassel:nth-child(2) { height: 50px; animation-delay: 0.2s; }
+.tassel:nth-child(3) { height: 40px; animation-delay: 0.4s; }
+
+@keyframes sway {
+  0%, 100% { transform: rotate(-8deg); }
+  50% { transform: rotate(8deg); }
+}
+
+@keyframes tassel-sway {
+  0%, 100% { transform: rotate(-15deg); }
+  50% { transform: rotate(15deg); }
+}
+
+@keyframes pulse-glow {
+  from { opacity: 0.2; transform: scale(0.8); }
+  to { opacity: 0.5; transform: scale(1.1); }
+}
+
+/* Colors for Buddhist Flag */
+.lantern.blue { --lantern-color: var(--buddhist-blue); filter: drop-shadow(0 0 15px rgba(0, 51, 173, 0.4)); }
+.lantern.yellow { --lantern-color: var(--buddhist-yellow); filter: drop-shadow(0 0 15px rgba(249, 215, 28, 0.4)); }
+.lantern.red { --lantern-color: var(--buddhist-red); filter: drop-shadow(0 0 15px rgba(255, 0, 0, 0.4)); }
+.lantern.white { --lantern-color: var(--buddhist-white); filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.4)); }
+.lantern.orange { --lantern-color: var(--buddhist-orange); filter: drop-shadow(0 0 15px rgba(255, 152, 0, 0.4)); }
+
+.lantern:nth-child(odd) { animation-delay: -1s; }
+.lantern:nth-child(3n) { animation-delay: -2.5s; }
+
+/* Moon */
+.vesak-moon {
+  position: absolute;
+  top: 40px;
+  right: 40px;
+  width: 100px;
+  height: 100px;
+  background: #fff;
+  border-radius: 50%;
+  box-shadow: 
+    0 0 40px rgba(255, 255, 255, 0.8), 
+    0 0 100px rgba(255, 255, 255, 0.4),
+    0 0 200px rgba(255, 255, 255, 0.2);
+  opacity: 0.95;
+  animation: moon-glow 5s ease-in-out infinite alternate;
+}
+
+@keyframes moon-glow {
+  from { box-shadow: 0 0 40px rgba(255, 255, 255, 0.8), 0 0 100px rgba(255, 255, 255, 0.4); }
+  to { box-shadow: 0 0 60px rgba(255, 255, 255, 0.9), 0 0 150px rgba(255, 255, 255, 0.6); }
+}
+
+.vesak-moon::before {
+  content: '';
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle at 30% 30%, rgba(255,255,255,1) 0%, rgba(240,240,240,0.5) 100%);
+  border-radius: 50%;
+}
+
+/* Petals / Falling lights */
+.petals {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.petal {
+  position: absolute;
+  background: #fff;
+  border-radius: 50% 0 50% 50%;
+  opacity: 0.3;
+  animation: fall linear infinite;
+}
+
+@keyframes fall {
+  to { transform: translateY(100vh) rotate(360deg); }
+}
+
+.vesak-ambient {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle at 50% 0%, rgba(255, 235, 59, 0.03) 0%, transparent 60%);
+  pointer-events: none;
+  z-index: 9998;
+}
+
+@media (max-width: 768px) {
+  .lantern:nth-child(n+5) { display: none; }
+  .lantern { width: 60px; }
+  .vesak-moon { width: 40px; height: 40px; top: 20px; right: 20px; }
+}
