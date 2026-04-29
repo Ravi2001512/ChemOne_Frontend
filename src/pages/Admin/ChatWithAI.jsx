@@ -99,9 +99,10 @@ const ChatWithAI = () => {
 
       setMessages((prev) => [...prev, aiMessage]);
     } catch (error) {
+      const errorMsg = error.response?.data?.reply || "Error: Unable to get response 😢";
       setMessages((prev) => [
         ...prev,
-        { role: "ai", text: "Error: Unable to get response 😢" },
+        { role: "ai", text: errorMsg },
       ]);
     }
 
