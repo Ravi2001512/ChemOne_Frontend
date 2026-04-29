@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Mail, Lock, ArrowRight, ArrowLeft, CheckCircle2 } from "lucide-react";
+import { Mail, Lock, ArrowLeft, CheckCircle2, RotateCcw } from "lucide-react";
 import API from "../services/api";
 
 const ForgotPassword = () => {
@@ -11,11 +11,23 @@ const ForgotPassword = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [resending, setResending] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [timer, setTimer] = useState(0);
   const navigate = useNavigate();
 
+  useEffect(() => {
+    let interval;
+    if (timer > 0) {
+      interval = setInterval(() => {
+        setTimer((prev) => prev - 1);
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [timer]);
+
   const handleSendOTP = async (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
     if (!email) {
       setError("Please enter your email address.");
       return;
@@ -28,15 +40,19 @@ const ForgotPassword = () => {
     
     try {
       setError("");
-      setLoading(true);
+      if (step === 1) setLoading(true);
+      else setResending(true);
+
       await API.post("/auth/forgot-password", { email });
       setStep(2);
+      setTimer(60); // 60 seconds cooldown
     } catch (err) {
       setError(
         err.response?.data?.message || "Failed to send reset link."
       );
     } finally {
       setLoading(false);
+      setResending(false);
     }
   };
 
@@ -62,7 +78,7 @@ const ForgotPassword = () => {
     try {
       setError("");
       setLoading(true);
-      const res = await API.post("/auth/reset-password", {
+      await API.post("/auth/reset-password", {
         email,
         otp,
         newPassword,
@@ -140,6 +156,7 @@ const ForgotPassword = () => {
                     onChange={(e) => setEmail(e.target.value)}
                     className="input-acid"
                     placeholder="you@example.com"
+                    autoComplete="email"
                     required
                   />
                 </div>
@@ -150,17 +167,35 @@ const ForgotPassword = () => {
                   <label className="font-mono text-[10px] font-semibold tracking-widest uppercase text-sub">
                     // security_otp
                   </label>
-                  <div className="relative group">
-                    <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-sub group-focus-within:text-acid transition-colors" />
-                    <input
-                      type="text"
-                      maxLength="6"
-                      value={otp}
-                      onChange={(e) => setOtp(e.target.value)}
-                      className="input-acid text-center tracking-[0.5em] font-mono"
-                      placeholder="000000"
-                      required
-                    />
+                  <div className="relative group flex flex-col gap-2">
+                    <div className="relative w-full">
+                      <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-sub group-focus-within:text-acid transition-colors" />
+                      <input
+                        type="text"
+                        maxLength="6"
+                        value={otp}
+                        onChange={(e) => setOtp(e.target.value)}
+                        className="input-acid text-center tracking-[0.5em] font-mono"
+                        placeholder="000000"
+                        autoComplete="one-time-code"
+                        required
+                      />
+                    </div>
+                    <div className="flex justify-end">
+                      <button
+                        type="button"
+                        onClick={() => handleSendOTP()}
+                        disabled={timer > 0 || resending}
+                        className="font-mono text-[9px] text-sub hover:text-acid disabled:text-sub/40 disabled:cursor-not-allowed transition-colors flex items-center gap-1.5 uppercase tracking-widest"
+                      >
+                        {resending ? (
+                          <span className="animate-spin-cw w-2.5 h-2.5 border-2 border-sub/25 border-t-sub rounded-full" />
+                        ) : (
+                          <RotateCcw className="w-2.5 h-2.5" />
+                        )}
+                        {timer > 0 ? `Resend in ${timer}s` : "Resend OTP"}
+                      </button>
+                    </div>
                   </div>
                 </div>
 
@@ -176,6 +211,7 @@ const ForgotPassword = () => {
                       onChange={(e) => setNewPassword(e.target.value)}
                       className="input-acid"
                       placeholder="Min 6 characters"
+                      autoComplete="new-password"
                       required
                     />
                   </div>
@@ -193,6 +229,7 @@ const ForgotPassword = () => {
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       className="input-acid"
                       placeholder="Repeat password"
+                      autoComplete="new-password"
                       required
                     />
                   </div>
