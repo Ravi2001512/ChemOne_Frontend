@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import AdminNavbar from "../../components/AdminNavbar";
 import API from "../../services/api";
 
@@ -13,9 +13,24 @@ const DailyWorksheet = () => {
     const [date, setDate] = useState(
         new Date().toISOString().split("T")[0]
     );
+    const [batch, setBatch] = useState("All");
+    const [availableBatches, setAvailableBatches] = useState([]);
     const [error, setError] = useState("");
 
     const inputRef = useRef();
+
+    useEffect(() => {
+        const fetchBatches = async () => {
+            try {
+                const res = await API.get("/auth/students");
+                const uniqueBatches = [...new Set(res.data.map(s => s.batch).filter(Boolean).sort())];
+                setAvailableBatches(uniqueBatches);
+            } catch (err) {
+                console.error("Failed to fetch batches:", err);
+            }
+        };
+        fetchBatches();
+    }, []);
 
     const today = new Date().toLocaleDateString("en-US", {
         weekday: "long",
@@ -71,6 +86,7 @@ const DailyWorksheet = () => {
         setSubmitted(false);
         setError("");
         setNotes("");
+        setBatch("All");
         if (inputRef.current) inputRef.current.value = "";
     };
 
@@ -82,6 +98,7 @@ const DailyWorksheet = () => {
         formData.append("file", file);
         formData.append("date", date);
         formData.append("notes", notes);
+        formData.append("batch", batch);
 
         try {
             setUploading(true);
@@ -148,11 +165,11 @@ const DailyWorksheet = () => {
         <div className="min-h-screen bg-blue-50 dark:bg-slate-950">
             <AdminNavbar />
 
-            <div className="min-h-screen bg-blue-50 dark:bg-slate-950 flex justify-center p-6">
-                <div className="bg-white dark:bg-slate-900/70 backdrop-blur-xl rounded-3xl w-full max-w-2xl shadow-2xl border border-white/50">
+            <div className="min-h-screen bg-blue-50 dark:bg-slate-950 flex justify-center p-4 sm:p-6">
+                <div className="bg-white dark:bg-slate-900/70 backdrop-blur-xl rounded-2xl sm:rounded-3xl w-full max-w-2xl shadow-2xl border border-white/50">
 
                     {/* HEADER */}
-                    <div className="p-8 border-b border-slate-200/50 bg-white rounded-t-3xl dark:bg-black">
+                    <div className="p-6 sm:p-8 border-b border-slate-200/50 bg-white rounded-t-2xl sm:rounded-t-3xl dark:bg-black">
                         <div className="flex items-center gap-3 mb-2">
                             <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg">
                                 <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -170,7 +187,7 @@ const DailyWorksheet = () => {
                         </div>
                     </div>
 
-                    <div className="p-8 space-y-6">
+                    <div className="p-6 sm:p-8 space-y-6">
 
                         {/* ERROR */}
                         {error && (
@@ -293,6 +310,21 @@ const DailyWorksheet = () => {
                             />
                         </div>
 
+                        {/* BATCH */}
+                        <div>
+                            <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Select Batch</label>
+                            <select
+                                value={batch}
+                                onChange={(e) => setBatch(e.target.value)}
+                                className="w-full border-2 border-slate-200 p-4 rounded-2xl focus:border-blue-400 focus:ring-4 focus:ring-blue-100/50 transition-all duration-200 shadow-sm dark:shadow-none hover:shadow-md bg-white dark:bg-slate-900/50 text-slate-700 dark:text-slate-300 appearance-none"
+                            >
+                                <option value="All">All Batches</option>
+                                {availableBatches.map(b => (
+                                    <option key={b} value={b}>{b}</option>
+                                ))}
+                            </select>
+                        </div>
+
                         {/* NOTES */}
                         <div>
                             <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Notes (optional)</label>
@@ -325,7 +357,7 @@ const DailyWorksheet = () => {
                                 {uploading ? (
                                     <>
                                         <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                        Uploading...
+                                        Uploading......
                                     </>
                                 ) : (
                                     <>

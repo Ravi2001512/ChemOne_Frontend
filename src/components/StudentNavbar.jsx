@@ -55,7 +55,7 @@ const StudentNavbar = () => {
     });
 
     return (
-        <nav className="bg-ink border-b border-white/5 sticky top-0 z-50 backdrop-blur-md">
+        <nav className="bg-ink/90 border-b border-white/5 sticky top-0 z-50 backdrop-blur-md">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex justify-between h-16">
                     <div className="flex items-center">
@@ -66,7 +66,7 @@ const StudentNavbar = () => {
                             <div className="w-9 h-9 rounded-xl bg-acid flex items-center justify-center shadow-lg shadow-acid/20">
                                 <img src="/logo.png" alt="ChemOne Logo" />
                             </div>
-                            <span className="ml-3 font-bebas text-xl sm:text-2xl text-white tracking-wider whitespace-nowrap">
+                            <span className="ml-3 font-bebas text-xl sm:text-2xl text-white tracking-wider whitespace-nowrap drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]">
                                 ChemBridge
                             </span>
                         </div>
@@ -82,10 +82,10 @@ const StudentNavbar = () => {
                                         to={item.path}
                                         className={`inline-flex items-center px-1 pt-1 border-b-2 text-[13px] font-mono tracking-wider uppercase transition-all duration-200 ${isActive
                                             ? 'border-acid text-acid'
-                                            : 'border-transparent text-sub hover:border-white/20 hover:text-white'
+                                            : 'border-transparent text-slate-400 hover:border-white/40 hover:text-white'
                                             }`}
                                     >
-                                        <Icon className={`w-3.5 h-3.5 mr-2 ${isActive ? 'text-acid' : 'text-sub'}`} />
+                                        <Icon className={`w-3.5 h-3.5 mr-2 ${isActive ? 'text-acid' : 'text-slate-400'}`} />
                                         {item.name}
                                     </Link>
                                 );
@@ -96,7 +96,7 @@ const StudentNavbar = () => {
                     <div className="hidden md:flex md:items-center md:gap-4">
                         <button
                             onClick={toggleDarkMode}
-                            className="p-2 rounded-lg text-sub hover:text-acid transition-colors"
+                            className="p-2 rounded-lg text-slate-400 hover:text-acid transition-colors"
                             title="Toggle Dark Mode"
                         >
                             {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
@@ -113,13 +113,13 @@ const StudentNavbar = () => {
                     <div className="flex md:hidden items-center gap-2">
                         <button
                             onClick={toggleDarkMode}
-                            className="p-2 rounded-lg text-sub hover:text-acid"
+                            className="p-2 rounded-lg text-slate-400 hover:text-acid"
                         >
                             {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
                         </button>
                         <button
                             onClick={() => setIsMenuOpen(!isMenuOpen)}
-                            className="p-2 rounded-lg text-sub hover:bg-white/5 focus:outline-none"
+                            className="p-2 rounded-lg text-slate-400 hover:bg-white/5 focus:outline-none"
                         >
                             {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
                         </button>
@@ -141,10 +141,10 @@ const StudentNavbar = () => {
                                     onClick={() => setIsMenuOpen(false)}
                                     className={`flex items-center px-3 py-3 rounded-xl text-sm font-mono tracking-widest uppercase transition-colors ${isActive
                                         ? 'bg-acid/10 text-acid'
-                                        : 'text-sub hover:bg-white/5 hover:text-white'
+                                        : 'text-slate-400 hover:bg-white/5 hover:text-white'
                                         }`}
                                 >
-                                    <Icon className={`w-4 h-4 mr-3 ${isActive ? 'text-acid' : 'text-sub'}`} />
+                                    <Icon className={`w-4 h-4 mr-3 ${isActive ? 'text-acid' : 'text-slate-400'}`} />
                                     {item.name}
                                 </Link>
                             );

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import AdminNavbar from "../../components/AdminNavbar";
-import axios from "axios";
+import API from "../../services/api";
 
 /* ─── Theme Token Helper ─────────────────────────────────────── */
 const getTokens = (dark) => ({
@@ -88,7 +88,7 @@ const ChatWithAI = () => {
     setLoading(true);
 
     try {
-      const res = await axios.post("http://localhost:5000/api/chat", {
+      const res = await API.post("/chat", {
         message: input,
       });
 

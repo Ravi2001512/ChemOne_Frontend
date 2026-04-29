@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ClipboardList,
@@ -8,44 +8,9 @@ import {
   Settings,
   Gamepad2,
   ArrowRight,
-  Atom,
-  Zap,
-  TrendingUp,
   ExternalLink,
 } from 'lucide-react';
 import StudentNavbar from '../../components/StudentNavbar';
-
-/* ─── Theme Token Helper ─────────────────────────────────────── */
-const getTokens = (dark) => ({
-  // backgrounds
-  pageBg: dark ? '#0a0a0a' : '#f1f5f9',
-  heroBg: dark ? 'linear-gradient(135deg,#111 0%,#181818 100%)' : 'linear-gradient(135deg,#fff 0%,#f8fafc 100%)',
-  heroBorder: dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)',
-  cardBg: dark ? '#111111' : '#ffffff',
-  cardBgHov: dark ? '#141414' : '#f8faff',
-  cardBorder: dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.08)',
-  statBg: dark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)',
-  statBorder: dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.07)',
-  divider: dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.07)',
-  // text
-  heading: dark ? '#ffffff' : '#0f172a',
-  headingHov: dark ? '#ffffff' : '#1e293b',
-  body: dark ? '#666666' : '#64748b',
-  bodyHov: dark ? '#888888' : '#475569',
-  label: dark ? '#555555' : '#94a3b8',
-  statLabel: dark ? '#888888' : '#64748b',
-  statValue: dark ? '#ffffff' : '#0f172a',
-  // accent (acid-green in dark, indigo in light)
-  accent: dark ? '#c8f230' : '#6366f1',
-  accentBg: dark ? 'rgba(200,242,48,0.10)' : 'rgba(99,102,241,0.08)',
-  accentGlow: dark ? 'rgba(200,242,48,0.30)' : 'rgba(99,102,241,0.20)',
-  accentText: dark ? '#0a0a0a' : '#ffffff',
-  tag: dark ? '#c8f230' : '#6366f1',
-  tagBg: dark ? 'rgba(200,242,48,0.10)' : 'rgba(99,102,241,0.08)',
-  tagBorder: dark ? 'rgba(200,242,48,0.25)' : 'rgba(99,102,241,0.25)',
-  glow: dark ? 'radial-gradient(circle,rgba(200,242,48,0.12) 0%,transparent 70%)'
-    : 'radial-gradient(circle,rgba(99,102,241,0.12) 0%,transparent 70%)',
-});
 
 /* ─── Main Component ──────────────────────────────────────────── */
 const StudentDashboard = () => {
@@ -53,21 +18,6 @@ const StudentDashboard = () => {
   const [userRole, setUserRole] = useState(null);
   const [userName, setUserName] = useState('');
   const [mounted, setMounted] = useState(false);
-  const [isDark, setIsDark] = useState(
-    () => document.documentElement.classList.contains('dark')
-  );
-
-  /* Watch for theme toggles (the navbar toggles .dark on <html>) */
-  useEffect(() => {
-    const observer = new MutationObserver(() => {
-      setIsDark(document.documentElement.classList.contains('dark'));
-    });
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ['class'],
-    });
-    return () => observer.disconnect();
-  }, []);
 
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
@@ -81,16 +31,13 @@ const StudentDashboard = () => {
     requestAnimationFrame(() => setMounted(true));
   }, []);
 
-  const t = getTokens(isDark);
-
   const dashboardCards = [
     {
       title: 'Spot Tests',
       description: 'Access your assigned spot tests and timed assessments',
       icon: ClipboardList,
       onClick: () => navigate('/student/spot-test'),
-      accent: '#6366f1',
-      glowColor: 'rgba(99,102,241,0.25)',
+      color: 'indigo',
       tag: 'Assessment',
     },
     {
@@ -98,8 +45,7 @@ const StudentDashboard = () => {
       description: "Today's worksheet — complete and submit your answers",
       icon: BookOpen,
       onClick: () => navigate('/student/daily-worksheet'),
-      accent: '#10b981',
-      glowColor: 'rgba(16,185,129,0.25)',
+      color: 'emerald',
       tag: 'Practice',
     },
     {
@@ -107,8 +53,7 @@ const StudentDashboard = () => {
       description: 'View class exam history and leaderboard rankings',
       icon: Award,
       onClick: () => navigate('/student/results'),
-      accent: '#f43f5e',
-      glowColor: 'rgba(244,63,94,0.25)',
+      color: 'rose',
       tag: 'Results',
     },
     {
@@ -116,8 +61,7 @@ const StudentDashboard = () => {
       description: 'Get instant help from your AI chemistry tutor',
       icon: Bot,
       onClick: () => navigate('/student/ai-chatbot'),
-      accent: '#0ea5e9',
-      glowColor: 'rgba(14,165,233,0.25)',
+      color: 'sky',
       tag: 'AI Tutor',
     },
     {
@@ -125,8 +69,7 @@ const StudentDashboard = () => {
       description: 'Manage your profile and account preferences',
       icon: Settings,
       onClick: () => navigate('/settings'),
-      accent: '#8b5cf6',
-      glowColor: 'rgba(139,92,246,0.25)',
+      color: 'violet',
       tag: 'Account',
     },
     {
@@ -134,8 +77,7 @@ const StudentDashboard = () => {
       description: 'Take a break and play chemistry-themed mini-games',
       icon: Gamepad2,
       onClick: () => navigate('/student/games'),
-      accent: '#f59e0b',
-      glowColor: 'rgba(245,158,11,0.25)',
+      color: 'amber',
       tag: 'Games',
     },
   ];
@@ -148,95 +90,30 @@ const StudentDashboard = () => {
   });
 
   return (
-    <div
-      style={{
-        minHeight: '100vh',
-        background: t.pageBg,
-        transition: 'background 0.3s ease',
-      }}
-    >
+    <div className="min-h-screen bg-slate-50 dark:bg-ink transition-colors duration-300">
       <StudentNavbar />
 
       <main
-        style={{
-          maxWidth: '1280px',
-          margin: '0 auto',
-          padding: '2.5rem 1.5rem',
-          opacity: mounted ? 1 : 0,
-          transform: mounted ? 'translateY(0)' : 'translateY(16px)',
-          transition: 'opacity 0.5s ease, transform 0.5s ease',
-        }}
+        className={`max-w-7xl mx-auto px-6 py-10 transition-all duration-500 ease-out ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
+          }`}
       >
         {/* ── HERO BANNER ─────────────────────────────────────── */}
-        <div
-          style={{
-            position: 'relative',
-            borderRadius: '20px',
-            overflow: 'hidden',
-            marginBottom: '2.5rem',
-            background: t.heroBg,
-            border: `1px solid ${t.heroBorder}`,
-            padding: '2.5rem 2rem',
-            boxShadow: isDark ? 'none' : '0 4px 24px rgba(0,0,0,0.06)',
-            transition: 'background 0.3s ease, border-color 0.3s ease',
-          }}
-        >
+        <div className="relative rounded-[24px] overflow-hidden mb-10 bg-white dark:bg-ink-lighter border border-black/5 dark:border-white/10 p-8 md:p-12 shadow-sm dark:shadow-none transition-all duration-300">
           {/* Decorative glow blob */}
-          <div
-            style={{
-              position: 'absolute',
-              top: '-60px',
-              right: '-60px',
-              width: '260px',
-              height: '260px',
-              borderRadius: '50%',
-              background: t.glow,
-              pointerEvents: 'none',
-            }}
-          />
+          <div className="absolute -top-16 -right-16 w-64 h-64 rounded-full bg-indigo-500/10 dark:bg-acid/10 blur-3xl pointer-events-none" />
 
-          <div style={{ position: 'relative', zIndex: 1 }}>
-            <p
-              style={{
-                fontFamily: "'JetBrains Mono', monospace",
-                fontSize: '11px',
-                letterSpacing: '0.2em',
-                textTransform: 'uppercase',
-                color: t.accent,
-                marginBottom: '0.5rem',
-                transition: 'color 0.3s ease',
-              }}
-            >
+          <div className="relative z-10">
+            <p className="font-mono text-[11px] tracking-[0.2em] uppercase text-indigo-600 dark:text-acid mb-3 transition-colors duration-300">
               // Student Portal
             </p>
-            <h1
-              style={{
-                fontFamily: "'Space Grotesk', sans-serif",
-                fontSize: 'clamp(1.75rem, 4vw, 2.75rem)',
-                fontWeight: 800,
-                color: t.heading,
-                lineHeight: 1.15,
-                marginBottom: '0.75rem',
-                transition: 'color 0.3s ease',
-              }}
-            >
+            <h1 className="font-grotesk text-4xl md:text-5xl font-extrabold text-slate-900 dark:text-white leading-tight mb-4 transition-colors duration-300">
               Welcome back,{' '}
-              <span style={{ color: t.accent, transition: 'color 0.3s ease' }}>
+              <span className="text-indigo-600 dark:text-acid transition-colors duration-300">
                 {userName || 'Student'}
               </span>{' '}
               👋
             </h1>
-            <p
-              style={{
-                fontFamily: "'Space Grotesk', sans-serif",
-                fontSize: '1rem',
-                color: t.body,
-                maxWidth: '520px',
-                lineHeight: 1.6,
-                marginBottom: '1.75rem',
-                transition: 'color 0.3s ease',
-              }}
-            >
+            <p className="font-grotesk text-lg text-slate-600 dark:text-zinc-400 max-w-2xl leading-relaxed mb-8 transition-colors duration-300">
               Ready to continue your chemistry journey? Jump into your latest
               test, practice with worksheets, and track your progress.
             </p>
@@ -249,79 +126,26 @@ const StudentDashboard = () => {
                   '_blank'
                 )
               }
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '8px',
-                padding: '0.7rem 1.4rem',
-                background: t.accent,
-                color: t.accentText,
-                border: 'none',
-                borderRadius: '10px',
-                fontFamily: "'Space Grotesk', sans-serif",
-                fontWeight: 700,
-                fontSize: '0.875rem',
-                cursor: 'pointer',
-                transition: 'transform 0.2s ease, box-shadow 0.2s ease, background 0.3s ease',
-                boxShadow: `0 0 20px ${t.accentGlow}`,
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = 'translateY(-2px)';
-                e.currentTarget.style.boxShadow = `0 0 32px ${t.accentGlow}`;
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = `0 0 20px ${t.accentGlow}`;
-              }}
+              className="inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 dark:bg-acid text-white dark:text-ink rounded-xl font-grotesk font-bold text-sm transition-all duration-200 hover:-translate-y-0.5 shadow-lg shadow-indigo-600/20 dark:shadow-acid/20"
             >
-              <ExternalLink size={15} />
+              <ExternalLink size={16} />
               View VSPER 3D Structures
             </button>
           </div>
         </div>
 
         {/* ── SECTION LABEL ───────────────────────────────────── */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '12px',
-            marginBottom: '1.5rem',
-          }}
-        >
-          <p
-            style={{
-              fontFamily: "'JetBrains Mono', monospace",
-              fontSize: '11px',
-              letterSpacing: '0.18em',
-              textTransform: 'uppercase',
-              color: t.label,
-              whiteSpace: 'nowrap',
-              transition: 'color 0.3s ease',
-            }}
-          >
+        <div className="flex items-center gap-4 mb-8">
+          <p className="font-mono text-[11px] tracking-[0.18em] uppercase text-slate-400 dark:text-zinc-500 whitespace-nowrap transition-colors duration-300">
             // Quick Actions
           </p>
-          <div
-            style={{
-              flex: 1,
-              height: '1px',
-              background: t.divider,
-              transition: 'background 0.3s ease',
-            }}
-          />
+          <div className="flex-1 h-px bg-slate-200 dark:bg-white/10 transition-colors duration-300" />
         </div>
 
         {/* ── ACTION CARDS ─────────────────────────────────────── */}
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(3, 1fr)',
-            gap: '1.25rem',
-          }}
-        >
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredCards.map((card, index) => (
-            <ActionCard key={index} card={card} index={index} tokens={t} isDark={isDark} />
+            <ActionCard key={index} card={card} />
           ))}
         </div>
       </main>
@@ -330,78 +154,39 @@ const StudentDashboard = () => {
 };
 
 /* ─── Individual Card Component ───────────────────────────────── */
-const ActionCard = ({ card, index, tokens: t, isDark }) => {
-  const [hovered, setHovered] = useState(false);
+const ActionCard = ({ card }) => {
   const Icon = card.icon;
+
+  const colorConfig = {
+    indigo: 'text-indigo-500 bg-indigo-500/10 border-indigo-500/20 shadow-indigo-500/10',
+    emerald: 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20 shadow-emerald-500/10',
+    rose: 'text-rose-500 bg-rose-500/10 border-rose-500/20 shadow-rose-500/10',
+    sky: 'text-sky-500 bg-sky-500/10 border-sky-500/20 shadow-sky-500/10',
+    violet: 'text-violet-500 bg-violet-500/10 border-violet-500/20 shadow-violet-500/10',
+    amber: 'text-amber-500 bg-amber-500/10 border-amber-500/20 shadow-amber-500/10',
+  };
+
+  const config = colorConfig[card.color] || colorConfig.indigo;
 
   return (
     <div
       onClick={card.onClick}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      style={{
-        position: 'relative',
-        background: hovered ? t.cardBgHov : t.cardBg,
-        border: hovered
-          ? `1px solid ${card.accent}55`
-          : `1px solid ${t.cardBorder}`,
-        borderRadius: '16px',
-        padding: '1.5rem',
-        cursor: 'pointer',
-        overflow: 'hidden',
-        transition: 'all 0.25s ease',
-        transform: hovered ? 'translateY(-4px)' : 'translateY(0)',
-        boxShadow: hovered
-          ? `0 12px 40px ${card.glowColor}`
-          : isDark
-            ? 'none'
-            : '0 2px 12px rgba(0,0,0,0.05)',
-      }}
+      className="group relative bg-white dark:bg-ink-lighter border border-slate-200 dark:border-white/5 rounded-2xl p-6 cursor-pointer overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-xl dark:hover:shadow-none hover:border-indigo-500/30 dark:hover:border-acid/30"
     >
       {/* Top accent bar */}
       <div
-        style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          height: '3px',
-          background: `linear-gradient(90deg, ${card.accent}, transparent)`,
-          opacity: hovered ? 1 : 0.4,
-          transition: 'opacity 0.25s ease',
-        }}
+        className={`absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-current to-transparent opacity-40 group-hover:opacity-100 transition-opacity duration-300 ${config.split(' ')[0]}`}
       />
 
       {/* Background glow on hover */}
       <div
-        style={{
-          position: 'absolute',
-          top: '-40px',
-          right: '-40px',
-          width: '120px',
-          height: '120px',
-          borderRadius: '50%',
-          background: `radial-gradient(circle, ${card.glowColor} 0%, transparent 70%)`,
-          opacity: hovered ? 1 : 0,
-          transition: 'opacity 0.3s ease',
-          pointerEvents: 'none',
-        }}
+        className={`absolute -top-10 -right-10 w-32 h-32 rounded-full blur-2xl opacity-0 group-hover:opacity-20 transition-opacity duration-500 pointer-events-none bg-current ${config.split(' ')[0]}`}
       />
 
       {/* Tag badge */}
-      <div style={{ marginBottom: '1rem' }}>
+      <div className="mb-4">
         <span
-          style={{
-            fontFamily: "'JetBrains Mono', monospace",
-            fontSize: '10px',
-            letterSpacing: '0.15em',
-            textTransform: 'uppercase',
-            color: card.accent,
-            background: `${card.accent}18`,
-            border: `1px solid ${card.accent}33`,
-            padding: '2px 8px',
-            borderRadius: '4px',
-          }}
+          className={`font-mono text-[10px] tracking-widest uppercase px-2 py-1 rounded-md border ${config}`}
         >
           {card.tag}
         </span>
@@ -409,68 +194,27 @@ const ActionCard = ({ card, index, tokens: t, isDark }) => {
 
       {/* Icon */}
       <div
-        style={{
-          width: '48px',
-          height: '48px',
-          borderRadius: '12px',
-          background: `${card.accent}18`,
-          border: `1px solid ${card.accent}33`,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          marginBottom: '1rem',
-          transition: 'transform 0.25s ease',
-          transform: hovered ? 'scale(1.1)' : 'scale(1)',
-        }}
+        className={`w-12 h-12 rounded-xl border flex items-center justify-center mb-4 transition-transform duration-300 group-hover:scale-110 ${config}`}
       >
-        <Icon size={22} style={{ color: card.accent }} />
+        <Icon size={22} />
       </div>
 
       {/* Title */}
-      <h3
-        style={{
-          fontFamily: "'Space Grotesk', sans-serif",
-          fontSize: '1.05rem',
-          fontWeight: 700,
-          color: hovered ? t.headingHov : t.heading,
-          marginBottom: '0.4rem',
-          transition: 'color 0.2s ease',
-        }}
-      >
+      <h3 className="font-grotesk text-lg font-bold text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-acid transition-colors duration-200 mb-1.5">
         {card.title}
       </h3>
 
       {/* Description */}
-      <p
-        style={{
-          fontFamily: "'Space Grotesk', sans-serif",
-          fontSize: '0.825rem',
-          color: hovered ? t.bodyHov : t.body,
-          lineHeight: 1.55,
-          marginBottom: '1.25rem',
-          transition: 'color 0.2s ease',
-        }}
-      >
+      <p className="font-grotesk text-sm text-slate-500 dark:text-zinc-400 leading-relaxed mb-6 transition-colors duration-200">
         {card.description}
       </p>
 
       {/* Footer link */}
       <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: hovered ? '10px' : '6px',
-          fontFamily: "'JetBrains Mono', monospace",
-          fontSize: '11px',
-          letterSpacing: '0.08em',
-          textTransform: 'uppercase',
-          color: card.accent,
-          opacity: hovered ? 1 : 0.6,
-          transition: 'opacity 0.2s ease, gap 0.2s ease',
-        }}
+        className={`flex items-center gap-2 font-mono text-[11px] tracking-widest uppercase transition-all duration-300 group-hover:gap-3 ${config.split(' ')[0]}`}
       >
-        Open
-        <ArrowRight size={13} />
+        <span>Open</span>
+        <ArrowRight size={14} />
       </div>
     </div>
   );

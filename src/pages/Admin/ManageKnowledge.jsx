@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import AdminNavbar from "../../components/AdminNavbar";
-import axios from "axios";
+import API from "../../services/api";
 import { 
   FiUploadCloud, 
   FiTrash2, 
@@ -19,10 +19,7 @@ const ManageKnowledge = () => {
 
   const fetchKnowledge = async () => {
     try {
-      const token = localStorage.getItem("token");
-      const res = await axios.get("http://localhost:5000/api/admin/knowledge", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await API.get("/admin/knowledge");
       setFiles(res.data.data);
     } catch (error) {
       console.error("Error fetching knowledge base:", error);
@@ -83,10 +80,8 @@ const ManageKnowledge = () => {
     formData.append("pdf", file);
 
     try {
-      const token = localStorage.getItem("token");
-      await axios.post("http://localhost:5000/api/admin/ingest-pdf", formData, {
+      await API.post("/admin/ingest-pdf", formData, {
         headers: { 
-          Authorization: `Bearer ${token}`,
           "Content-Type": "multipart/form-data"
         },
       });
@@ -103,10 +98,7 @@ const ManageKnowledge = () => {
     if (!window.confirm("Are you sure you want to delete this knowledge source?")) return;
 
     try {
-      const token = localStorage.getItem("token");
-      await axios.delete(`http://localhost:5000/api/admin/knowledge/${id}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      await API.delete(`/admin/knowledge/${id}`);
       setFiles(files.filter(f => f._id !== id));
     } catch (error) {
       console.error("Delete error:", error);
@@ -143,7 +135,7 @@ const ManageKnowledge = () => {
 
         {/* Upload Section */}
         <div 
-          className={`relative border-2 border-dashed rounded-2xl p-12 text-center transition-all ${
+          className={`relative border-2 border-dashed rounded-2xl p-6 sm:p-12 text-center transition-all ${
             dragActive ? "border-indigo-500 bg-indigo-50" : "border-gray-300 bg-white"
           } mb-8`}
           onDragEnter={handleDrag}

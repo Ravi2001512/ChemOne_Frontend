@@ -9,6 +9,7 @@ const ManageDailyWorksheet = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const [searchTerm, setSearchTerm] = useState("");
+    const [selectedBatch, setSelectedBatch] = useState("All Batches");
     const [selectedWorksheet, setSelectedWorksheet] = useState(null);
     const [submissions, setSubmissions] = useState([]);
     const [loadingSubmissions, setLoadingSubmissions] = useState(false);
@@ -90,14 +91,18 @@ const ManageDailyWorksheet = () => {
         fetchWorksheets();
     }, []);
 
+    const batches = ["All Batches", ...new Set(worksheets.map(ws => ws.batch || "All").sort())];
+
     // Filter Logic
     const filteredWorksheets = worksheets.filter((ws) => {
         const term = searchTerm.toLowerCase();
-        return (
-            ws.fileName?.toLowerCase().includes(term) ||
+        const matchesSearch = ws.fileName?.toLowerCase().includes(term) ||
             ws.date?.includes(term) ||
-            ws.notes?.toLowerCase().includes(term)
-        );
+            ws.notes?.toLowerCase().includes(term);
+        const wsBatch = ws.batch || "All";
+        const matchesBatch = selectedBatch === "All Batches" || wsBatch === selectedBatch;
+        
+        return matchesSearch && matchesBatch;
     });
 
     // Delete Logic
@@ -154,19 +159,32 @@ const ManageDailyWorksheet = () => {
                         <p className="text-slate-500 mt-2 text-lg">View, search, and manage uploaded daily worksheets.</p>
                     </div>
 
-                    <div className="w-full md:w-96 relative">
-                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                            <svg className="h-5 w-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                            </svg>
+                    <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+                        <div className="w-full sm:w-48">
+                            <select
+                                value={selectedBatch}
+                                onChange={(e) => setSelectedBatch(e.target.value)}
+                                className="w-full px-4 py-3.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 rounded-2xl text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium appearance-none"
+                            >
+                                {batches.map(b => (
+                                    <option key={b} value={b}>{b}</option>
+                                ))}
+                            </select>
                         </div>
-                        <input
-                            type="text"
-                            placeholder="Search by name, date or notes..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-11 pr-4 py-3.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 rounded-2xl text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium"
-                        />
+                        <div className="w-full sm:w-80 relative">
+                            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                <svg className="h-5 w-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                </svg>
+                            </div>
+                            <input
+                                type="text"
+                                placeholder="Search name, date, notes..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="w-full pl-11 pr-4 py-3.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 rounded-2xl text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium"
+                            />
+                        </div>
                     </div>
                 </div>
 
@@ -212,6 +230,9 @@ const ManageDailyWorksheet = () => {
                                                 </h3>
                                                 <p className="text-sm font-medium text-slate-500 bg-slate-50 dark:bg-slate-950 inline-block px-3 py-1 rounded-lg">
                                                     {formatDate(ws.date)}
+                                                </p>
+                                                <p className="text-xs font-bold text-blue-600 bg-blue-50 dark:bg-blue-900/30 inline-block px-2 py-1 rounded-md ml-2 uppercase tracking-wide">
+                                                    Batch: {ws.batch || "All"}
                                                 </p>
                                             </div>
                                             <div className="w-12 h-12 bg-red-50 text-red-500 rounded-2xl flex items-center justify-center flex-shrink-0 group-hover:scale-110 group-hover:bg-red-500 group-hover:text-white transition-all duration-300">
