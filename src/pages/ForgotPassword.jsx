@@ -156,6 +156,7 @@ const ForgotPassword = () => {
                     onChange={(e) => setEmail(e.target.value)}
                     className="input-acid"
                     placeholder="you@example.com"
+                    autoComplete="email"
                     required
                   />
                 </div>
@@ -176,6 +177,7 @@ const ForgotPassword = () => {
                         onChange={(e) => setOtp(e.target.value)}
                         className="input-acid text-center tracking-[0.5em] font-mono"
                         placeholder="000000"
+                        autoComplete="one-time-code"
                         required
                       />
                     </div>
@@ -209,6 +211,7 @@ const ForgotPassword = () => {
                       onChange={(e) => setNewPassword(e.target.value)}
                       className="input-acid"
                       placeholder="Min 6 characters"
+                      autoComplete="new-password"
                       required
                     />
                   </div>
@@ -226,6 +229,7 @@ const ForgotPassword = () => {
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       className="input-acid"
                       placeholder="Repeat password"
+                      autoComplete="new-password"
                       required
                     />
                   </div>
