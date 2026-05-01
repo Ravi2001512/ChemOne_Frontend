@@ -47,10 +47,11 @@ const getTokens = (dark) => ({
   scrollTrack: dark ? "transparent" : "transparent",
 });
 
+const defaultMessages = [{ role: "ai", text: "Hello 👋.., How Can I Help You ....😊" }];
+
 const ChatWithAI = () => {
-  const [messages, setMessages] = useState([
-    { role: "ai", text: "Hello 👋.., How Can I Help You ....😊" },
-  ]);
+  const [chats, setChats] = useState([]);
+  const [currentChatId, setCurrentChatId] = useState(null);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [isDark, setIsDark] = useState(
@@ -59,7 +60,7 @@ const ChatWithAI = () => {
 
   const chatEndRef = useRef(null);
 
-  /* Watch for theme toggles (the navbar toggles .dark on <html>) */
+  /* Watch for theme toggles */
   useEffect(() => {
     const observer = new MutationObserver(() => {
       setIsDark(document.documentElement.classList.contains("dark"));
@@ -71,7 +72,34 @@ const ChatWithAI = () => {
     return () => observer.disconnect();
   }, []);
 
-  // ✅ Auto scroll
+  // Load chats from localStorage
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("chemOneAdminChats");
+      if (saved) {
+        let parsed = JSON.parse(saved);
+        // Keep chats from the last 24 hours
+        const now = Date.now();
+        parsed = parsed.filter(c => now - c.timestamp < 86400000);
+        setChats(parsed);
+        if (parsed.length > 0) {
+          setCurrentChatId(parsed[0].id);
+        }
+      }
+    } catch (e) {
+      console.error("Failed to load chats", e);
+    }
+  }, []);
+
+  // Save chats to localStorage whenever they update
+  useEffect(() => {
+    localStorage.setItem("chemOneAdminChats", JSON.stringify(chats));
+  }, [chats]);
+
+  const currentChat = chats.find(c => c.id === currentChatId);
+  const messages = currentChat ? currentChat.messages : defaultMessages;
+
+  // Auto scroll
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading]);
@@ -81,15 +109,44 @@ const ChatWithAI = () => {
   const handleSend = async () => {
     if (!input.trim()) return;
 
-    const userMessage = { role: "user", text: input };
+    let chatId = currentChatId;
+    let newChats = [...chats];
+    let chatIndex = newChats.findIndex(c => c.id === chatId);
 
-    setMessages((prev) => [...prev, userMessage]);
+    const userMessage = { role: "user", text: input };
+    const currentInput = input;
+    
     setInput("");
     setLoading(true);
 
+    if (chatIndex === -1) {
+      // Create new chat
+      chatId = Date.now().toString();
+      const title = currentInput.split(" ").slice(0, 4).join(" ") + (currentInput.length > 20 ? "..." : "");
+      const newChat = {
+        id: chatId,
+        title: title || "New Chat",
+        timestamp: Date.now(),
+        messages: [...defaultMessages, userMessage]
+      };
+      newChats.unshift(newChat);
+      setCurrentChatId(chatId);
+      chatIndex = 0;
+    } else {
+      newChats[chatIndex].messages.push(userMessage);
+      newChats[chatIndex].timestamp = Date.now();
+      // Move to top if it's not already
+      if (chatIndex > 0) {
+        const [movedChat] = newChats.splice(chatIndex, 1);
+        newChats.unshift(movedChat);
+      }
+    }
+
+    setChats(newChats);
+
     try {
       const res = await API.post("/chat", {
-        message: input,
+        message: currentInput,
       });
 
       const aiMessage = {
@@ -97,16 +154,31 @@ const ChatWithAI = () => {
         text: res.data.reply,
       };
 
-      setMessages((prev) => [...prev, aiMessage]);
+      setChats(prev => {
+        const updated = [...prev];
+        const idx = updated.findIndex(c => c.id === chatId);
+        if (idx !== -1) {
+          updated[idx].messages.push(aiMessage);
+        }
+        return updated;
+      });
     } catch (error) {
       const errorMsg = error.response?.data?.reply || "Error: Unable to get response 😢";
-      setMessages((prev) => [
-        ...prev,
-        { role: "ai", text: errorMsg },
-      ]);
+      setChats(prev => {
+        const updated = [...prev];
+        const idx = updated.findIndex(c => c.id === chatId);
+        if (idx !== -1) {
+          updated[idx].messages.push({ role: "ai", text: errorMsg });
+        }
+        return updated;
+      });
     }
 
     setLoading(false);
+  };
+
+  const handleNewChat = () => {
+    setCurrentChatId(null);
   };
 
   // 🧪 Loader (while AI thinking)
@@ -224,9 +296,12 @@ const ChatWithAI = () => {
   return (
     <div
       style={{
-        minHeight: "100vh",
+        height: "100vh",
+        display: "flex",
+        flexDirection: "column",
         background: t.pageBg,
         transition: "background 0.3s ease",
+        overflow: "hidden",
       }}
     >
       <AdminNavbar />
@@ -265,188 +340,309 @@ const ChatWithAI = () => {
         }
       `}</style>
 
-      <div
-        style={{
-          maxWidth: "56rem",
-          margin: "0 auto",
-          padding: "1rem",
-          display: "flex",
-          flexDirection: "column",
-          height: "90vh",
-        }}
-      >
-        {/* Header */}
-        <div style={{ marginBottom: "1rem" }}>
-          <h1
-            style={{
-              fontFamily: "'Space Grotesk', sans-serif",
-              fontSize: "1.5rem",
-              fontWeight: 800,
-              color: t.headerText,
-              transition: "color 0.3s ease",
-            }}
-          >
-            ChemFriend 😊
-          </h1>
-          <p
-            style={{
-              fontFamily: "'Space Grotesk', sans-serif",
-              fontSize: "0.8rem",
-              color: t.headerSub,
-              marginTop: "0.15rem",
-              transition: "color 0.3s ease",
-            }}
-          >
-            Your AI chemistry assistant — ask anything!
-          </p>
-        </div>
-
-        {/* Chat Box */}
+      {/* Main Container */}
+      <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
+        
+        {/* Sidebar */}
         <div
           className="chat-scrollbar"
           style={{
-            flex: 1,
-            overflowY: "auto",
-            background: t.chatBg,
-            border: `1px solid ${t.chatBorder}`,
-            borderRadius: "16px",
-            boxShadow: t.chatShadow,
-            padding: "1.25rem",
+            width: "260px",
+            minWidth: "260px",
+            background: isDark ? "#121212" : "#f1f5f9",
+            borderRight: `1px solid ${t.chatBorder}`,
             display: "flex",
             flexDirection: "column",
-            gap: "0.75rem",
-            transition: "background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease",
+            overflowY: "auto",
+            transition: "background 0.3s ease, border-color 0.3s ease",
           }}
         >
-          {/* 🧑‍🔬 Show animation if no conversation */}
-          {messages.length === 1 && !loading ? (
-            <ChemistryAnimation />
-          ) : (
-            <>
-              {messages.map((msg, index) => (
+          <div style={{ padding: "1.25rem" }}>
+            <button
+              onClick={handleNewChat}
+              style={{
+                width: "100%",
+                background: t.sendBg,
+                color: t.sendText,
+                border: "none",
+                borderRadius: "8px",
+                padding: "0.75rem",
+                fontFamily: "'Space Grotesk', sans-serif",
+                fontWeight: 700,
+                fontSize: "0.875rem",
+                cursor: "pointer",
+                marginBottom: "1.5rem",
+                transition: "all 0.2s ease",
+                boxShadow: t.sendShadow,
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = t.sendHoverBg;
+                e.currentTarget.style.transform = "translateY(-1px)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = t.sendBg;
+                e.currentTarget.style.transform = "translateY(0)";
+              }}
+            >
+              + New Chat
+            </button>
+
+            <div style={{ 
+              display: "flex", 
+              alignItems: "center", 
+              color: isDark ? "#ffffff" : "#0f172a",
+              fontWeight: 600, 
+              fontSize: "0.9rem",
+              marginBottom: "1rem",
+              fontFamily: "'Space Grotesk', sans-serif",
+            }}>
+              Recents
+              <svg style={{ width: "16px", height: "16px", marginLeft: "4px", opacity: 0.7 }} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+              {chats.map(c => (
                 <div
-                  key={index}
+                  key={c.id}
+                  onClick={() => setCurrentChatId(c.id)}
                   style={{
-                    display: "flex",
-                    justifyContent: msg.role === "user" ? "flex-end" : "flex-start",
+                    padding: "0.75rem",
+                    borderRadius: "8px",
+                    cursor: "pointer",
+                    background: currentChatId === c.id ? (isDark ? "#2a2a2a" : "#e2e8f0") : "transparent",
+                    color: currentChatId === c.id ? (isDark ? "#c8f230" : "#6366f1") : (isDark ? "#d1d5db" : "#334155"),
+                    transition: "all 0.2s ease",
+                    fontFamily: "'Space Grotesk', sans-serif",
+                    fontSize: "0.85rem",
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis"
+                  }}
+                  onMouseEnter={(e) => {
+                    if (currentChatId !== c.id) {
+                      e.currentTarget.style.background = isDark ? "#262626" : "#e2e8f0";
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (currentChatId !== c.id) {
+                      e.currentTarget.style.background = "transparent";
+                    }
                   }}
                 >
-                  <div
-                    style={{
-                      maxWidth: "70%",
-                      padding: "0.75rem 1rem",
-                      borderRadius:
-                        msg.role === "user"
-                          ? "16px 16px 4px 16px"
-                          : "16px 16px 16px 4px",
-                      fontSize: "0.875rem",
-                      lineHeight: 1.6,
-                      transition: "all 0.3s ease",
-                      ...(msg.role === "user"
-                        ? {
-                            background: t.userBg,
-                            color: t.userText,
-                            boxShadow: t.userShadow,
-                          }
-                        : {
-                            background: t.aiBg,
-                            border: `1px solid ${t.aiBorder}`,
-                            color: t.aiText,
-                          }),
-                    }}
-                  >
-                    {msg.role === "ai" && (
-                      <span
-                        style={{
-                          display: "inline-block",
-                          fontSize: "0.65rem",
-                          fontWeight: 700,
-                          letterSpacing: "0.1em",
-                          textTransform: "uppercase",
-                          color: t.aiAccent,
-                          marginBottom: "0.25rem",
-                        }}
-                      >
-                        ChemFriend
-                      </span>
-                    )}
-                    <div style={{ whiteSpace: "pre-wrap" }}>{msg.text}</div>
-                  </div>
+                  {c.title}
                 </div>
               ))}
-
-              {/* Loader */}
-              {loading && <ChemistryLoader />}
-            </>
-          )}
-
-          {/* Auto scroll */}
-          <div ref={chatEndRef} />
+              
+              {chats.length === 0 && (
+                <div style={{ 
+                  color: t.headerSub, 
+                  fontSize: "0.8rem", 
+                  textAlign: "center", 
+                  marginTop: "1rem",
+                  fontFamily: "'Space Grotesk', sans-serif",
+                }}>
+                  No recent chats
+                </div>
+              )}
+            </div>
+          </div>
         </div>
 
-        {/* Input */}
+        {/* Chat Area */}
         <div
           style={{
-            marginTop: "0.75rem",
+            flex: 1,
             display: "flex",
-            gap: "0.5rem",
+            justifyContent: "center",
+            padding: "1rem",
+            overflow: "hidden"
           }}
         >
-          <input
-            type="text"
-            placeholder="Type your question..."
-            className="chat-input"
+          <div
             style={{
-              flex: 1,
-              background: t.inputBg,
-              border: `1.5px solid ${t.inputBorder}`,
-              borderRadius: "12px",
-              padding: "0.75rem 1rem",
-              fontSize: "0.875rem",
-              color: t.inputText,
-              outline: "none",
-              transition: "all 0.3s ease",
-              fontFamily: "'Space Grotesk', sans-serif",
-            }}
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleSend()}
-            onFocus={(e) => {
-              e.target.style.borderColor = t.inputBorderFocus;
-              e.target.style.boxShadow = `0 0 0 3px ${t.inputBorderFocus}22`;
-            }}
-            onBlur={(e) => {
-              e.target.style.borderColor = t.inputBorder;
-              e.target.style.boxShadow = "none";
-            }}
-          />
-
-          <button
-            onClick={handleSend}
-            style={{
-              background: t.sendBg,
-              color: t.sendText,
-              border: "none",
-              borderRadius: "12px",
-              padding: "0.75rem 1.5rem",
-              fontFamily: "'Space Grotesk', sans-serif",
-              fontWeight: 700,
-              fontSize: "0.875rem",
-              cursor: "pointer",
-              transition: "all 0.2s ease",
-              boxShadow: t.sendShadow,
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = t.sendHoverBg;
-              e.currentTarget.style.transform = "translateY(-1px)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = t.sendBg;
-              e.currentTarget.style.transform = "translateY(0)";
+              width: "100%",
+              maxWidth: "56rem",
+              display: "flex",
+              flexDirection: "column",
+              height: "100%",
             }}
           >
-            Send
-          </button>
+            {/* Header */}
+            <div style={{ marginBottom: "1rem" }}>
+              <h1
+                style={{
+                  fontFamily: "'Space Grotesk', sans-serif",
+                  fontSize: "1.5rem",
+                  fontWeight: 800,
+                  color: t.headerText,
+                  transition: "color 0.3s ease",
+                }}
+              >
+                ChemFriend 😊
+              </h1>
+              <p
+                style={{
+                  fontFamily: "'Space Grotesk', sans-serif",
+                  fontSize: "0.8rem",
+                  color: t.headerSub,
+                  marginTop: "0.15rem",
+                  transition: "color 0.3s ease",
+                }}
+              >
+                Your AI chemistry assistant — ask anything!
+              </p>
+            </div>
+
+            {/* Chat Box */}
+            <div
+              className="chat-scrollbar"
+              style={{
+                flex: 1,
+                overflowY: "auto",
+                background: t.chatBg,
+                border: `1px solid ${t.chatBorder}`,
+                borderRadius: "16px",
+                boxShadow: t.chatShadow,
+                padding: "1.25rem",
+                display: "flex",
+                flexDirection: "column",
+                gap: "0.75rem",
+                transition: "background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease",
+              }}
+            >
+              {/* 🧑‍🔬 Show animation if no conversation */}
+              {messages.length === 1 && !loading ? (
+                <ChemistryAnimation />
+              ) : (
+                <>
+                  {messages.map((msg, index) => (
+                    <div
+                      key={index}
+                      style={{
+                        display: "flex",
+                        justifyContent: msg.role === "user" ? "flex-end" : "flex-start",
+                      }}
+                    >
+                      <div
+                        style={{
+                          maxWidth: "70%",
+                          padding: "0.75rem 1rem",
+                          borderRadius:
+                            msg.role === "user"
+                              ? "16px 16px 4px 16px"
+                              : "16px 16px 16px 4px",
+                          fontSize: "0.875rem",
+                          lineHeight: 1.6,
+                          transition: "all 0.3s ease",
+                          ...(msg.role === "user"
+                            ? {
+                                background: t.userBg,
+                                color: t.userText,
+                                boxShadow: t.userShadow,
+                              }
+                            : {
+                                background: t.aiBg,
+                                border: `1px solid ${t.aiBorder}`,
+                                color: t.aiText,
+                              }),
+                        }}
+                      >
+                        {msg.role === "ai" && (
+                          <span
+                            style={{
+                              display: "inline-block",
+                              fontSize: "0.65rem",
+                              fontWeight: 700,
+                              letterSpacing: "0.1em",
+                              textTransform: "uppercase",
+                              color: t.aiAccent,
+                              marginBottom: "0.25rem",
+                            }}
+                          >
+                            ChemFriend
+                          </span>
+                        )}
+                        <div style={{ whiteSpace: "pre-wrap" }}>{msg.text}</div>
+                      </div>
+                    </div>
+                  ))}
+
+                  {/* Loader */}
+                  {loading && <ChemistryLoader />}
+                </>
+              )}
+
+              {/* Auto scroll */}
+              <div ref={chatEndRef} />
+            </div>
+
+            {/* Input */}
+            <div
+              style={{
+                marginTop: "0.75rem",
+                display: "flex",
+                gap: "0.5rem",
+              }}
+            >
+              <input
+                type="text"
+                placeholder="Type your question..."
+                className="chat-input"
+                style={{
+                  flex: 1,
+                  background: t.inputBg,
+                  border: `1.5px solid ${t.inputBorder}`,
+                  borderRadius: "12px",
+                  padding: "0.75rem 1rem",
+                  fontSize: "0.875rem",
+                  color: t.inputText,
+                  outline: "none",
+                  transition: "all 0.3s ease",
+                  fontFamily: "'Space Grotesk', sans-serif",
+                }}
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleSend()}
+                onFocus={(e) => {
+                  e.target.style.borderColor = t.inputBorderFocus;
+                  e.target.style.boxShadow = `0 0 0 3px ${t.inputBorderFocus}22`;
+                }}
+                onBlur={(e) => {
+                  e.target.style.borderColor = t.inputBorder;
+                  e.target.style.boxShadow = "none";
+                }}
+              />
+
+              <button
+                onClick={handleSend}
+                style={{
+                  background: t.sendBg,
+                  color: t.sendText,
+                  border: "none",
+                  borderRadius: "12px",
+                  padding: "0.75rem 1.5rem",
+                  fontFamily: "'Space Grotesk', sans-serif",
+                  fontWeight: 700,
+                  fontSize: "0.875rem",
+                  cursor: "pointer",
+                  transition: "all 0.2s ease",
+                  boxShadow: t.sendShadow,
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = t.sendHoverBg;
+                  e.currentTarget.style.transform = "translateY(-1px)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = t.sendBg;
+                  e.currentTarget.style.transform = "translateY(0)";
+                }}
+              >
+                Send
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
