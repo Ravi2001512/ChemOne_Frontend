@@ -50,8 +50,25 @@ const getTokens = (dark) => ({
 const defaultMessages = [{ role: "ai", text: "Hello 👋.., How Can I Help You ....😊" }];
 
 const ChatWithAI = () => {
-  const [chats, setChats] = useState([]);
-  const [currentChatId, setCurrentChatId] = useState(null);
+  const [chats, setChats] = useState(() => {
+    try {
+      const saved = localStorage.getItem("chemOneAdminChats");
+      if (saved) {
+        let parsed = JSON.parse(saved);
+        const now = Date.now();
+        return parsed.filter(c => now - c.timestamp < 86400000);
+      }
+    } catch (e) {
+      console.error("Failed to load chats", e);
+    }
+    return [];
+  });
+
+  const [currentChatId, setCurrentChatId] = useState(() => {
+    if (chats && chats.length > 0) return chats[0].id;
+    return null;
+  });
+
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [isDark, setIsDark] = useState(
@@ -70,25 +87,6 @@ const ChatWithAI = () => {
       attributeFilter: ["class"],
     });
     return () => observer.disconnect();
-  }, []);
-
-  // Load chats from localStorage
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem("chemOneAdminChats");
-      if (saved) {
-        let parsed = JSON.parse(saved);
-        // Keep chats from the last 24 hours
-        const now = Date.now();
-        parsed = parsed.filter(c => now - c.timestamp < 86400000);
-        setChats(parsed);
-        if (parsed.length > 0) {
-          setCurrentChatId(parsed[0].id);
-        }
-      }
-    } catch (e) {
-      console.error("Failed to load chats", e);
-    }
   }, []);
 
   // Save chats to localStorage whenever they update
@@ -133,8 +131,11 @@ const ChatWithAI = () => {
       setCurrentChatId(chatId);
       chatIndex = 0;
     } else {
-      newChats[chatIndex].messages.push(userMessage);
-      newChats[chatIndex].timestamp = Date.now();
+      newChats[chatIndex] = {
+        ...newChats[chatIndex],
+        messages: [...newChats[chatIndex].messages, userMessage],
+        timestamp: Date.now()
+      };
       // Move to top if it's not already
       if (chatIndex > 0) {
         const [movedChat] = newChats.splice(chatIndex, 1);
@@ -158,7 +159,10 @@ const ChatWithAI = () => {
         const updated = [...prev];
         const idx = updated.findIndex(c => c.id === chatId);
         if (idx !== -1) {
-          updated[idx].messages.push(aiMessage);
+          updated[idx] = {
+            ...updated[idx],
+            messages: [...updated[idx].messages, aiMessage]
+          };
         }
         return updated;
       });
@@ -168,7 +172,10 @@ const ChatWithAI = () => {
         const updated = [...prev];
         const idx = updated.findIndex(c => c.id === chatId);
         if (idx !== -1) {
-          updated[idx].messages.push({ role: "ai", text: errorMsg });
+          updated[idx] = {
+            ...updated[idx],
+            messages: [...updated[idx].messages, { role: "ai", text: errorMsg }]
+          };
         }
         return updated;
       });
