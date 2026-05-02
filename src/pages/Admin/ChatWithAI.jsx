@@ -82,6 +82,7 @@ const ChatWithAI = () => {
     () => document.documentElement.classList.contains("dark")
   );
 
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const chatEndRef = useRef(null);
 
   /* Watch for theme toggles */
@@ -151,6 +152,7 @@ const ChatWithAI = () => {
     }
 
     setChats(newChats);
+    setIsSidebarOpen(false);
 
     try {
       const res = await API.post("/chat", {
@@ -195,6 +197,7 @@ const ChatWithAI = () => {
 
   const handleNewChat = () => {
     setCurrentChatId(null);
+    setIsSidebarOpen(false);
   };
 
   // 🧪 Loader (while AI thinking)
@@ -354,14 +357,83 @@ const ChatWithAI = () => {
         .chat-input::placeholder {
           color: ${t.inputPlaceholder};
         }
+        @media (max-width: 768px) {
+          .sidebar-container {
+            position: fixed !important;
+            left: -260px;
+            top: 64px;
+            bottom: 0;
+            z-index: 100;
+            transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 10px 0 30px rgba(0,0,0,0.1);
+          }
+          .sidebar-open .sidebar-container {
+            left: 0 !important;
+          }
+          .mobile-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            top: 64px;
+            background: rgba(0,0,0,0.4);
+            backdrop-filter: blur(4px);
+            z-index: 90;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+          }
+          .sidebar-open .mobile-overlay {
+            display: block;
+            opacity: 1;
+          }
+          .chat-area-container {
+            padding: 0.75rem !important;
+          }
+          .header-container {
+            flex-direction: column;
+            align-items: flex-start !important;
+            gap: 1rem;
+            margin-bottom: 1rem !important;
+          }
+          .header-text-group {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+          }
+          .model-selector-container {
+            width: 100%;
+            justify-content: space-between;
+          }
+          .model-selector-container button {
+            flex: 1;
+            padding: 8px !important;
+          }
+          .message-bubble {
+            max-width: 85% !important;
+          }
+          .mobile-toggle {
+            display: flex !important;
+          }
+          .input-container {
+            padding-bottom: 0.5rem;
+          }
+        }
       `}</style>
 
       {/* Main Container */}
-      <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
-        
+      <div 
+        className={isSidebarOpen ? "sidebar-open" : ""}
+        style={{ display: "flex", flex: 1, overflow: "hidden" }}
+      >
+        {/* Mobile Overlay */}
+        <div 
+          className="mobile-overlay" 
+          onClick={() => setIsSidebarOpen(false)}
+        />
+
         {/* Sidebar */}
         <div
-          className="chat-scrollbar"
+          className="chat-scrollbar sidebar-container"
           style={{
             width: "260px",
             minWidth: "260px",
@@ -422,7 +494,10 @@ const ChatWithAI = () => {
               {chats.map(c => (
                 <div
                   key={c.id}
-                  onClick={() => setCurrentChatId(c.id)}
+                  onClick={() => {
+                    setCurrentChatId(c.id);
+                    setIsSidebarOpen(false);
+                  }}
                   style={{
                     padding: "0.75rem",
                     borderRadius: "8px",
@@ -468,11 +543,12 @@ const ChatWithAI = () => {
 
         {/* Chat Area */}
         <div
+          className="chat-area-container"
           style={{
             flex: 1,
             display: "flex",
             justifyContent: "center",
-            padding: "1rem",
+            padding: "1.5rem",
             overflow: "hidden"
           }}
         >
@@ -486,20 +562,47 @@ const ChatWithAI = () => {
             }}
           >
             {/* Header */}
-            <div style={{ marginBottom: "1rem", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <div>
-                <h1
-                  style={{
-                    fontFamily: "'Space Grotesk', sans-serif",
-                    fontSize: "1.5rem",
-                    fontWeight: 800,
-                    color: t.headerText,
-                    transition: "color 0.3s ease",
-                  }}
-                >
-                  ChemFriend 😊
-                </h1>
+            <div 
+              className="header-container"
+              style={{ marginBottom: "1.5rem", display: "flex", alignItems: "center", justifyContent: "space-between" }}
+            >
+              <div className="header-text-group">
+                <div style={{ display: "flex", alignItems: "center" }}>
+                  {/* Mobile Menu Toggle */}
+                  <button 
+                    className="mobile-toggle"
+                    onClick={() => setIsSidebarOpen(true)}
+                    style={{
+                      display: "none",
+                      background: "transparent",
+                      border: "none",
+                      color: t.headerText,
+                      cursor: "pointer",
+                      padding: "0.5rem",
+                      marginRight: "0.5rem",
+                      marginLeft: "-0.5rem",
+                    }}
+                  >
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <line x1="3" y1="12" x2="21" y2="12"></line>
+                      <line x1="3" y1="6" x2="21" y2="6"></line>
+                      <line x1="3" y1="18" x2="21" y2="18"></line>
+                    </svg>
+                  </button>
+                  <h1
+                    style={{
+                      fontFamily: "'Space Grotesk', sans-serif",
+                      fontSize: "1.5rem",
+                      fontWeight: 800,
+                      color: t.headerText,
+                      transition: "color 0.3s ease",
+                    }}
+                  >
+                    ChemFriend 😊
+                  </h1>
+                </div>
                 <p
+                  className="desktop-subtitle"
                   style={{
                     fontFamily: "'Space Grotesk', sans-serif",
                     fontSize: "0.8rem",
@@ -508,13 +611,14 @@ const ChatWithAI = () => {
                     transition: "color 0.3s ease",
                   }}
                 >
-                  Your AI chemistry assistant — ask anything!
+                  Your AI chemistry assistant
                 </p>
               </div>
 
               {/* AI Model Toggle */}
               <div
                 id="admin-model-selector"
+                className="model-selector-container"
                 style={{
                   display: "flex",
                   alignItems: "center",
@@ -597,6 +701,7 @@ const ChatWithAI = () => {
                       }}
                     >
                       <div
+                        className="message-bubble"
                         style={{
                           maxWidth: "70%",
                           padding: "0.75rem 1rem",
@@ -651,6 +756,7 @@ const ChatWithAI = () => {
 
             {/* Input */}
             <div
+              className="input-container"
               style={{
                 marginTop: "0.75rem",
                 display: "flex",
