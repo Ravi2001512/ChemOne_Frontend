@@ -6,15 +6,22 @@ import { Search, Save, Trophy, Send, Plus, Trash2, X, Calendar, Hash, Users, Bar
 
 const ManageResults = () => {
     const [exams, setExams] = useState([]);
-    const [selectedExamIds, setSelectedExamIds] = useState([]);
+    const [selectedExamIds, setSelectedExamIds] = useState(() => {
+        const saved = localStorage.getItem("manageResults_selectedExamIds");
+        return saved ? JSON.parse(saved) : [];
+    });
     const [students, setStudents] = useState([]);
     const [marksByExam, setMarksByExam] = useState({}); // { [examId]: { [studentId]: score } }
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [sending, setSending] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
-    const [selectedBatch, setSelectedBatch] = useState("All Batches");
-    const [isMultiSelect, setIsMultiSelect] = useState(false);
+    const [selectedBatch, setSelectedBatch] = useState(() => {
+        return localStorage.getItem("manageResults_selectedBatch") || "All Batches";
+    });
+    const [isMultiSelect, setIsMultiSelect] = useState(() => {
+        return localStorage.getItem("manageResults_isMultiSelect") === "true";
+    });
 
     // Modal states
     const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -43,6 +50,19 @@ const ManageResults = () => {
         fetchData();
     }, []);
 
+    // Persist UI state
+    useEffect(() => {
+        localStorage.setItem("manageResults_selectedExamIds", JSON.stringify(selectedExamIds));
+    }, [selectedExamIds]);
+
+    useEffect(() => {
+        localStorage.setItem("manageResults_selectedBatch", selectedBatch);
+    }, [selectedBatch]);
+
+    useEffect(() => {
+        localStorage.setItem("manageResults_isMultiSelect", isMultiSelect);
+    }, [isMultiSelect]);
+
     const fetchData = async () => {
         try {
             setLoading(true);
@@ -57,8 +77,15 @@ const ManageResults = () => {
                 setExams(activeExams);
             }
 
-            if (activeExams.length > 0 && selectedExamIds.length === 0) {
+            // Filter out selected IDs that no longer exist
+            const validSelectedIds = selectedExamIds.filter(id => 
+                activeExams.some(exam => exam._id === id)
+            );
+
+            if (activeExams.length > 0 && validSelectedIds.length === 0) {
                 setSelectedExamIds([activeExams[0]._id]);
+            } else if (validSelectedIds.length !== selectedExamIds.length) {
+                setSelectedExamIds(validSelectedIds);
             }
 
             setStudents(studentsRes.data);
@@ -185,6 +212,7 @@ const ManageResults = () => {
 
     const handleSaveResults = async () => {
         if (selectedExamIds.length === 0) {
+            setSelectedExamIds([]); // Trigger cleanup if needed
             toast.error("No active exam session selected.");
             return;
         }
@@ -196,13 +224,8 @@ const ManageResults = () => {
             for (const examId of selectedExamIds) {
                 const examMarks = marksByExam[examId] || {};
                 const resultsToUpload = Object.entries(examMarks)
-                    .filter(([studentId, score]) => {
-                        if (score === "" || score === undefined) return false;
-                        if (selectedBatch !== "All Batches") {
-                            const student = students.find(s => s._id === studentId);
-                            return student && student.batch === selectedBatch;
-                        }
-                        return true;
+                    .filter(([_, score]) => {
+                        return score !== "" && score !== undefined;
                     })
                     .map(([studentId, score]) => ({
                         studentId,
@@ -220,6 +243,8 @@ const ManageResults = () => {
 
             if (successCount > 0) {
                 toast.success(`Results saved for ${successCount} exam(s).`);
+                // Refresh data to ensure everything is synced
+                fetchAllResults();
             } else {
                 toast.error("No marks entered to save.");
             }
@@ -228,6 +253,44 @@ const ManageResults = () => {
             toast.error("Failed to save some results.");
         } finally {
             setSaving(false);
+        }
+    };
+
+    const fetchAllResults = async () => {
+        if (selectedExamIds.length === 0) {
+            setMarksByExam({});
+            return;
+        }
+
+        const newMarksByExam = { ...marksByExam };
+        let updated = false;
+
+        for (const examId of selectedExamIds) {
+            try {
+                const response = await API.get(`/physical-exams/${examId}/results`);
+                if (response.data.success) {
+                    const examMarks = {};
+                    response.data.results.forEach(res => {
+                        examMarks[res.student._id] = res.score;
+                    });
+                    newMarksByExam[examId] = examMarks;
+                    updated = true;
+                }
+            } catch (err) {
+                console.error(`Error fetching results for exam ${examId}:`, err);
+            }
+        }
+
+        // Cleanup exams no longer selected
+        Object.keys(newMarksByExam).forEach(id => {
+            if (!selectedExamIds.includes(id)) {
+                delete newMarksByExam[id];
+                updated = true;
+            }
+        });
+
+        if (updated) {
+            setMarksByExam(newMarksByExam);
         }
     };
 
