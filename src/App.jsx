@@ -22,6 +22,7 @@ import About from "./pages/Student/About"
 import Games from "./pages/Student/Games"
 import { Toaster } from 'react-hot-toast';
 import { useEffect } from 'react';
+import AutoLogout from "./components/AutoLogout";
 
 const GuestRestrictRoute = ({ children }) => {
   const user = JSON.parse(localStorage.getItem('user') || '{}');
@@ -42,6 +43,7 @@ function App() {
 
   return (
     <BrowserRouter>
+      <AutoLogout />
       <Toaster position="top-center" reverseOrder={false} />
       <Routes>
         <Route path="/" element={<Navigate to="/login" replace />} />

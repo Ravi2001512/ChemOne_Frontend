@@ -22,6 +22,8 @@ const ManageResults = () => {
     const [isMultiSelect, setIsMultiSelect] = useState(() => {
         return localStorage.getItem("manageResults_isMultiSelect") === "true";
     });
+    const [selectedStudentIds, setSelectedStudentIds] = useState([]);
+    const [showOnlyMarked, setShowOnlyMarked] = useState(false);
 
     // Modal states
     const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -62,6 +64,11 @@ const ManageResults = () => {
     useEffect(() => {
         localStorage.setItem("manageResults_isMultiSelect", isMultiSelect);
     }, [isMultiSelect]);
+
+    // Clear student selection when filters change
+    useEffect(() => {
+        setSelectedStudentIds([]);
+    }, [selectedBatch, selectedExamIds]);
 
     const fetchData = async () => {
         try {
@@ -314,6 +321,161 @@ const ManageResults = () => {
         }
     };
 
+    const handleSaveAndNotifyAll = async () => {
+        if (selectedExamIds.length === 0) {
+            toast.error("No active exam session selected.");
+            return;
+        }
+        try {
+            setSaving(true);
+            setSending(true);
+            
+            // 1. Save all
+            let saveSuccess = false;
+            let savedExams = [];
+            for (const examId of selectedExamIds) {
+                const examMarks = marksByExam[examId] || {};
+                const resultsToUpload = Object.entries(examMarks)
+                    .filter(([_, score]) => score !== "" && score !== undefined)
+                    .map(([studentId, score]) => ({ studentId, score: Number(score) }));
+
+                if (resultsToUpload.length > 0) {
+                    const response = await API.post("/physical-exams/upload-results", {
+                        examId,
+                        results: resultsToUpload
+                    });
+                    if (response.data.success) {
+                        saveSuccess = true;
+                        savedExams.push(examId);
+                    }
+                }
+            }
+
+            if (!saveSuccess) {
+                toast.error("No marks to save.");
+                return;
+            }
+
+            // 2. Notify for those exams
+            let notifyCount = 0;
+            for (const examId of savedExams) {
+                const response = await API.post(`/physical-exams/${examId}/notify-results`, {
+                    batch: selectedBatch
+                });
+                if (response.data.success) notifyCount++;
+            }
+
+            toast.success(`Results saved and notifications sent for ${notifyCount} exam(s).`);
+            fetchAllResults();
+        } catch (err) {
+            console.error("Error in save & notify all:", err);
+            toast.error("An error occurred during save & notify.");
+        } finally {
+            setSaving(false);
+            setSending(false);
+        }
+    };
+
+    const handleSaveAndNotifySingle = async (student) => {
+        if (selectedExamIds.length === 0) {
+            toast.error("No active exam session selected.");
+            return;
+        }
+
+        try {
+            setSaving(true);
+            let successCount = 0;
+
+            for (const examId of selectedExamIds) {
+                const examMarks = marksByExam[examId] || {};
+                const score = examMarks[student._id];
+
+                if (score !== "" && score !== undefined) {
+                    // Save
+                    const saveResponse = await API.post("/physical-exams/upload-results", {
+                        examId,
+                        results: [{ studentId: student._id, score: Number(score) }]
+                    });
+
+                    if (saveResponse.data.success) {
+                        // Notify
+                        await API.post(`/physical-exams/${examId}/notify-results`, {
+                            studentId: student._id
+                        });
+                        successCount++;
+                    }
+                }
+            }
+
+            if (successCount > 0) {
+                toast.success(`Saved & notified ${student.name} for ${successCount} exam(s).`);
+                fetchAllResults();
+            } else {
+                toast.error("No marks entered for this student.");
+            }
+        } catch (err) {
+            console.error("Error saving/notifying single student:", err);
+            toast.error("Failed to save or notify.");
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const handleSaveAndNotifySelected = async () => {
+        if (selectedExamIds.length === 0) {
+            toast.error("No active exam session selected.");
+            return;
+        }
+        if (selectedStudentIds.length === 0) {
+            toast.error("No students selected.");
+            return;
+        }
+
+        try {
+            setSaving(true);
+            setSending(true);
+            let successCount = 0;
+
+            for (const studentId of selectedStudentIds) {
+                const student = students.find(s => s._id === studentId);
+                if (!student) continue;
+
+                for (const examId of selectedExamIds) {
+                    const examMarks = marksByExam[examId] || {};
+                    const score = examMarks[studentId];
+
+                    if (score !== "" && score !== undefined) {
+                        const saveResponse = await API.post("/physical-exams/upload-results", {
+                            examId,
+                            results: [{ studentId, score: Number(score) }]
+                        });
+
+                        if (saveResponse.data.success) {
+                            await API.post(`/physical-exams/${examId}/notify-results`, {
+                                studentId
+                            });
+                            successCount++;
+                        }
+                    }
+                }
+            }
+
+            if (successCount > 0) {
+                toast.success(`Saved & notified selected students for ${successCount} record(s).`);
+                setSelectedStudentIds([]);
+                fetchAllResults();
+            } else {
+                toast.error("No marks found for selected students.");
+            }
+        } catch (err) {
+            console.error("Error saving/notifying selected:", err);
+            toast.error("Failed to process some students.");
+        } finally {
+            setSaving(false);
+            setSending(false);
+        }
+    };
+
     const filteredStudents = students.filter(student => {
         const term = searchTerm.toLowerCase();
         const matchesSearch = (
@@ -322,7 +484,16 @@ const ManageResults = () => {
             (student.batch?.toLowerCase() || "").includes(term)
         );
         const matchesBatch = selectedBatch === "All Batches" || student.batch === selectedBatch;
-        return matchesSearch && matchesBatch;
+        
+        let hasMark = false;
+        if (showOnlyMarked) {
+            hasMark = selectedExamIds.some(examId => {
+                const score = marksByExam[examId]?.[student._id];
+                return score !== undefined && score !== "";
+            });
+        }
+
+        return matchesSearch && matchesBatch && (!showOnlyMarked || hasMark);
     });
 
     const selectedExams = exams.filter(e => selectedExamIds.includes(e._id));
@@ -566,31 +737,43 @@ const ManageResults = () => {
                             </div>
                         </div>
 
-                        <div className="flex flex-col sm:flex-row items-center gap-3 flex-shrink-0">
-                            <button
-                                onClick={handleSendEmails}
-                                disabled={sending || selectedExamIds.length === 0}
-                                className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3.5 bg-teal-600 text-white font-black rounded-2xl hover:bg-teal-700 active:scale-95 transition-all shadow-lg shadow-teal-200 dark:shadow-none disabled:opacity-50 text-sm"
-                            >
-                                {sending ? (
-                                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-                                ) : (
-                                    <Send className="w-4 h-4" />
-                                )}
-                                <span>{sending ? "Sending..." : "Notify"}</span>
-                            </button>
+                        <div className="flex flex-wrap items-center gap-3">
                             <button
                                 onClick={handleSaveResults}
                                 disabled={saving || selectedExamIds.length === 0}
-                                className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3.5 bg-rose-600 text-white font-black rounded-2xl hover:bg-rose-700 active:scale-95 transition-all shadow-lg shadow-rose-200 dark:shadow-none disabled:opacity-50 text-sm"
+                                className="px-5 py-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-black rounded-xl text-[10px] uppercase tracking-widest hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-95 transition-all border border-slate-200 dark:border-slate-700 flex items-center gap-2"
                             >
                                 {saving ? (
-                                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                                    <div className="animate-spin rounded-full h-3 w-3 border-2 border-slate-600 border-t-transparent"></div>
                                 ) : (
-                                    <Save className="w-4 h-4" />
+                                    <Save className="w-3.5 h-3.5" />
                                 )}
-                                <span>{saving ? "Saving..." : "Save All"}</span>
+                                <span>Save All (No Email)</span>
                             </button>
+
+                            <button
+                                onClick={() => setShowOnlyMarked(!showOnlyMarked)}
+                                className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border ${showOnlyMarked 
+                                    ? 'bg-amber-500 text-white border-amber-500 shadow-md shadow-amber-200' 
+                                    : 'bg-white dark:bg-slate-800 text-slate-400 border-slate-200 dark:border-slate-700'}`}
+                            >
+                                {showOnlyMarked ? 'Showing Marked Only' : 'Show All Students'}
+                            </button>
+
+                            {selectedStudentIds.length > 0 && (
+                                <button
+                                    onClick={handleSaveAndNotifySelected}
+                                    disabled={saving || sending}
+                                    className="px-6 py-2 bg-rose-600 text-white font-black rounded-xl text-[10px] uppercase tracking-widest hover:bg-rose-700 active:scale-95 transition-all shadow-lg shadow-rose-200 dark:shadow-none flex items-center gap-2"
+                                >
+                                    {(saving || sending) ? (
+                                        <div className="animate-spin rounded-full h-3 w-3 border-2 border-white border-t-transparent"></div>
+                                    ) : (
+                                        <Send className="w-3.5 h-3.5" />
+                                    )}
+                                    <span>Save & Notify Selected ({selectedStudentIds.length})</span>
+                                </button>
+                            )}
                         </div>
                     </div>
 
@@ -629,6 +812,20 @@ const ManageResults = () => {
                             <table className="w-full text-left">
                                 <thead className="bg-slate-50 dark:bg-slate-950/50 border-b border-slate-100 dark:border-slate-800">
                                     <tr>
+                                        <th className="px-8 py-6 text-xs font-black text-slate-400 uppercase tracking-widest text-center w-12">
+                                            <input 
+                                                type="checkbox"
+                                                className="w-4 h-4 rounded border-slate-300 text-rose-600 focus:ring-rose-500 cursor-pointer"
+                                                checked={filteredStudents.length > 0 && selectedStudentIds.length === filteredStudents.length}
+                                                onChange={(e) => {
+                                                    if (e.target.checked) {
+                                                        setSelectedStudentIds(filteredStudents.map(s => s._id));
+                                                    } else {
+                                                        setSelectedStudentIds([]);
+                                                    }
+                                                }}
+                                            />
+                                        </th>
                                         <th className="px-8 py-6 text-xs font-black text-slate-400 uppercase tracking-widest whitespace-nowrap min-w-[300px]">Student Details</th>
                                         <th className="px-8 py-6 text-xs font-black text-slate-400 uppercase tracking-widest text-center">Batch</th>
                                         {selectedExams.map(exam => (
@@ -639,6 +836,7 @@ const ManageResults = () => {
                                                 </div>
                                             </th>
                                         ))}
+                                        <th className="px-8 py-6 text-xs font-black text-slate-400 uppercase tracking-widest text-center">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -654,7 +852,7 @@ const ManageResults = () => {
                                             return Object.entries(grouped).map(([batch, batchStudents]) => (
                                                 <Fragment key={batch}>
                                                     <tr className="bg-slate-50/80 dark:bg-slate-950/40 border-y border-slate-100 dark:border-slate-800 text-slate-400">
-                                                        <td colSpan={2 + selectedExams.length} className="px-8 py-3">
+                                                        <td colSpan={4 + selectedExams.length} className="px-8 py-3">
                                                             <div className="flex items-center gap-2">
                                                                 <div className="w-2 h-2 rounded-full bg-rose-500"></div>
                                                                 <span className="text-xs font-black uppercase tracking-widest">
@@ -665,7 +863,21 @@ const ManageResults = () => {
                                                     </tr>
                                                     {batchStudents.map((student) => {
                                                         return (
-                                                            <tr key={student._id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group">
+                                                            <tr key={student._id} className={`hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group ${selectedStudentIds.includes(student._id) ? 'bg-rose-50/30 dark:bg-rose-500/5' : ''}`}>
+                                                                <td className="px-8 py-5 text-center">
+                                                                    <input 
+                                                                        type="checkbox"
+                                                                        className="w-4 h-4 rounded border-slate-300 text-rose-600 focus:ring-rose-500 cursor-pointer"
+                                                                        checked={selectedStudentIds.includes(student._id)}
+                                                                        onChange={(e) => {
+                                                                            if (e.target.checked) {
+                                                                                setSelectedStudentIds(prev => [...prev, student._id]);
+                                                                            } else {
+                                                                                setSelectedStudentIds(prev => prev.filter(id => id !== student._id));
+                                                                            }
+                                                                        }}
+                                                                    />
+                                                                </td>
                                                                 <td className="px-8 py-5 whitespace-nowrap">
                                                                     <div className="flex items-center gap-4">
                                                                         <div className="w-11 h-11 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-400 flex items-center justify-center font-black text-sm group-hover:bg-rose-600 group-hover:text-white transition-all">
@@ -678,29 +890,39 @@ const ManageResults = () => {
                                                                     </div>
                                                                 </td>
                                                                 <td className="px-8 py-5 whitespace-nowrap text-center">
-                                                                    <span className="inline-flex items-center px-4 py-1.5 rounded-xl text-[10px] font-black bg-rose-50 dark:bg-rose-500/10 text-rose-700 dark:text-rose-400 border border-rose-100 dark:border-rose-500/20 uppercase tracking-wider">
-                                                                        {student.batch}
-                                                                    </span>
+                                                                     <span className="inline-flex items-center px-4 py-1.5 rounded-xl text-[10px] font-black bg-rose-50 dark:bg-rose-500/10 text-rose-700 dark:text-rose-400 border border-rose-100 dark:border-rose-500/20 uppercase tracking-wider">
+                                                                         {student.batch}
+                                                                     </span>
+                                                                 </td>
+                                                                 {selectedExams.map(exam => {
+                                                                     const examMarks = marksByExam[exam._id] || {};
+                                                                     const score = examMarks[student._id] ?? "";
+                                                                     return (
+                                                                         <td key={exam._id} className="px-8 py-5 whitespace-nowrap text-right min-w-[150px]">
+                                                                             <div className="inline-flex items-center gap-2">
+                                                                                 <input
+                                                                                     type="number"
+                                                                                     max={exam.totalMarks}
+                                                                                     min="0"
+                                                                                     placeholder="—"
+                                                                                     value={score}
+                                                                                     onChange={(e) => handleMarkChange(exam._id, student._id, e.target.value)}
+                                                                                     className="w-24 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:ring-2 focus:ring-rose-600 text-right font-black text-base text-slate-900 dark:text-white transition-all shadow-sm"
+                                                                                 />
+                                                                             </div>
+                                                                         </td>
+                                                                     );
+                                                                 })}
+                                                                 <td className="px-8 py-5 whitespace-nowrap text-center">
+                                                                    <button
+                                                                        onClick={() => handleSaveAndNotifySingle(student)}
+                                                                        disabled={saving || sending}
+                                                                        className="inline-flex items-center gap-2 px-4 py-2 bg-rose-600 text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-rose-700 active:scale-95 transition-all disabled:opacity-50 shadow-sm"
+                                                                    >
+                                                                        <Save className="w-3 h-3" />
+                                                                        <span>Save & Notify</span>
+                                                                    </button>
                                                                 </td>
-                                                                {selectedExams.map(exam => {
-                                                                    const examMarks = marksByExam[exam._id] || {};
-                                                                    const score = examMarks[student._id] ?? "";
-                                                                    return (
-                                                                        <td key={exam._id} className="px-8 py-5 whitespace-nowrap text-right min-w-[150px]">
-                                                                            <div className="inline-flex items-center gap-2">
-                                                                                <input
-                                                                                    type="number"
-                                                                                    max={exam.totalMarks}
-                                                                                    min="0"
-                                                                                    placeholder="—"
-                                                                                    value={score}
-                                                                                    onChange={(e) => handleMarkChange(exam._id, student._id, e.target.value)}
-                                                                                    className="w-24 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:ring-2 focus:ring-rose-600 text-right font-black text-base text-slate-900 dark:text-white transition-all shadow-sm"
-                                                                                />
-                                                                            </div>
-                                                                        </td>
-                                                                    );
-                                                                })}
                                                             </tr>
                                                         );
                                                     })}
@@ -709,7 +931,7 @@ const ManageResults = () => {
                                         })()
                                     ) : (
                                         <tr>
-                                            <td colSpan={2 + selectedExams.length} className="px-8 py-20 text-center">
+                                            <td colSpan={4 + selectedExams.length} className="px-8 py-20 text-center">
                                                 <div className="flex flex-col items-center">
                                                     <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-full mb-4">
                                                         <Search className="w-8 h-8 text-slate-200 dark:text-slate-600" />
