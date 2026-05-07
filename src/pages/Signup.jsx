@@ -80,7 +80,7 @@ export default function Signup() {
       const { confirmPassword, ...payload } = form;
       await API.post("/auth/register", payload);
       setSuccess(true);
-      setTimeout(() => navigate("/login"), 2500);
+      setTimeout(() => navigate("/admin/students"), 2500);
     } catch (err) {
       const msg = err.response?.data?.message || err.message || "Registration failed.";
       setError(msg);
@@ -125,18 +125,7 @@ export default function Signup() {
       {/* Noise grain overlay */}
       <div className="fixed inset-0 pointer-events-none z-0 opacity-[0.025] bg-[url('data:image/svg+xml,%3Csvg_viewBox=%270_0_256_256%27_xmlns=%27http://www.w3.org/2000/svg%27%3E%3Cfilter_id=%27n%27%3E%3CfeTurbulence_type=%27fractalNoise%27_baseFrequency=%270.9%27_numOctaves=%274%27_stitchTiles=%27stitch%27/%3E%3C/filter%3E%3Crect_width=%27100%25%27_height=%27100%25%27_filter=%27url(%23n)%27/%3E%3C/svg%3E')] bg-[length:256px_256px]" />
 
-      {/* Top Right Login Navigation */}
-      <div className="absolute top-6 right-8 z-50 flex items-center gap-4">
-        <span className="font-mono hidden sm:block text-sub text-[11px] tracking-wider">
-          ALREADY REGISTERED?
-        </span>
-        <button
-          onClick={() => navigate("/login")}
-          className="font-bebas px-6 py-2 bg-surface border border-white/10 rounded-lg text-white text-[1.1rem] tracking-wider cursor-pointer transition-all hover:border-acid hover:text-acid hover:bg-acid/5"
-        >
-          SIGN IN
-        </button>
-      </div>
+
 
       {/* Card */}
       <div className="animate-fade-slide relative z-10 w-full max-w-[920px] h-full max-h-[calc(100vh-32px)] rounded-2xl border border-white/10 overflow-hidden flex shadow-[0_40px_120px_rgba(0,0,0,0.7),inset_0_1px_0_rgba(255,255,255,0.05)]">
@@ -295,7 +284,10 @@ export default function Signup() {
                     name="role" value={form.role} onChange={change}
                   >
                     <option value="student">Student</option>
-                    <option value="instructor">Instructor</option>
+                    {(new URLSearchParams(window.location.search).get("admin") === "true" || 
+                      JSON.parse(localStorage.getItem("user") || "{}").role === "instructor") && (
+                      <option value="instructor">Instructor</option>
+                    )}
                   </select>
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sub text-[10px] pointer-events-none">▾</span>
                 </div>
@@ -332,24 +324,6 @@ export default function Signup() {
               </div>
             </button>
           </form>
-
-          {/* Divider */}
-          <div className="flex items-center gap-3 my-5 text-muted">
-            <div className="flex-1 h-[1px] bg-white/10" />
-            <span className="font-mono text-[10px] tracking-widest">OR</span>
-            <div className="flex-1 h-[1px] bg-white/10" />
-          </div>
-
-          <p className="font-grotesk text-center text-sub text-[13px]">
-            Already have an account?{" "}
-            <span
-              onClick={() => navigate("/login")}
-              className="text-acid cursor-pointer font-semibold transition-opacity hover:opacity-70"
-            >
-              Sign in ↗
-            </span>
-          </p>
-
           <p className="font-mono text-center text-ink-lighter text-[10px] mt-5 tracking-widest">
             © 2026 CHEMONE — ALL RIGHTS RESERVED
           </p>

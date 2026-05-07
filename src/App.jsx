@@ -24,6 +24,30 @@ import { Toaster } from 'react-hot-toast';
 import { useEffect } from 'react';
 import AutoLogout from "./components/AutoLogout";
 
+const AdminRoute = ({ children }) => {
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const token = localStorage.getItem('token');
+  
+  if (!token || user.role !== 'instructor') {
+    return <Navigate to="/login" replace />;
+  }
+  return children;
+};
+
+const StudentRoute = ({ children }) => {
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const token = localStorage.getItem('token');
+
+  if (!token) {
+    return <Navigate to="/login" replace />;
+  }
+  
+  if (user.role === 'instructor') {
+    return <Navigate to="/admin" replace />;
+  }
+  return children;
+};
+
 const GuestRestrictRoute = ({ children }) => {
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   if (user.role === 'guest') {
@@ -47,31 +71,31 @@ function App() {
       <Toaster position="top-center" reverseOrder={false} />
       <Routes>
         <Route path="/" element={<Navigate to="/login" replace />} />
-        <Route path="/signup" element={<Signup />} />
         <Route path="/login" element={<Login />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
 
         <Route path="/settings" element={<GuestRestrictRoute><Settings /></GuestRestrictRoute>} />
 
-        <Route path="/admin" element={<AdminDashboard />} />
-        <Route path="/admin/chat-with-ai" element={<ChatWithAI />} />
-        <Route path="/admin/manage-knowledge" element={<ManageKnowledge />} />
-        <Route path="/admin/spot-test/create" element={<CreateSpotTest />} />
-        <Route path="/admin/spot-test/edit/:id" element={<CreateSpotTest />} />
-        <Route path="/admin/daily-worksheet" element={<DailyWorksheet />} />
-        <Route path="/admin/manage-spot-test" element={<ManageSpotTest />} />
-        <Route path="/admin/manage-daily-worksheet" element={<ManageDailyWorksheet />} />
-        <Route path="/admin/students" element={<ManageStudents />} />
-        <Route path="/admin/manage-results" element={<ManageResults />} />
+        <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+        <Route path="/admin/signup" element={<AdminRoute><Signup /></AdminRoute>} />
+        <Route path="/admin/chat-with-ai" element={<AdminRoute><ChatWithAI /></AdminRoute>} />
+        <Route path="/admin/manage-knowledge" element={<AdminRoute><ManageKnowledge /></AdminRoute>} />
+        <Route path="/admin/spot-test/create" element={<AdminRoute><CreateSpotTest /></AdminRoute>} />
+        <Route path="/admin/spot-test/edit/:id" element={<AdminRoute><CreateSpotTest /></AdminRoute>} />
+        <Route path="/admin/daily-worksheet" element={<AdminRoute><DailyWorksheet /></AdminRoute>} />
+        <Route path="/admin/manage-spot-test" element={<AdminRoute><ManageSpotTest /></AdminRoute>} />
+        <Route path="/admin/manage-daily-worksheet" element={<AdminRoute><ManageDailyWorksheet /></AdminRoute>} />
+        <Route path="/admin/students" element={<AdminRoute><ManageStudents /></AdminRoute>} />
+        <Route path="/admin/manage-results" element={<AdminRoute><ManageResults /></AdminRoute>} />
 
-        <Route path="/student" element={<StudentDashboard />} />
-        <Route path="/student/spot-test" element={<ViewSpotTest />} />
-        <Route path="/student/spot-test/:id" element={<TakeSpotTest />} />
-        <Route path="/student/daily-worksheet" element={<Dailyworksheet />} />
-        <Route path="/student/results" element={<ViewPhysicalResults />} />
-        <Route path="/student/ai-chatbot" element={<ChatBot />} />
-        <Route path="/student/about" element={<About />} />
-        <Route path="/student/games" element={<Games />} />
+        <Route path="/student" element={<StudentRoute><StudentDashboard /></StudentRoute>} />
+        <Route path="/student/spot-test" element={<StudentRoute><ViewSpotTest /></StudentRoute>} />
+        <Route path="/student/spot-test/:id" element={<StudentRoute><TakeSpotTest /></StudentRoute>} />
+        <Route path="/student/daily-worksheet" element={<StudentRoute><Dailyworksheet /></StudentRoute>} />
+        <Route path="/student/results" element={<StudentRoute><ViewPhysicalResults /></StudentRoute>} />
+        <Route path="/student/ai-chatbot" element={<StudentRoute><ChatBot /></StudentRoute>} />
+        <Route path="/student/about" element={<StudentRoute><About /></StudentRoute>} />
+        <Route path="/student/games" element={<StudentRoute><Games /></StudentRoute>} />
       </Routes>
     </BrowserRouter>
   );
