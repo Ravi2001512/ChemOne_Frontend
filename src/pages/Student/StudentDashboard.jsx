@@ -5,7 +5,7 @@ import {
   BookOpen,
   Award,
   Bot,
-  Settings,
+  Info,
   Gamepad2,
   ArrowRight,
   ExternalLink,
@@ -65,20 +65,20 @@ const StudentDashboard = () => {
       tag: 'AI Tutor',
     },
     {
-      title: 'Settings',
-      description: 'Manage your profile and account preferences',
-      icon: Settings,
-      onClick: () => navigate('/settings'),
-      color: 'violet',
-      tag: 'Account',
-    },
-    {
       title: 'Mind Relaxing',
       description: 'Take a break and play chemistry-themed mini-games',
       icon: Gamepad2,
       onClick: () => navigate('/student/games'),
       color: 'amber',
       tag: 'Games',
+    },
+    {
+      title: 'About ChemBridge',
+      description: 'About ChemBridge',
+      icon: Info,
+      onClick: () => navigate('/student/about'),
+      color: 'violet',
+      tag: 'About',
     },
   ];
 
