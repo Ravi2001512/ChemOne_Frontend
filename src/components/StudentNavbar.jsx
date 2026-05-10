@@ -12,7 +12,7 @@ const StudentNavbar = () => {
 
     useEffect(() => {
         setIsDarkMode(document.documentElement.classList.contains("dark"));
-        const storedUser = localStorage.getItem('user');
+        const storedUser = sessionStorage.getItem('user');
         if (storedUser) {
             try {
                 setUserRole(JSON.parse(storedUser).role);
@@ -33,8 +33,8 @@ const StudentNavbar = () => {
     };
 
     const handleLogout = () => {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
+        sessionStorage.removeItem('token');
+        sessionStorage.removeItem('user');
         navigate('/login');
     };
 

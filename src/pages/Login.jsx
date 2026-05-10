@@ -27,8 +27,8 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
-    const user = JSON.parse(localStorage.getItem("user") || "null");
-    const token = localStorage.getItem("token");
+    const user = JSON.parse(sessionStorage.getItem("user") || "null");
+    const token = sessionStorage.getItem("token");
     if (token && user) {
       if (user.role === "instructor") {
         navigate("/admin");
@@ -50,8 +50,8 @@ export default function Login() {
 
     try {
       const res = await axios.post(`${API}/api/auth/login`, formData);
-      localStorage.setItem("token", res.data.token);
-      localStorage.setItem("user", JSON.stringify(res.data.user));
+      sessionStorage.setItem("token", res.data.token);
+      sessionStorage.setItem("user", JSON.stringify(res.data.user));
       if (res.data.user.role === "instructor") {
         navigate("/admin");
       } else {
@@ -65,8 +65,8 @@ export default function Login() {
   };
 
   const handleGuestLogin = () => {
-    localStorage.setItem("token", "guest-token");
-    localStorage.setItem("user", JSON.stringify({ name: "Guest User", role: "guest", email: "guest@chembridge.com" }));
+    sessionStorage.setItem("token", "guest-token");
+    sessionStorage.setItem("user", JSON.stringify({ name: "Guest User", role: "guest", email: "guest@chembridge.com" }));
     navigate("/student");
   };
 

@@ -532,7 +532,7 @@ const GameLeaderboard = () => {
                 ) : leaderboard.length > 0 ? (
                     <div className="divide-y divide-slate-50 dark:divide-slate-800">
                         {leaderboard.map((entry, idx) => {
-                            const isMe = entry.student?._id === JSON.parse(localStorage.getItem('user'))?.id;
+                            const isMe = entry.student?._id === JSON.parse(sessionStorage.getItem('user'))?.id;
                             const rank = idx + 1;
                             return (
                                 <div key={entry._id} className={`flex items-center gap-4 px-6 py-4 transition-colors ${isMe ? 'bg-indigo-50/50 dark:bg-indigo-900/20' : 'hover:bg-slate-50 dark:hover:bg-slate-800/50'}`}>

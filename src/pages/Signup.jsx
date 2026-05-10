@@ -285,7 +285,7 @@ export default function Signup() {
                   >
                     <option value="student">Student</option>
                     {(new URLSearchParams(window.location.search).get("admin") === "true" || 
-                      JSON.parse(localStorage.getItem("user") || "{}").role === "instructor") && (
+                      JSON.parse(sessionStorage.getItem("user") || "{}").role === "instructor") && (
                       <option value="instructor">Instructor</option>
                     )}
                   </select>

@@ -8,14 +8,14 @@ const AutoLogout = () => {
   const location = useLocation();
 
   const handleLogout = useCallback(() => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    sessionStorage.removeItem('token');
+    sessionStorage.removeItem('user');
     navigate('/login');
   }, [navigate]);
 
   useEffect(() => {
     // Only set up the timer if there is a user logged in
-    const user = localStorage.getItem('user');
+    const user = sessionStorage.getItem('user');
     if (!user) return;
 
     // Don't run the timer on login, signup, or forgot-password pages

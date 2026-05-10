@@ -25,8 +25,8 @@ import { useEffect } from 'react';
 import AutoLogout from "./components/AutoLogout";
 
 const AdminRoute = ({ children }) => {
-  const user = JSON.parse(localStorage.getItem('user') || '{}');
-  const token = localStorage.getItem('token');
+  const user = JSON.parse(sessionStorage.getItem('user') || '{}');
+  const token = sessionStorage.getItem('token');
   
   if (!token || user.role !== 'instructor') {
     return <Navigate to="/login" replace />;
@@ -35,8 +35,8 @@ const AdminRoute = ({ children }) => {
 };
 
 const StudentRoute = ({ children }) => {
-  const user = JSON.parse(localStorage.getItem('user') || '{}');
-  const token = localStorage.getItem('token');
+  const user = JSON.parse(sessionStorage.getItem('user') || '{}');
+  const token = sessionStorage.getItem('token');
 
   if (!token) {
     return <Navigate to="/login" replace />;
@@ -49,7 +49,7 @@ const StudentRoute = ({ children }) => {
 };
 
 const GuestRestrictRoute = ({ children }) => {
-  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const user = JSON.parse(sessionStorage.getItem('user') || '{}');
   if (user.role === 'guest') {
     return <Navigate to="/student" replace />;
   }
