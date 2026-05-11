@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { Trash2 } from "lucide-react";
 import StudentNavbar from "../../components/StudentNavbar";
 import API from "../../services/api";
 
@@ -198,6 +199,15 @@ const ChatBot = () => {
   const handleNewChat = () => {
     setCurrentChatId(null);
     setIsSidebarOpen(false);
+  };
+
+  const handleDeleteChat = (e, chatId) => {
+    e.stopPropagation(); // Prevent selecting the chat
+    const updatedChats = chats.filter((c) => c.id !== chatId);
+    setChats(updatedChats);
+    if (currentChatId === chatId) {
+      setCurrentChatId(null);
+    }
   };
 
   // 🧪 Loader (while AI thinking)
@@ -507,9 +517,10 @@ const ChatBot = () => {
                     transition: "all 0.2s ease",
                     fontFamily: "'Space Grotesk', sans-serif",
                     fontSize: "0.85rem",
-                    whiteSpace: "nowrap",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis"
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: "8px"
                   }}
                   onMouseEnter={(e) => {
                     if (currentChatId !== c.id) {
@@ -522,7 +533,43 @@ const ChatBot = () => {
                     }
                   }}
                 >
-                  {c.title}
+                  <span style={{ 
+                    whiteSpace: "nowrap", 
+                    overflow: "hidden", 
+                    textOverflow: "ellipsis",
+                    flex: 1
+                  }}>
+                    {c.title}
+                  </span>
+                  <button
+                    onClick={(e) => handleDeleteChat(e, c.id)}
+                    style={{
+                      background: "transparent",
+                      border: "none",
+                      color: "inherit",
+                      opacity: 0.5,
+                      cursor: "pointer",
+                      padding: "4px",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      borderRadius: "4px",
+                      transition: "all 0.2s ease"
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.opacity = 1;
+                      e.currentTarget.style.background = isDark ? "rgba(239, 68, 68, 0.2)" : "rgba(239, 68, 68, 0.1)";
+                      e.currentTarget.style.color = "#ef4444";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.opacity = 0.5;
+                      e.currentTarget.style.background = "transparent";
+                      e.currentTarget.style.color = "inherit";
+                    }}
+                    title="Delete Chat"
+                  >
+                    <Trash2 size={14} />
+                  </button>
                 </div>
               ))}
 
