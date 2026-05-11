@@ -67,7 +67,7 @@ function App() {
         <Route path="/student/spot-test/:id" element={<TakeSpotTest />} />
         <Route path="/student/daily-worksheet" element={<Dailyworksheet />} />
         <Route path="/student/results" element={<ViewPhysicalResults />} />
-        <Route path="/student/ai-chatbot" element={<ChatBot />} />
+        <Route path="/student/ai-chatbot" element={<GuestRestrictRoute><ChatBot /></GuestRestrictRoute>} />
         <Route path="/student/about" element={<About />} />
         <Route path="/student/games" element={<Games />} />
       </Routes>
