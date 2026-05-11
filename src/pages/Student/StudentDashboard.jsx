@@ -84,7 +84,7 @@ const StudentDashboard = () => {
 
   const filteredCards = dashboardCards.filter((card) => {
     if (userRole === 'guest') {
-      return !['Spot Tests', 'Daily Worksheet', 'Physical Results', 'Settings'].includes(card.title);
+      return !['Spot Tests', 'Daily Worksheet', 'Physical Results', 'Settings', 'AI Chatbot'].includes(card.title);
     }
     return true;
   });
