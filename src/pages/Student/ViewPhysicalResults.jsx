@@ -20,7 +20,7 @@ const ViewPhysicalResults = () => {
     const [activeTab, setActiveTab] = useState("history");
 
     useEffect(() => {
-        const user = JSON.parse(localStorage.getItem('user'));
+        const user = JSON.parse(sessionStorage.getItem('user'));
         setCurrentUser(user);
         fetchExams();
         fetchMyHistory();
@@ -31,7 +31,7 @@ const ViewPhysicalResults = () => {
             setLoading(true);
             const response = await API.get("/physical-exams");
             if (response.data.success) {
-                const user = JSON.parse(localStorage.getItem('user'));
+                const user = JSON.parse(sessionStorage.getItem('user'));
                 const studentBatch = user?.batch;
 
                 const filteredExams = response.data.exams.filter(exam =>

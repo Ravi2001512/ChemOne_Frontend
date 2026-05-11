@@ -21,7 +21,7 @@ function Settings() {
         setFormData({ name: res.data.name, email: res.data.email });
       } catch (err) {
         setError("Failed to load profile details.");
-        const localUser = localStorage.getItem("user");
+        const localUser = sessionStorage.getItem("user");
         if (localUser) {
           const u = JSON.parse(localUser);
           setUser(u);
@@ -43,7 +43,7 @@ function Settings() {
     try {
       const res = await API.put("/auth/me", formData);
       setUser(res.data.user);
-      localStorage.setItem("user", JSON.stringify(res.data.user));
+      sessionStorage.setItem("user", JSON.stringify(res.data.user));
       setSuccess("Profile updated successfully!");
       setIsEditing(false);
     } catch (err) {
