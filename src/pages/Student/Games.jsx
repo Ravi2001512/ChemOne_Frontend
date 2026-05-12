@@ -1,631 +1,553 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import StudentNavbar from '../../components/StudentNavbar';
 import API from '../../services/api';
-import { Trophy, Medal, Clock, Award, User, ChevronRight, Gamepad2 } from 'lucide-react';
-import toast from 'react-hot-toast';
+import { Trophy, X, Medal, Beaker, Zap } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 
-// -------- Memory Game (4x4) --------
-const MemoryGame = () => {
-    const emojis = ["🍎", "🍌", "🍇", "🍉", "🍓", "🍍", "🥝", "🍑"];
-    const generateCards = () =>
-        [...emojis, ...emojis]
-            .sort(() => Math.random() - 0.5)
-            .map((emoji, i) => ({ id: i, emoji, isMatched: false }));
+// --- DATA: CHEM BATTLE 100 ---
+const TOTAL_QUESTIONS = [
+    { q: "ප්‍රබල අම්ලයක pH අගය කීයද?", a: "1-3", b: "11-14", correct: "a", effect: "ACID" },
+    { q: "සෘණ ආරෝපණයක් සහිත අංශුව කුමක්ද?", a: "ප්‍රෝටෝනය", b: "ඉලෙක්ට්‍රෝනය", correct: "b", effect: "SHOCK" },
+    { q: "සෝඩියම් ජලය සමග ප්‍රතික්‍රියා කළ විට?", a: "පිපිරුමක් ඇතිවේ", b: "අයිස් සෑදේ", correct: "a", effect: "BOOM" },
+    { q: "රත්තරන් වල රසායනික සංකේතය කුමක්ද?", a: "Au", b: "Gd", correct: "a", effect: "ACID" },
+    { q: "කාබන් වල සංයුජතාව කීයද?", a: "2", b: "4", correct: "b", effect: "SHOCK" },
+    { q: "වාතයේ වැඩිපුරම ඇති වායුව?", a: "ඔක්සිජන්", b: "නයිට්‍රජන්", correct: "b", effect: "BOOM" },
+    { q: "දියමන්ති සෑදී ඇත්තේ කුමන මූලද්‍රව්‍යයෙන්ද?", a: "කාබන්", b: "සිලිකන්", correct: "a", effect: "SHOCK" },
+    { q: "ලුණු වල රසායනික නාමය?", a: "NaCl", b: "KCl", correct: "a", effect: "ACID" },
+    { q: "ඕසෝන් ස්ථරයේ සංකේතය?", a: "O2", b: "O3", correct: "b", effect: "BOOM" },
+    { q: "යකඩ මලකෑමට අවශ්‍ය වන්නේ?", a: "ජලය හා ඔක්සිජන්", b: "නයිට්‍රජන්", correct: "a", effect: "ACID" },
+    { q: "ආවර්තිතා වගුවේ 1 වන මූලද්‍රව්‍යය?", a: "හයිඩ්‍රජන්", b: "හීලියම්", correct: "a", effect: "SHOCK" },
+    { q: "හීලියම් යනු කුමන වර්ගයේ වායුවක්ද?", a: "උදාසීන වායුවකි", b: "සක්‍රීය වායුවකි", correct: "a", effect: "BOOM" },
+    { q: "ජලයේ රසායනික සූත්‍රය?", a: "HO2", b: "H2O", correct: "b", effect: "ACID" },
+    { q: "කාබන් ඩයොක්සයිඩ් වායුවේ සූත්‍රය?", a: "CO2", b: "CO", correct: "a", effect: "BOOM" },
+    { q: "පරමාණුවක න්‍යෂ්ටියේ ඇත්තේ?", a: "ප්‍රෝටෝන හා නියුට්‍රෝන", b: "ඉලෙක්ට්‍රෝන පමණි", correct: "a", effect: "SHOCK" },
+    { q: "භෂ්මයක pH අගය?", a: "7 ට වැඩි", b: "7 ට අඩු", correct: "a", effect: "ACID" },
+    { q: "ලෝහයක් නොවන මූලද්‍රව්‍යය කුමක්ද?", a: "යකඩ", b: "සල්ෆර්", correct: "b", effect: "BOOM" },
+    { q: "මිනිස් සිරුරේ වැඩිපුරම ඇති ලෝහය?", a: "යකඩ", b: "කැල්සියම්", correct: "b", effect: "SHOCK" },
+    { q: "සල්ෆියුරික් අම්ලයේ සූත්‍රය?", a: "H2SO4", b: "HCl", correct: "a", effect: "ACID" },
+    { q: "හයිඩ්‍රොක්ලෝරික් අම්ලයේ සූත්‍රය?", a: "H2SO4", b: "HCl", correct: "b", effect: "BOOM" },
+    { q: "ස්කන්ධ ක්‍රමාංකය යනු?", a: "p + n එකතුව", b: "p ගණන පමණි", correct: "a", effect: "SHOCK" },
+    { q: "පැන්සල් කූරු සෑදීමට ගන්නා ද්‍රව්‍යය?", a: "මිනිරන්", b: "ගල් අඟුරු", correct: "a", effect: "ACID" },
+    { q: "හුණුගල් වල රසායනික නාමය?", a: "කැල්සියම් කාබනේට්", b: "සෝඩියම් කාබනේට්", correct: "a", effect: "BOOM" },
+    { q: "වියළි අයිස් යනු කුමක්ද?", a: "ඝන CO2", b: "ඝන O2", correct: "a", effect: "SHOCK" },
+    { q: "පරමාණුක ක්‍රමාංකය 11 වූ මූලද්‍රව්‍යය?", a: "මැග්නීසියම්", b: "සෝඩියම්", correct: "b", effect: "ACID" },
+    { q: "ලෝහ රත් කළ විට ප්‍රසාරණය?", a: "වේ", b: "නොවේ", correct: "a", effect: "BOOM" },
+    { q: "ඇලුමිනියම් වල රසායනික සංකේතය?", a: "Al", b: "Am", correct: "a", effect: "SHOCK" },
+    { q: "රසදිය (Mercury) කාමර උෂ්ණත්වයේදී?", a: "ඝන", b: "ද්‍රව", correct: "b", effect: "ACID" },
+    { q: "විදුලිය හොඳින්ම ගෙන යන ලෝහය?", a: "තඹ", b: "රිදී", correct: "b", effect: "BOOM" },
+    { q: "ගිනිකූරු නිෂ්පාදනයට ගන්නා මූලද්‍රව්‍යය?", a: "සල්ෆර්", b: "පොස්පරස්", correct: "b", effect: "SHOCK" },
+    { q: "මීතේන් වායුවේ සූත්‍රය?", a: "CH4", b: "C2H6", correct: "a", effect: "ACID" },
+    { q: "ග්ලූකෝස් අණුවක කාබන් පරමාණු ගණන?", a: "6", b: "12", correct: "a", effect: "BOOM" },
+    { q: "ප්‍රෝටෝනයක ආරෝපණය?", a: "ධන", b: "සෘණ", correct: "a", effect: "SHOCK" },
+    { q: "නියුට්‍රෝනයක ආරෝපණය?", a: "උදාසීන", b: "ධන", correct: "a", effect: "ACID" },
+    { q: "ඇමෝනියා වායුවේ සූත්‍රය?", a: "NH3", b: "NO2", correct: "a", effect: "BOOM" },
+    { q: "පොටෑසියම් වල රසායනික සංකේතය?", a: "P", b: "K", correct: "b", effect: "SHOCK" },
+    { q: "මැග්නීසියම් පීත්ත පටියක් දහනය වූ විට ලැබෙන වර්ණය?", a: "දීප්තිමත් සුදු", b: "නිල්", correct: "a", effect: "ACID" },
+    { q: "පිත්තල සෑදීමට ගන්නා ලෝහ?", a: "තඹ හා සින්ක්", b: "තඹ හා ටින්", correct: "a", effect: "BOOM" },
+    { q: "ලෝකඩ (Bronze) සෑදීමට ගන්නා ලෝහ?", a: "තඹ හා ටින්", b: "යකඩ හා නිකල්", correct: "a", effect: "SHOCK" },
+    { q: "ආවර්තිතා වගුවේ 18 වන කාණ්ඩය?", a: "උදාසීන වායු", b: "හැලජන", correct: "a", effect: "ACID" },
+    { q: "ක්ලෝරීන් වල පරමාණුක ක්‍රමාංකය?", a: "17", b: "18", correct: "a", effect: "BOOM" },
+    { q: "හීලියම් පරමාණුවක ඉලෙක්ට්‍රෝන ගණන?", a: "1", b: "2", correct: "b", effect: "SHOCK" },
+    { q: "නියොන් (Neon) වල සංකේතය?", a: "Ne", b: "Ni", correct: "a", effect: "ACID" },
+    { q: "කැල්සියම් වල සංයුජතාව?", a: "1", b: "2", correct: "b", effect: "BOOM" },
+    { q: "යකඩ වල සංකේතය?", a: "Fe", b: "Ir", correct: "a", effect: "SHOCK" },
+    { q: "තඹ වල සංකේතය?", a: "Cu", b: "Co", correct: "a", effect: "ACID" },
+    { q: "රිදී වල සංකේතය?", a: "Ag", b: "Si", correct: "a", effect: "BOOM" },
+    { q: "ඊයම් (Lead) වල සංකේතය?", a: "Pb", b: "Ld", correct: "a", effect: "SHOCK" },
+    { q: "අයඩීන් වල වර්ණය?", a: "තද දම්", b: "කහ", correct: "a", effect: "ACID" },
+    { q: "එතනෝල් වල ක්‍රියාකාරී සමූහය?", a: "-OH", b: "-COOH", correct: "a", effect: "BOOM" },
+    { q: "අම්ලයක් හා භෂ්මයක් ප්‍රතික්‍රියා කිරීම?", a: "උදාසීනීකරණය", b: "ඔක්සිකරණය", correct: "a", effect: "SHOCK" },
+    { q: "ප්‍රතික්‍රියාවක වේගය වැඩි කරන ද්‍රව්‍ය?", a: "උත්ප්‍රේරක", b: "ප්‍රතික්‍රියක", correct: "a", effect: "ACID" },
+    { q: "ස්වාභාවික වායුවේ ප්‍රධාන සංරචකය?", a: "මීතේන්", b: "ප්‍රොපේන්", correct: "a", effect: "BOOM" },
+    { q: "LP ගෑස් වල අඩංගු වායූන්?", a: "ප්‍රොපේන් හා බියුටේන්", b: "මීතේන් හා එතේන්", correct: "a", effect: "SHOCK" },
+    { q: "පරමාණුක ස්කන්ධ ඒකකය?", a: "amu", b: "kg", correct: "a", effect: "ACID" },
+    { q: "මවුලය යනු කුමක්ද?", a: "ද්‍රව්‍ය ප්‍රමාණය මැනීමේ ඒකකය", b: "බර මැනීමේ ඒකකය", correct: "a", effect: "BOOM" },
+    { q: "ඇවගාඩ්‍රෝ නියතය?", a: "6.022 x 10^23", b: "1.6 x 10^-19", correct: "a", effect: "SHOCK" },
+    { q: "නැප්තලීන් වලට සිදුවන සංසිද්ධිය?", a: "ඌර්ධවපාතනය", b: "වාෂ්පීකරණය", correct: "a", effect: "ACID" },
+    { q: "කිරි ඇඹුල් වීමට හේතු වන අම්ලය?", a: "ලැක්ටික් අම්ලය", b: "සිට්‍රික් අම්ලය", correct: "a", effect: "BOOM" },
+    { q: "දෙහි වල අඩංගු අම්ලය?", a: "සිට්‍රික් අම්ලය", b: "ටාටරික් අම්ලය", correct: "a", effect: "SHOCK" },
+    { q: "විනාකිරි වල අඩංගු අම්ලය?", a: "ඇසිටික් අම්ලය", b: "ෆෝමික් අම්ලය", correct: "a", effect: "ACID" },
+    { q: "හුණු වතුර කිරි පැහැ ගැන්වෙන වායුව?", a: "CO2", b: "O2", correct: "a", effect: "BOOM" },
+    { q: "හයිඩ්‍රජන් වායුව හඳුනා ගැනීමේ පරීක්ෂාව?", a: "පොප් හඬ", b: "නිල් දැල්ල", correct: "a", effect: "SHOCK" },
+    { q: "ගිනි නිවන උපකරණ වල භාවිතා වන වායුව?", a: "CO2", b: "O2", correct: "a", effect: "ACID" },
+    { q: "ඉලෙක්ට්‍රෝන පිටකිරීම?", a: "ඔක්සිකරණය", b: "ඔක්සිහරණය", correct: "a", effect: "BOOM" },
+    { q: "ඉලෙක්ට්‍රෝන ලබාගැනීම?", a: "ඔක්සිහරණය", b: "ඔක්සිකරණය", correct: "a", effect: "SHOCK" },
+    { q: "බෝර් ආකෘතියේ 2 වන ශක්ති මට්ටමේ උපරිම ඉලෙක්ට්‍රෝන?", a: "8", b: "2", correct: "a", effect: "ACID" },
+    { q: "පොස්පරස් වල සංකේතය?", a: "P", b: "Ph", correct: "a", effect: "BOOM" },
+    { q: "සල්ෆර් වල සංකේතය?", a: "S", b: "Su", correct: "a", effect: "SHOCK" },
+    { q: "ෆ්ලෝරීන් වල සංකේතය?", a: "F", b: "Fl", correct: "a", effect: "ACID" },
+    { q: "මැග්නීසියම් වල සංකේතය?", a: "Mg", b: "Mn", correct: "a", effect: "BOOM" },
+    { q: "සින්ක් වල සංකේතය?", a: "Zn", b: "Z", correct: "a", effect: "SHOCK" },
+    { q: "යකඩ ඔක්සයිඩ් වල වර්ණය?", a: "රතු දුඹුරු", b: "නිල්", correct: "a", effect: "ACID" },
+    { q: "තඹ සල්ෆේට් වල වර්ණය?", a: "නිල්", b: "කහ", correct: "a", effect: "BOOM" },
+    { q: "පිරිසිදු රත්තරන් වල කැරට් අගය?", a: "24", b: "22", correct: "a", effect: "SHOCK" },
+    { q: "කාබනික රසායනයේ පදනම කුමක්ද?", a: "කාබන්", b: "නයිට්‍රජන්", correct: "a", effect: "ACID" },
+    { q: "පොලිමර් වල ඒකකය?", a: "මොනෝමර්", b: "අණු", correct: "a", effect: "BOOM" },
+    { q: "ස්වාභාවික රබර් වල මූලික ඒකකය?", a: "අයිසොප්‍රීන්", b: "එතීන්", correct: "a", effect: "SHOCK" },
+    { q: "වල්කනයිස් කළ රබර් වල අඩංගු මූලද්‍රව්‍යය?", a: "සල්ෆර්", b: "නයිට්‍රජන්", correct: "a", effect: "ACID" },
+    { q: "ආවර්තිතා වගුව නිපදවූ විද්‍යාඥයා?", a: "මෙන්ඩලීව්", b: "නියුටන්", correct: "a", effect: "BOOM" },
+    { q: "ඇල්කේන වල පොදු සූත්‍රය?", a: "CnH2n+2", b: "CnH2n", correct: "a", effect: "SHOCK" },
+    { q: "ඇල්කීන වල පොදු සූත්‍රය?", a: "CnH2n", b: "CnH2n-2", correct: "a", effect: "ACID" },
+    { q: "පළතුරු ඉදවීමට ගන්නා වායුව?", a: "එතිලීන්", b: "මීතේන්", correct: "a", effect: "BOOM" },
+    { q: "ග්‍රැපීන් යනු කුමන මූලද්‍රව්‍යයේ රූපයක්ද?", a: "කාබන්", b: "සිලිකන්", correct: "a", effect: "SHOCK" },
+    { q: "ලෝහ විද්‍යුත් සන්නායක වන්නේ ඇයි?", a: "සංචාරක ඉලෙක්ට්‍රෝන නිසා", b: "ප්‍රෝටෝන නිසා", correct: "a", effect: "ACID" },
+    { q: "යකඩ මලකෑම වැළැක්වීමට තට්ටුවක් දැමීම?", a: "ගැල්වනයිස් කිරීම", b: "ඌර්ධවපාතනය", correct: "a", effect: "BOOM" },
+    { q: "ආහාර කල්තබා ගැනීමට ගන්නා රසායනයක්?", a: "සෝඩියම් බෙන්සොඒට්", b: "සල්ෆියුරික් අම්ලය", correct: "a", effect: "SHOCK" },
+    { q: "විද්‍යුත් විච්ඡේදනයකදී ධන අග්‍රය?", a: "ඇනෝඩය", b: "කැතෝඩය", correct: "a", effect: "ACID" },
+    { q: "විද්‍යුත් විච්ඡේදනයකදී සෘණ අග්‍රය?", a: "කැතෝඩය", b: "ඇනෝඩය", correct: "a", effect: "BOOM" },
+    { q: "සෝඩා බෝතලයක අඩංගු අම්ලය?", a: "කාබොනික් අම්ලය", b: "නයිට්‍රික් අම්ලය", correct: "a", effect: "SHOCK" },
+    { q: "හීලියම් පරමාණුවක නියුට්‍රෝන ගණන?", a: "2", b: "1", correct: "a", effect: "ACID" },
+    { q: "ඔක්සිජන් වල පරමාණුක ක්‍රමාංකය?", a: "8", b: "16", correct: "a", effect: "BOOM" },
+    { q: "නයිට්‍රජන් වල පරමාණුක ක්‍රමාංකය?", a: "7", b: "14", correct: "a", effect: "SHOCK" },
+    { q: "සෝඩියම් හයිඩ්‍රොක්සයිඩ් වල pH අගය?", a: "13-14", b: "1-2", correct: "a", effect: "ACID" },
+    { q: "කාබනික ද්‍රව්‍ය දහනය වූ විට ලැබෙන වායුව?", a: "CO2", b: "N2", correct: "a", effect: "BOOM" },
+    { q: "විදුලි බුබුළු තුළ පුරවන වායුව?", a: "ආගන් (Argon)", b: "ඔක්සිජන්", correct: "a", effect: "SHOCK" },
+    { q: "බ්‍රෝමීන් වල වර්ණය?", a: "රතු දුඹුරු ද්‍රවයකි", b: "නිල් වායුවකි", correct: "a", effect: "ACID" },
+    { q: "හයිඩ්‍රජන් පෙරොක්සයිඩ් සූත්‍රය?", a: "H2O2", b: "HO", correct: "a", effect: "BOOM" },
+    { q: "එස්ටර වල සුවඳ?", a: "සුවඳවත් පළතුරු සුවඳ", b: "නරක සුවඳ", correct: "a", effect: "SHOCK" },
+    { q: "ආවර්තිතා වගුවේ 2 වන කාණ්ඩය?", a: "ක්ෂාරීය පාංශු ලෝහ", b: "ක්ෂාර ලෝහ", correct: "a", effect: "ACID" }
+];
 
-    const [cards, setCards] = useState(generateCards);
-    const [flipped, setFlipped] = useState([]);
-    const [locked, setLocked] = useState(false);
-    const [moves, setMoves] = useState(0);
-    const [matched, setMatched] = useState([]);
-
-    const handleFlip = (index) => {
-        if (locked || flipped.includes(index) || cards[index].isMatched) return;
-        const newFlipped = [...flipped, index];
-        setFlipped(newFlipped);
-        if (newFlipped.length === 2) {
-            setMoves(m => m + 1);
-            setLocked(true);
-            const [a, b] = newFlipped;
-            if (cards[a].emoji === cards[b].emoji) {
-                const newMatched = [...matched, cards[a].emoji];
-                setMatched(newMatched);
-                setCards(prev => prev.map(c => c.emoji === cards[a].emoji ? { ...c, isMatched: true } : c));
-                setFlipped([]);
-                setLocked(false);
-            } else {
-                setTimeout(() => { setFlipped([]); setLocked(false); }, 900);
-            }
-        }
-    };
-
-    const reset = () => { setCards(generateCards()); setFlipped([]); setLocked(false); setMoves(0); setMatched([]); };
-    const won = matched.length === emojis.length;
-
-    useEffect(() => {
-        if (won) {
-            submitGameScore('memory', moves);
-        }
-    }, [won]);
-
-    return (
-        <div>
-            <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                    <div className="p-2 bg-indigo-100 dark:bg-indigo-900/50 rounded-lg">
-                        <Gamepad2 className="w-5 h-5 text-indigo-600" />
-                    </div>
-                    <h2 className="text-xl font-bold dark:text-white">Memory Game</h2>
-                </div>
-                <div className="flex items-center gap-3">
-                    <span className="text-sm text-gray-500 font-medium">Moves: <strong className="text-indigo-600">{moves}</strong></span>
-                    <button onClick={reset} className="px-4 py-2 text-sm bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-all shadow-md">Reset</button>
-                </div>
-            </div>
-            {won && (
-                <div className="mb-4 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl flex items-center gap-3 animate-in fade-in slide-in-from-top-2">
-                    <Trophy className="w-6 h-6 text-green-600" />
-                    <p className="text-green-700 dark:text-green-400 font-bold text-lg">🎉 Fantastic! You completed it in {moves} moves!</p>
-                </div>
-            )}
-            <div className="grid grid-cols-4 gap-3 max-w-sm mx-auto">
-                {cards.map((card, i) => (
-                    <button key={card.id} onClick={() => handleFlip(i)}
-                        className={`h-20 text-3xl rounded-2xl shadow-lg transition-all duration-300 font-bold border-2
-              ${card.isMatched ? 'bg-green-100 dark:bg-green-900/40 border-green-200 dark:border-green-800 cursor-default scale-95'
-                                : flipped.includes(i) ? 'bg-indigo-600 border-indigo-400 text-white rotate-y-180'
-                                    : 'bg-white dark:bg-slate-700 border-slate-100 dark:border-slate-600 hover:border-indigo-300 hover:scale-105'}`}>
-                        {flipped.includes(i) || card.isMatched ? card.emoji : '❓'}
-                    </button>
-                ))}
-            </div>
-        </div>
-    );
+const MEME_QUOTES = {
+    wrong: ["අයියෝ සාන්ත!", "ලැබ් එක ඉවරයි!", "ආයෙත් 6 වසරට පලයන්!", "ටීචර්ට කිව්වා ඕං!", "මොකක්ද ඒ කළේ?", "අයියෝ අයියෝ!", "ගෙදර පලයන් මචං"],
+    right: ["අම්මෝ ඒක! 🔥", "සුපිරි වැඩක්!", "හරියටම හරි!", "වැඩ්ඩෙක් තමයි!", "Full Marks!", "සයන්ස් වැඩ්ඩෙක්!", "Boom! Correct!"]
 };
 
-// -------- Puzzle Game (4x4 Sliding Puzzle) --------
-const PuzzleGame = () => {
-    const SIZE = 4;
-    const total = SIZE * SIZE;
-    const solved = [...Array(total - 1).keys()].map(i => i + 1).concat([null]);
+// --- DATA: LAB GAME ---
+const REACTIONS_DATABASE = [
+    { a: 'Na', b: 'H2O', res: 'BOOM!', meme: '💥 බුම්මාතේ!', sound: 'අඩෝ සෝඩියම් වතුරට දැම්මේ කවුද?!', type: 'danger' },
+    { a: 'HCl', b: 'NaOH', res: 'Neutral', meme: '🧂 ලුණුයි වතුරයි!', sound: 'ශාන්ති ශාන්ති... නියමයි පුතා.', type: 'safe' },
+    { a: 'H2SO4', b: 'Sugar', res: 'Snake', meme: '🐍 කළු සර්පයා!', sound: 'සීනි ටික කර කරගත්තා නේද?', type: 'funny' },
+    { a: 'K', b: 'H2O', res: 'Lilac Fire', meme: '🔥 පර්පල් ගින්දර!', sound: 'ලැබ් එක ඉවරයි! දුවපන්!', type: 'danger' },
+    { a: 'NH3', b: 'HCl', res: 'Smoke', meme: '☁️ සුදු දුම් මකරා!', sound: 'ඇමෝනියම් ක්ලෝරයිඩ් දුම බලන්න.', type: 'funny' },
+    { a: 'Pb(NO3)2', b: 'KI', res: 'Gold', meme: '✨ රත්තරන් වැස්සක්!', sound: 'ෂා... මේක නම් මැජික් එකක් වගේ.', type: 'safe' },
+    { a: 'Cu', b: 'HNO3', res: 'Toxic', meme: '🧪 දුඹුරු වලාකුළ!', sound: 'ඕක ආග්රහණය කරන්න එපා ඕයි!', type: 'danger' },
+    { a: 'Mg', b: 'O2', res: 'Flash', meme: '😎 ඇස් පේන්නෑ!', sound: 'මැග්නීසියම් පීත්ත පටිය දිහා බලන්න එපා කිව්වා නේද?', type: 'funny' },
+    { a: 'Phenol', b: 'Base', res: 'Pink', meme: '🌸 තද රෝස පාටයි!', sound: 'ෆීනොප්තලීන් දැම්මම ලස්සනයි නේද?', type: 'safe' },
+    { a: 'AgNO3', b: 'NH4OH', res: 'Mirror', meme: '🪞 මූණ පේනවා!', sound: 'ටොලන්ස් පරීක්ෂණය හරියටම කළා.', type: 'safe' },
+    { a: 'Ethanol', b: 'H2SO4', res: 'Gas', meme: '🎈 එතීන් වායුව!', sound: 'එතීන් හැදෙන සුවඳ එනවා.', type: 'safe' },
+    { a: 'Phone', b: 'H2SO4', res: 'Dead', meme: '📱 ෆෝන් එක ඉවරයි!', sound: 'කවුද ඕයි ෆෝන් එක ඇසිඩ් එකට දැම්මේ?', type: 'funny' },
+];
 
-    const isSolvable = (arr) => {
-        const flat = arr.filter(x => x !== null);
-        let inversions = 0;
-        for (let i = 0; i < flat.length; i++)
-            for (let j = i + 1; j < flat.length; j++)
-                if (flat[i] > flat[j]) inversions++;
-        const emptyRow = Math.floor(arr.indexOf(null) / SIZE);
-        const fromBottom = SIZE - emptyRow;
-        return SIZE % 2 === 1
-            ? inversions % 2 === 0
-            : (fromBottom % 2 === 0) ? inversions % 2 === 1 : inversions % 2 === 0;
-    };
+// --- REUSABLE COMPONENTS ---
 
-    const getShuffled = () => {
-        let arr;
-        do { arr = [...solved].sort(() => Math.random() - 0.5); }
-        while (!isSolvable(arr) || arr.join() === solved.join());
-        return arr;
-    };
-
-    const [tiles, setTiles] = useState(getShuffled);
-    const [moveCount, setMoveCount] = useState(0);
-
-    const moveTile = (index) => {
-        const emptyIndex = tiles.indexOf(null);
-        const row = Math.floor(index / SIZE), col = index % SIZE;
-        const eRow = Math.floor(emptyIndex / SIZE), eCol = emptyIndex % SIZE;
-        if ((Math.abs(row - eRow) + Math.abs(col - eCol)) !== 1) return;
-        const newTiles = [...tiles];
-        [newTiles[index], newTiles[emptyIndex]] = [newTiles[emptyIndex], newTiles[index]];
-        setTiles(newTiles);
-        setMoveCount(m => m + 1);
-    };
-
-    const isSolved = tiles.join() === solved.join();
-
-    useEffect(() => {
-        if (isSolved && moveCount > 0) {
-            submitGameScore('puzzle', moveCount);
-        }
-    }, [isSolved]);
-
-    return (
-        <div>
-            <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                    <div className="p-2 bg-indigo-100 dark:bg-indigo-900/50 rounded-lg">
-                        <Award className="w-5 h-5 text-indigo-600" />
-                    </div>
-                    <h2 className="text-xl font-bold dark:text-white">Sliding Puzzle (4×4)</h2>
-                </div>
-                <div className="flex items-center gap-3">
-                    <span className="text-sm text-gray-500 font-medium">Moves: <strong className="text-indigo-600">{moveCount}</strong></span>
-                    <button onClick={() => { setTiles(getShuffled()); setMoveCount(0); }}
-                        className="px-4 py-2 text-sm bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-all shadow-md">Reset</button>
-                </div>
-            </div>
-            {isSolved && (
-                <div className="mb-4 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl flex items-center gap-3 animate-in fade-in slide-in-from-top-2">
-                    <Trophy className="w-6 h-6 text-green-600" />
-                    <p className="text-green-700 dark:text-green-400 font-bold text-lg">🎉 Brilliant! Solved in {moveCount} moves!</p>
-                </div>
-            )}
-            <div className="bg-indigo-50 dark:bg-slate-900 p-4 rounded-2xl w-fit mx-auto lg:mx-0 shadow-inner">
-                <div className="grid grid-cols-4 gap-2 w-64 h-64">
-                    {tiles.map((tile, i) => (
-                        <button key={i} onClick={() => moveTile(i)}
-                            className={`flex items-center justify-center rounded-xl text-lg font-black transition-all border-b-4
-                ${tile === null ? 'bg-transparent border-transparent cursor-default'
-                                    : 'bg-indigo-600 border-indigo-800 hover:bg-indigo-500 text-white active:scale-95 active:border-b-0 active:translate-y-1 cursor-pointer'}`}>
-                            {tile}
+const LeaderboardModal = ({ show, onClose, data, loading, gameTitle }) => (
+    <AnimatePresence>
+        {show && (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} className="absolute inset-0 bg-black/80 backdrop-blur-sm" />
+                <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="bg-slate-900 border-2 border-yellow-500/50 w-full max-w-lg rounded-3xl overflow-hidden relative z-10 shadow-2xl">
+                    <div className="bg-yellow-500 p-6 flex justify-between items-center">
+                        <h2 className="text-black font-black text-2xl flex items-center gap-2">
+                            <Trophy size={28} />
+                            {gameTitle} TOP 10
+                        </h2>
+                        <button onClick={onClose} className="bg-black/20 hover:bg-black/40 p-2 rounded-full transition-all">
+                            <X size={24} className="text-black" />
                         </button>
-                    ))}
-                </div>
-            </div>
-        </div>
-    );
-};
-
-// -------- Word Search Game --------
-const GRID_SIZE = 12;
-
-const WORD_LIST = [
-    { word: "ALKANE", hint: "Saturated hydrocarbon" },
-    { word: "MOLE", hint: "6.02×10²³ particles" },
-    { word: "ENTROPY", hint: "Measure of disorder" },
-    { word: "ORBITAL", hint: "Electron probability region" },
-    { word: "BUFFER", hint: "Resists pH change" },
-    { word: "CATALYST", hint: "Speeds up reaction" },
-    { word: "ISOMER", hint: "Same formula, different structure" },
-    { word: "HALOGEN", hint: "Group VII elements" },
-    { word: "TITRATION", hint: "Volumetric analysis" },
-    { word: "LATTICE", hint: "Ionic crystal structure" },
-];
-
-const DIRECTIONS = [
-    [0, 1], [1, 0], [1, 1], [-1, 1],
-    [0, -1], [-1, 0], [-1, -1], [1, -1],
-];
-
-function buildGrid(words) {
-    const grid = Array.from({ length: GRID_SIZE }, () => Array(GRID_SIZE).fill(''));
-    const placed = [];
-
-    for (const { word } of words) {
-        let success = false;
-        for (let attempt = 0; attempt < 200 && !success; attempt++) {
-            const [dr, dc] = DIRECTIONS[Math.floor(Math.random() * DIRECTIONS.length)];
-            const row = Math.floor(Math.random() * GRID_SIZE);
-            const col = Math.floor(Math.random() * GRID_SIZE);
-            const cells = [];
-            let fits = true;
-            for (let i = 0; i < word.length; i++) {
-                const r = row + dr * i, c = col + dc * i;
-                if (r < 0 || r >= GRID_SIZE || c < 0 || c >= GRID_SIZE) { fits = false; break; }
-                if (grid[r][c] !== '' && grid[r][c] !== word[i]) { fits = false; break; }
-                cells.push([r, c]);
-            }
-            if (fits) {
-                cells.forEach(([r, c], i) => { grid[r][c] = word[i]; });
-                placed.push({ word, cells });
-                success = true;
-            }
-        }
-    }
-
-    const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-    for (let r = 0; r < GRID_SIZE; r++)
-        for (let c = 0; c < GRID_SIZE; c++)
-            if (grid[r][c] === '') grid[r][c] = letters[Math.floor(Math.random() * 26)];
-
-    return { grid, placed };
-}
-
-const WordSearch = () => {
-    const [{ grid, placed }, setPuzzle] = useState(() => buildGrid(WORD_LIST));
-    const [selecting, setSelecting] = useState(false);
-    const [selection, setSelection] = useState([]);
-    const [foundWords, setFoundWords] = useState([]);
-    const [highlightCells, setHighlightCells] = useState([]);
-    const [timer, setTimer] = useState(0);
-    const [isPaused, setIsPaused] = useState(false);
-
-    useEffect(() => {
-        let interval;
-        if (!isPaused && foundWords.length < placed.length) {
-            interval = setInterval(() => {
-                setTimer(t => t + 1);
-            }, 1000);
-        }
-        return () => clearInterval(interval);
-    }, [isPaused, foundWords.length, placed.length]);
-
-    const formatTime = (seconds) => {
-        const mins = Math.floor(seconds / 60);
-        const secs = seconds % 60;
-        return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
-    };
-
-    const cellKey = (r, c) => `${r}-${c}`;
-
-    const getColor = (r, c) => {
-        const key = cellKey(r, c);
-        const foundEntry = highlightCells.find(h => h.cells.some(([hr, hc]) => hr === r && hc === c));
-        if (foundEntry) return foundEntry.color;
-        if (selection.some(([sr, sc]) => sr === r && sc === c)) return 'selecting';
-        return null;
-    };
-
-    const FOUND_COLORS = [
-        'bg-yellow-200 text-yellow-900',
-        'bg-green-200 text-green-900',
-        'bg-pink-200 text-pink-900',
-        'bg-blue-200 text-blue-900',
-        'bg-orange-200 text-orange-900',
-        'bg-purple-200 text-purple-900',
-        'bg-teal-200 text-teal-900',
-        'bg-red-200 text-red-900',
-        'bg-cyan-200 text-cyan-900',
-        'bg-lime-200 text-lime-900',
-    ];
-
-    const startSelect = (r, c) => { setSelecting(true); setSelection([[r, c]]); };
-
-    const extendSelect = (r, c) => {
-        if (!selecting || selection.length === 0) return;
-        const [sr, sc] = selection[0];
-        const dr = r - sr, dc = c - sc;
-        const len = Math.max(Math.abs(dr), Math.abs(dc));
-        if (len === 0) { setSelection([[sr, sc]]); return; }
-        let stepR = 0, stepC = 0;
-        if (Math.abs(dr) === Math.abs(dc)) { stepR = dr / len; stepC = dc / len; }
-        else if (Math.abs(dr) > Math.abs(dc)) { stepR = dr / Math.abs(dr); stepC = 0; }
-        else { stepR = 0; stepC = dc / Math.abs(dc); }
-        const cells = [];
-        for (let i = 0; i <= len; i++) cells.push([sr + stepR * i, sc + stepC * i]);
-        setSelection(cells);
-    };
-
-    const endSelect = () => {
-        setSelecting(false);
-        const selected = selection.map(([r, c]) => grid[r][c]).join('');
-        const reversed = selected.split('').reverse().join('');
-        const match = placed.find(p => (p.word === selected || p.word === reversed) && !foundWords.includes(p.word));
-        if (match) {
-            const colorIdx = foundWords.length % FOUND_COLORS.length;
-            setFoundWords(fw => [...fw, match.word]);
-            setHighlightCells(hc => [...hc, { word: match.word, cells: match.cells, color: FOUND_COLORS[colorIdx] }]);
-        }
-        setSelection([]);
-    };
-
-    const reset = () => {
-        setPuzzle(buildGrid(WORD_LIST));
-        setFoundWords([]);
-        setHighlightCells([]);
-        setSelection([]);
-        setSelecting(false);
-    };
-
-    const allFound = foundWords.length === placed.length;
-
-    useEffect(() => {
-        if (allFound && timer > 0) {
-            submitGameScore('wordsearch', timer);
-        }
-    }, [allFound]);
-
-    return (
-        <div>
-            <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                    <div className="p-2 bg-indigo-100 dark:bg-indigo-900/50 rounded-lg">
-                        <Clock className="w-5 h-5 text-indigo-600" />
                     </div>
-                    <h2 className="text-xl font-bold dark:text-white">Word Search</h2>
-                </div>
-                <div className="flex items-center gap-4">
-                    <div className="text-sm font-bold bg-slate-100 dark:bg-slate-700 px-3 py-1 rounded-lg">
-                        ⏱️ {formatTime(timer)}
-                    </div>
-                    <span className="text-sm text-gray-500 font-medium">Found: <strong className="text-indigo-600">{foundWords.length}/{placed.length}</strong></span>
-                    <button onClick={reset} className="px-4 py-2 text-sm bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-all shadow-md">New Puzzle</button>
-                </div>
-            </div>
-
-            {allFound && (
-                <div className="mb-6 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl flex items-center gap-3 animate-in fade-in slide-in-from-top-2">
-                    <Trophy className="w-6 h-6 text-green-600" />
-                    <p className="text-green-700 dark:text-green-400 font-bold text-lg">🎉 Incredible! All words found in {formatTime(timer)}!</p>
-                </div>
-            )}
-
-            <div className="flex flex-col lg:flex-row gap-6">
-                <div
-                    className="select-none overflow-x-auto pb-4 custom-scrollbar"
-                    onMouseLeave={() => { if (selecting) endSelect(); }}
-                >
-                    <div className="inline-grid gap-0.5 mx-auto" style={{ gridTemplateColumns: `repeat(${GRID_SIZE}, 2rem)` }}>
-                        {grid.map((row, r) =>
-                            row.map((letter, c) => {
-                                const color = getColor(r, c);
-                                return (
-                                    <div
-                                        key={cellKey(r, c)}
-                                        onMouseDown={() => startSelect(r, c)}
-                                        onMouseEnter={() => extendSelect(r, c)}
-                                        onMouseUp={endSelect}
-                                        onTouchStart={(e) => { e.preventDefault(); startSelect(r, c); }}
-                                        onTouchMove={(e) => {
-                                            e.preventDefault();
-                                            const touch = e.touches[0];
-                                            const el = document.elementFromPoint(touch.clientX, touch.clientY);
-                                            if (el?.dataset?.r !== undefined) extendSelect(+el.dataset.r, +el.dataset.c);
-                                        }}
-                                        onTouchEnd={endSelect}
-                                        data-r={r}
-                                        data-c={c}
-                                        className={`w-8 h-8 flex items-center justify-center text-[10px] sm:text-xs font-bold rounded cursor-pointer transition-colors
-                      ${color ? color : 'bg-white dark:bg-slate-700 text-gray-700 dark:text-gray-200 hover:bg-indigo-50 dark:hover:bg-slate-600'}
-                      ${color === 'selecting' ? 'bg-indigo-300 text-indigo-900' : ''}`}
-                                    >
-                                        {letter}
+                    <div className="p-6 max-h-[60vh] overflow-y-auto">
+                        {loading ? (
+                            <div className="text-center py-20 text-slate-400">පූරණය වෙමින්...</div>
+                        ) : data.length > 0 ? (
+                            <div className="space-y-3">
+                                {data.map((entry, index) => (
+                                    <div key={index} className={`flex items-center justify-between p-4 rounded-2xl border ${index === 0 ? 'bg-yellow-500/10 border-yellow-500' : 'bg-slate-800/50 border-slate-700'}`}>
+                                        <div className="flex items-center gap-4">
+                                            <div className={`w-10 h-10 rounded-full flex items-center justify-center font-black ${index === 0 ? 'bg-yellow-500 text-black' : index === 1 ? 'bg-slate-300 text-black' : index === 2 ? 'bg-amber-600 text-white' : 'bg-slate-700 text-slate-400'}`}>
+                                                {index + 1}
+                                            </div>
+                                            <div>
+                                                <p className="font-bold text-white">{entry.student?.name || "Unknown Scientist"}</p>
+                                                <p className="text-xs text-slate-400">Batch: {entry.student?.batch || "N/A"}</p>
+                                            </div>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="text-2xl font-black text-yellow-400">{entry.score}{gameTitle.includes('LAB') ? '' : '%'}</p>
+                                            <p className="text-[10px] text-slate-500 uppercase font-bold tracking-widest">{gameTitle.includes('LAB') ? 'Points' : 'Victory'}</p>
+                                        </div>
                                     </div>
-                                );
-                            })
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="text-center py-20">
+                                <div className="text-5xl mb-4 opacity-20">🧪</div>
+                                <p className="text-slate-500 font-medium italic">තවමත් වාර්තා තබා නැත. පළමු වැන්නා වන්න!</p>
+                            </div>
                         )}
                     </div>
-                </div>
+                    <div className="bg-slate-800/50 p-4 text-center border-t border-slate-800">
+                        <p className="text-xs text-slate-500 font-mono italic">මෙම මාසයේ හොඳම දක්ෂතා පමණක් පෙන්වයි</p>
+                    </div>
+                </motion.div>
+            </div>
+        )}
+    </AnimatePresence>
+);
 
-                {/* Word List */}
-                <div className="min-w-[160px]">
-                    <p className="text-sm font-semibold text-gray-500 mb-2 uppercase tracking-wide">Find these words</p>
-                    <ul className="space-y-1.5">
-                        {WORD_LIST.map(({ word, hint }) => {
-                            const found = foundWords.includes(word);
-                            const colorEntry = highlightCells.find(h => h.word === word);
-                            return (
-                                <li key={word} className={`flex items-center gap-2 text-sm rounded px-2 py-1 transition-all
-                  ${found ? (colorEntry?.color || 'bg-green-100 text-green-800') : 'text-gray-700 dark:text-gray-300'}`}>
-                                    <span className={`font-bold tracking-wide ${found ? 'line-through opacity-60' : ''}`}>{word}</span>
-                                    {!found && <span className="text-xs text-gray-400 italic">— {hint}</span>}
-                                    {found && <span className="ml-auto text-base">✓</span>}
-                                </li>
-                            );
-                        })}
-                    </ul>
+// --- GAME: CHEM BATTLE 100 ---
+
+const ChemBattle100 = ({ onOpenLeaderboard }) => {
+    const [gameState, setGameState] = useState('START');
+    const [sessionQuestions, setSessionQuestions] = useState([]);
+    const [currentIndex, setCurrentIndex] = useState(0);
+    const [playerHP, setPlayerHP] = useState(100);
+    const [enemyHP, setEnemyHP] = useState(100);
+    const [feedback, setFeedback] = useState("");
+    const [animTrigger, setAnimTrigger] = useState(null);
+
+    const submitScore = async (finalScore) => {
+        try {
+            await API.post('/games/score', { game: 'chembattle', score: finalScore });
+            toast.success("ඔබේ ලකුණු සටහන් කර ගත්තා!");
+        } catch (error) { console.error("Error submitting score", error); }
+    };
+
+    const startNewGame = () => {
+        const shuffled = [...TOTAL_QUESTIONS].sort(() => 0.5 - Math.random());
+        setSessionQuestions(shuffled.slice(0, 10));
+        setPlayerHP(100);
+        setEnemyHP(100);
+        setCurrentIndex(0);
+        setFeedback("වැඩේ පටන් ගමු!");
+        setGameState('PLAYING');
+    };
+
+    const handleAnswer = (choice) => {
+        if (gameState !== 'PLAYING') return;
+        const currentQ = sessionQuestions[currentIndex];
+        let nextPlayerHP = playerHP;
+        let nextEnemyHP = enemyHP;
+
+        if (choice === currentQ.correct) {
+            setAnimTrigger(currentQ.effect);
+            nextEnemyHP = Math.max(0, enemyHP - 10);
+            setEnemyHP(nextEnemyHP);
+            setFeedback(MEME_QUOTES.right[Math.floor(Math.random() * MEME_QUOTES.right.length)]);
+        } else {
+            setAnimTrigger('FAIL');
+            nextPlayerHP = Math.max(0, playerHP - 15);
+            setPlayerHP(nextPlayerHP);
+            setFeedback(MEME_QUOTES.wrong[Math.floor(Math.random() * MEME_QUOTES.wrong.length)]);
+        }
+
+        setTimeout(() => {
+            setAnimTrigger(null);
+            if (currentIndex + 1 < 10 && nextPlayerHP > 0 && nextEnemyHP > 0) {
+                setCurrentIndex(prev => prev + 1);
+            } else {
+                const finalScore = Math.max(0, 100 - nextEnemyHP);
+                setGameState('GAMEOVER');
+                if (finalScore > 0) submitScore(finalScore);
+            }
+        }, 1300);
+    };
+
+    return (
+        <div className="w-full flex flex-col items-center">
+            {/* HUD Header */}
+            <div className="w-full max-w-4xl flex justify-between items-center mb-6 bg-slate-900 p-4 rounded-xl border border-slate-800">
+                <h1 className="text-xl font-black text-yellow-400">CHEM-BATTLE: 100 Q-BANK</h1>
+                <div className="bg-blue-600/20 px-4 py-1 rounded-full border border-blue-500 text-sm">
+                    ප්‍රශ්නය: <span className="text-white font-bold">{gameState === 'PLAYING' ? currentIndex + 1 : 0} / 10</span>
                 </div>
             </div>
+
+            {gameState === 'START' ? (
+                <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} className="text-center py-10">
+                    <div className="text-6xl mb-4">🧪</div>
+                    <p className="mb-6 text-slate-400">ප්‍රශ්න 100න් අහඹු 10කට මුහුණ දෙන්න සූදානම්ද?</p>
+                    <div className="flex flex-col gap-4 items-center">
+                        <button onClick={startNewGame} className="bg-yellow-500 text-black px-12 py-5 rounded-2xl font-black text-3xl shadow-[0_8px_0_rgb(161,98,7)] hover:translate-y-1 hover:shadow-[0_4px_0_rgb(161,98,7)] transition-all">
+                            Start Challenge
+                        </button>
+                        <button onClick={() => onOpenLeaderboard('chembattle')} className="flex items-center gap-2 text-yellow-400 hover:text-yellow-300 font-bold transition-all">
+                            <Trophy size={20} />
+                            Leaderboard එක බලන්න
+                        </button>
+                    </div>
+                </motion.div>
+            ) : gameState === 'PLAYING' ? (
+                <div className="w-full max-w-4xl relative">
+                    {/* Health Section */}
+                    <div className="grid grid-cols-2 gap-8 mb-10">
+                        <motion.div animate={animTrigger === 'FAIL' ? { x: [-5, 5, -5, 5, 0] } : {}} className="relative">
+                            <div className="flex justify-between mb-1 text-xs font-bold text-green-400"><span>ඔබ</span><span>{playerHP}%</span></div>
+                            <div className="h-4 bg-slate-800 rounded-full overflow-hidden border border-slate-700">
+                                <motion.div animate={{ width: `${playerHP}%` }} className="h-full bg-green-500 shadow-[0_0_15px_rgba(34,197,94,0.5)]" />
+                            </div>
+                            <div className="text-7xl mt-4 text-center">🧑‍🔬</div>
+                        </motion.div>
+
+                        <motion.div animate={['ACID', 'SHOCK', 'BOOM'].includes(animTrigger) ? { scale: [1, 1.1, 1], rotate: [0, 5, -5, 0] } : {}} className="relative">
+                            <div className="flex justify-between mb-1 text-xs font-bold text-red-500"><span>සතුරා</span><span>{enemyHP}%</span></div>
+                            <div className="h-4 bg-slate-800 rounded-full overflow-hidden border border-slate-700">
+                                <motion.div animate={{ width: `${enemyHP}%` }} className="h-full bg-red-600 shadow-[0_0_15px_rgba(220,38,38,0.5)]" />
+                            </div>
+                            <div className="text-7xl mt-4 text-center relative">
+                                🧛‍♂️
+                                {animTrigger === 'ACID' && <motion.span initial={{ y: -30 }} animate={{ y: 30, opacity: 0 }} className="absolute inset-0 text-5xl">🧪</motion.span>}
+                                {animTrigger === 'SHOCK' && <motion.span animate={{ opacity: [0, 1, 0] }} className="absolute inset-0 text-cyan-400">⚡</motion.span>}
+                                {animTrigger === 'BOOM' && <motion.span animate={{ scale: [0, 2.5], opacity: [1, 0] }} className="absolute inset-0 text-orange-500">💥</motion.span>}
+                            </div>
+                        </motion.div>
+                    </div>
+
+                    <AnimatePresence>
+                        {animTrigger && (
+                            <motion.div initial={{ y: 50, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ opacity: 0 }} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 pointer-events-none">
+                                <div className="bg-yellow-400 text-black px-8 py-3 rounded-lg font-black text-3xl shadow-2xl -rotate-2 border-4 border-black">
+                                    {feedback}
+                                </div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+
+                    {/* Question Card */}
+                    <div className="bg-slate-900/80 backdrop-blur-md p-10 rounded-[2rem] border-2 border-slate-800 shadow-2xl relative overflow-hidden">
+                        <h2 className="text-2xl font-bold text-center mb-10 leading-snug">{sessionQuestions[currentIndex]?.q}</h2>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                            <button onClick={() => handleAnswer('a')} className="bg-slate-800 hover:bg-yellow-500 hover:text-black p-6 rounded-2xl font-bold text-xl transition-all active:scale-95 border-b-4 border-black">
+                                {sessionQuestions[currentIndex]?.a}
+                            </button>
+                            <button onClick={() => handleAnswer('b')} className="bg-slate-800 hover:bg-yellow-500 hover:text-black p-6 rounded-2xl font-bold text-xl transition-all active:scale-95 border-b-4 border-black">
+                                {sessionQuestions[currentIndex]?.b}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            ) : (
+                <motion.div initial={{ scale: 0.8 }} animate={{ scale: 1 }} className="bg-slate-900 p-12 rounded-[3rem] border-4 border-yellow-500 text-center shadow-2xl max-w-lg w-full">
+                    <h2 className="text-5xl font-black mb-4 text-white uppercase tracking-tighter">{playerHP > 0 && enemyHP === 0 ? "You Won! 🏆" : "Defeated! 💀"}</h2>
+                    <p className="text-slate-400 mb-8 font-medium">අවසන් ප්‍රතිඵලය: {100 - enemyHP}% ක ජයක්!</p>
+                    <div className="flex flex-col gap-3">
+                        <button onClick={startNewGame} className="bg-white text-black px-12 py-4 rounded-full font-black text-xl hover:bg-yellow-400 transition-all shadow-lg active:scale-90 w-full">Play Again</button>
+                        <button onClick={() => onOpenLeaderboard('chembattle')} className="bg-slate-800 text-yellow-400 px-12 py-4 rounded-full font-bold text-lg hover:bg-slate-700 transition-all border border-slate-700 w-full flex items-center justify-center gap-2">
+                            <Trophy size={20} /> Leaderboard
+                        </button>
+                    </div>
+                </motion.div>
+            )}
         </div>
     );
 };
 
-// -------- Global Score Submission Helper --------
-const submitGameScore = async (game, score) => {
-    try {
-        const response = await API.post('/games/score', { game, score });
-        if (response.data.message.includes("high score")) {
-            toast.success("🏆 New Monthly High Score!");
-        } else {
-            toast.success(response.data.message);
-        }
-    } catch (err) {
-        console.error("Score submission error:", err);
-    }
-};
+// --- GAME: LAB GAME ---
 
-// -------- Leaderboard Component --------
-const GameLeaderboard = () => {
-    const [selectedGame, setSelectedGame] = useState("memory");
-    const [leaderboard, setLeaderboard] = useState([]);
-    const [loading, setLoading] = useState(false);
-    const [myBest, setMyBest] = useState(null);
+const LabGame = ({ onOpenLeaderboard }) => {
+    const [score, setScore] = useState(0);
+    const [timeLeft, setTimeLeft] = useState(45);
+    const [currentOptions, setCurrentOptions] = useState([]);
+    const [reaction, setReaction] = useState(null);
+    const [isGameOver, setIsGameOver] = useState(false);
+    const [shake, setShake] = useState(false);
 
-    const fetchLeaderboard = useCallback(async () => {
-        setLoading(true);
-        try {
-            const [lbRes, myRes] = await Promise.all([
-                API.get(`/games/leaderboard/${selectedGame}`),
-                API.get(`/games/my-score/${selectedGame}`)
-            ]);
-            setLeaderboard(lbRes.data);
-            setMyBest(myRes.data);
-        } catch (err) {
-            console.error("Leaderboard fetch error:", err);
-            // toast.error("Failed to load leaderboard");
-        } finally {
-            setLoading(false);
-        }
-    }, [selectedGame]);
+    const generateOptions = useCallback(() => {
+        const shuffled = [...REACTIONS_DATABASE].sort(() => 0.5 - Math.random());
+        setCurrentOptions(shuffled.slice(0, 4));
+    }, []);
+
+    useEffect(() => { generateOptions(); }, [generateOptions]);
 
     useEffect(() => {
-        fetchLeaderboard();
-    }, [fetchLeaderboard]);
-
-    const formatScore = (game, score) => {
-        if (game === 'wordsearch') {
-            const mins = Math.floor(score / 60);
-            const secs = score % 60;
-            return `${mins}m ${secs}s`;
+        if (timeLeft > 0 && !isGameOver) {
+            const timer = setTimeout(() => setTimeLeft(timeLeft - 1), 1000);
+            return () => clearTimeout(timer);
+        } else if (timeLeft === 0 && !isGameOver) {
+            setIsGameOver(true);
+            if (score > 0) submitScore(score);
         }
-        if (score === null || score === undefined) return 'N/A';
-        return `${score} moves`;
+    }, [timeLeft, isGameOver]);
+
+    const submitScore = async (finalScore) => {
+        try {
+            await API.post('/games/score', { game: 'labgame', score: finalScore });
+            toast.success("ලකුණු සටහන් කර ගත්තා!");
+        } catch (error) { console.error("Error submitting score", error); }
     };
 
-    const MonthCountdown = () => {
-        const [timeLeft, setTimeLeft] = useState("");
+    const handleMix = (mix) => {
+        setReaction(mix);
+        if (mix.type === 'danger') {
+            setScore(prev => prev - 20);
+            setShake(true);
+            setTimeout(() => setShake(false), 500);
+        } else {
+            setScore(prev => prev + 10);
+        }
+        setTimeout(() => {
+            setReaction(null);
+            generateOptions();
+        }, 2000);
+    };
 
-        useEffect(() => {
-            const calculateTimeLeft = () => {
-                const now = new Date();
-                const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-                const diff = nextMonth - now;
-
-                const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-                const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
-                const mins = Math.floor((diff / 1000 / 60) % 60);
-
-                if (days > 0) return `${days}d ${hours}h left`;
-                return `${hours}h ${mins}m left`;
-            };
-
-            const timer = setInterval(() => setTimeLeft(calculateTimeLeft()), 60000);
-            setTimeLeft(calculateTimeLeft());
-            return () => clearInterval(timer);
-        }, []);
-
-        return <span>{timeLeft}</span>;
+    const resetGame = () => {
+        setScore(0);
+        setTimeLeft(45);
+        setIsGameOver(false);
+        setReaction(null);
+        generateOptions();
     };
 
     return (
-        <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div className="flex items-center gap-2">
-                    <div className="p-2 bg-amber-100 dark:bg-amber-900/40 rounded-lg">
-                        <Trophy className="w-5 h-5 text-amber-600" />
-                    </div>
-                    <h2 className="text-lg sm:text-xl font-bold dark:text-white">
-                        {new Date().toLocaleString('default', { month: 'long' })} Leaderboard
-                    </h2>
+        <div className={`w-full max-w-xl flex flex-col items-center p-6 rounded-3xl transition-all duration-300 ${shake ? 'bg-red-900/40 shadow-[0_0_50px_rgba(239,68,68,0.3)]' : 'bg-slate-900/60 border border-slate-800'}`}>
+            <div className="w-full flex justify-between items-center mb-6 bg-slate-950/50 p-4 rounded-xl border border-white/5">
+                <div>
+                    <p className="text-[10px] text-slate-500 uppercase tracking-widest">Score</p>
+                    <p className={`text-2xl font-black ${score >= 0 ? 'text-green-400' : 'text-red-500'}`}>{score}</p>
                 </div>
-                <div className="flex bg-slate-100 dark:bg-slate-950 p-1 rounded-xl w-fit overflow-x-auto">
-                    {["memory", "puzzle", "wordsearch"].map(g => (
-                        <button
-                            key={g}
-                            onClick={() => setSelectedGame(g)}
-                            className={`px-3 sm:px-4 py-2 rounded-lg text-[10px] sm:text-xs font-bold capitalize transition-all whitespace-nowrap ${selectedGame === g
-                                ? 'bg-white dark:bg-slate-800 text-indigo-600 shadow-sm'
-                                : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
-                        >
-                            {g}
-                        </button>
-                    ))}
+                <div className="text-center">
+                    <h1 className="text-xl font-bold text-yellow-500">🧪 ලැබ් අමාරුව</h1>
+                    <p className="text-[10px] text-slate-500">A/L CHEMISTRY CHAOS</p>
                 </div>
-                <div className="flex items-center gap-2 bg-indigo-50 dark:bg-indigo-900/20 px-3 py-1.5 rounded-xl border border-indigo-100 dark:border-indigo-800">
-                    <Clock className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-                    <span className="text-[10px] sm:text-xs font-bold text-indigo-700 dark:text-indigo-300 uppercase tracking-wider">
-                        Resets in: <MonthCountdown />
-                    </span>
+                <div className="text-right">
+                    <p className="text-[10px] text-slate-400 uppercase tracking-widest">Time</p>
+                    <p className={`text-2xl font-black ${timeLeft < 10 ? 'text-red-500 animate-pulse' : 'text-white'}`}>{timeLeft}s</p>
                 </div>
             </div>
 
-            {myBest && (
-                <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl p-6 text-white shadow-xl relative overflow-hidden group">
-                    <div className="relative z-10 flex items-center justify-between">
-                        <div>
-                            <p className="text-[10px] font-black uppercase tracking-widest text-indigo-200 mb-1">Your Personal Best</p>
-                            <h3 className="text-3xl font-black">{formatScore(selectedGame, myBest.score)}</h3>
-                        </div>
-                        <Medal className="w-12 h-12 text-amber-400 drop-shadow-lg group-hover:scale-110 transition-transform" />
-                    </div>
-                    <div className="absolute top-0 right-0 -mr-10 -mt-10 w-40 h-40 bg-white/10 rounded-full blur-3xl"></div>
-                </div>
-            )}
-
-            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 overflow-hidden shadow-sm">
-                {loading ? (
-                    <div className="p-20 flex flex-col items-center justify-center">
-                        <div className="animate-spin rounded-full h-10 w-10 border-4 border-indigo-600 border-t-transparent mb-4"></div>
-                        <p className="text-slate-500 font-bold">Fetching top players...</p>
-                    </div>
-                ) : leaderboard.length > 0 ? (
-                    <div className="divide-y divide-slate-50 dark:divide-slate-800">
-                        {leaderboard.map((entry, idx) => {
-                            const isMe = entry.student?._id === JSON.parse(sessionStorage.getItem('user'))?.id;
-                            const rank = idx + 1;
-                            return (
-                                <div key={entry._id} className={`flex items-center gap-4 px-6 py-4 transition-colors ${isMe ? 'bg-indigo-50/50 dark:bg-indigo-900/20' : 'hover:bg-slate-50 dark:hover:bg-slate-800/50'}`}>
-                                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-black text-sm ${rank === 1 ? 'bg-amber-400 text-white' : rank === 2 ? 'bg-slate-300 text-white' : rank === 3 ? 'bg-amber-600 text-white' : 'text-slate-400'}`}>
-                                        {rank}
-                                    </div>
-                                    <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center overflow-hidden border-2 border-white dark:border-slate-700 shadow-sm">
-                                        {entry.student?.profileImage ? (
-                                            <img src={entry.student.profileImage} alt="Profile" className="w-full h-full object-cover" />
-                                        ) : (
-                                            <div className="w-full h-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center">
-                                                <User className="w-5 h-5 text-slate-400" />
-                                            </div>
-                                        )}
-                                    </div>
-                                    <div className="flex-1">
-                                        <p className={`font-bold text-sm ${isMe ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-800 dark:text-slate-200'}`}>
-                                            {entry.student?.name}
-                                            {isMe && <span className="ml-2 text-[8px] bg-indigo-100 dark:bg-indigo-900 text-indigo-600 px-2 py-0.5 rounded-full uppercase tracking-tighter">You</span>}
-                                        </p>
-                                        <p className="text-[10px] text-slate-400 font-medium uppercase tracking-tight">{entry.student?.batch || 'Basic'}</p>
-                                    </div>
-                                    <div className="text-right">
-                                        <p className="text-lg font-black text-slate-900 dark:text-white leading-tight">
-                                            {selectedGame === 'wordsearch' ? (
-                                                <span className="flex items-center gap-1.5 justify-end">
-                                                    <Clock className="w-3 h-3 text-slate-400" />
-                                                    {formatScore(selectedGame, entry.score)}
-                                                </span>
-                                            ) : (
-                                                formatScore(selectedGame, entry.score)
-                                            )}
-                                        </p>
-                                    </div>
-                                </div>
-                            );
-                        })}
+            <div className={`w-full aspect-video rounded-3xl border-4 transition-all duration-300 flex flex-col items-center justify-center relative shadow-2xl ${
+                reaction?.type === 'danger' ? 'border-red-500 bg-red-950/50' : 
+                reaction?.type === 'safe' ? 'border-green-500 bg-green-950/50' : 
+                'border-slate-700 bg-slate-950'
+            }`}>
+                {reaction ? (
+                    <div className="text-center animate-bounce">
+                        <span className="text-7xl block mb-2">{reaction.meme.split(' ')[0]}</span>
+                        <h2 className="text-2xl font-black uppercase tracking-tighter">{reaction.meme}</h2>
                     </div>
                 ) : (
-                    <div className="p-16 text-center text-slate-400 font-medium">
-                        <Gamepad2 className="w-12 h-12 mx-auto mb-4 opacity-20" />
-                        No scores yet for this month. Be the first to rank!
+                    <div className="text-center opacity-40">
+                        <div className="flex gap-4 justify-center mb-4">
+                            <div className="w-8 h-12 border-2 border-white rounded-b-lg animate-pulse"></div>
+                            <div className="w-8 h-12 border-2 border-white rounded-b-lg animate-pulse delay-75"></div>
+                        </div>
+                        <p className="text-sm font-medium">මික්ස් කරන්න එකක් තෝරන්න...</p>
                     </div>
                 )}
             </div>
-        </div>
-    );
-};
 
-// -------- Main Page --------
-const Games = () => {
-    const [game, setGame] = useState("memory");
+            <div className="w-full mt-4 bg-blue-600/10 border-l-4 border-blue-500 p-4 rounded-r-xl">
+                <p className="text-blue-400 text-sm font-bold italic">
+                    Sir: <span className="text-blue-100">"{reaction ? reaction.sound : 'ලැබ් එක පුපුරවගන්නේ නැතුව වැඩ කරපන් ළමයෝ!'}"</span>
+                </p>
+            </div>
 
-    const tabs = [
-        { key: "memory", label: "🧠 Memory" },
-        { key: "puzzle", label: "🧩 Puzzle" },
-        { key: "wordsearch", label: "🔍 Word Search" },
-        { key: "leaderboard", label: "🏆 Leaderboard" },
-    ];
+            <div className="w-full mt-6 grid grid-cols-2 gap-3">
+                {currentOptions.map((opt, idx) => (
+                    <button
+                        key={idx}
+                        disabled={reaction || isGameOver}
+                        onClick={() => handleMix(opt)}
+                        className="group relative bg-slate-800 hover:bg-yellow-500 transition-all p-4 rounded-xl border-b-4 border-black active:border-b-0 active:translate-y-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        <span className="block text-xs text-slate-400 group-hover:text-black font-bold uppercase mb-1">Reaction {idx + 1}</span>
+                        <span className="block text-lg font-black group-hover:text-black whitespace-nowrap">{opt.a} + {opt.b}</span>
+                    </button>
+                ))}
+            </div>
 
-    return (
-        <div className="min-h-screen bg-blue-50 dark:bg-slate-900 transition-colors">
-            <StudentNavbar />
-            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-                <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
-                    <div>
-                        <h1 className="text-3xl sm:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-purple-600">
-                            Mind Relax Games
-                        </h1>
-                        <p className="text-sm sm:text-base text-slate-500 dark:text-slate-400 font-medium">Challenge your mind and climb the monthly leaderboard.</p>
+            <button onClick={() => onOpenLeaderboard('labgame')} className="mt-6 flex items-center gap-2 text-yellow-400 hover:text-yellow-300 font-bold transition-all text-sm">
+                <Trophy size={16} /> Leaderboard
+            </button>
+
+            {isGameOver && (
+                <div className="fixed inset-0 bg-black/90 backdrop-blur-md flex flex-col items-center justify-center z-50 p-6 text-center">
+                    <h2 className="text-6xl font-black text-red-600 mb-2 italic">Game Over!</h2>
+                    <p className="text-2xl mb-6 text-white">ඔයාගේ ලකුණු ප්‍රමාණය: <span className="text-yellow-400 font-bold">{score}</span></p>
+                    <div className="flex flex-col gap-4">
+                        <button onClick={resetGame} className="bg-white text-black px-12 py-4 rounded-full font-black text-xl hover:bg-yellow-500 transition-colors shadow-lg">Retry</button>
+                        <button onClick={() => onOpenLeaderboard('labgame')} className="text-yellow-500 font-bold underline">Leaderboard බලන්න</button>
                     </div>
                 </div>
-
-                <div className="flex gap-2 mb-8 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 sm:flex-wrap no-scrollbar">
-                    {tabs.map(tab => (
-                        <button key={tab.key} onClick={() => setGame(tab.key)}
-                            className={`px-5 py-2.5 sm:px-6 sm:py-3 rounded-2xl font-bold transition-all text-xs sm:text-sm shadow-sm flex items-center gap-2 whitespace-nowrap
-                ${game === tab.key
-                                    ? 'bg-indigo-600 text-white shadow-indigo-200 dark:shadow-none scale-105'
-                                    : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-indigo-50 dark:hover:bg-slate-700 border border-slate-100 dark:border-slate-700'}`}>
-                            {tab.label}
-                        </button>
-                    ))}
-                </div>
-                <div className="bg-white dark:bg-slate-800 p-4 sm:p-8 rounded-3xl sm:rounded-[2rem] shadow-xl shadow-blue-100/50 dark:shadow-none border border-slate-100 dark:border-slate-700 transition-all">
-                    {game === "memory" && <MemoryGame />}
-                    {game === "puzzle" && <PuzzleGame />}
-                    {game === "wordsearch" && <WordSearch />}
-                    {game === "leaderboard" && <GameLeaderboard />}
-                </div>
-            </main>
+            )}
         </div>
     );
 };
 
-export default Games;
+// --- MAIN GAMES PAGE ---
+
+export default function Games() {
+    const [activeTab, setActiveTab] = useState('BATTLE'); // BATTLE | LAB
+    const [showLeaderboard, setShowLeaderboard] = useState(false);
+    const [leaderboardData, setLeaderboardData] = useState([]);
+    const [loadingLeaderboard, setLoadingLeaderboard] = useState(false);
+    const [leaderboardGame, setLeaderboardGame] = useState('');
+
+    const fetchLeaderboard = async (game) => {
+        setLeaderboardGame(game === 'chembattle' ? 'CHEM BATTLE' : 'LAB CHAOS');
+        setLoadingLeaderboard(true);
+        setShowLeaderboard(true);
+        try {
+            const res = await API.get(`/games/leaderboard/${game}`);
+            setLeaderboardData(res.data);
+        } catch (error) {
+            console.error("Error fetching leaderboard", error);
+            toast.error("Leaderboard ලබා ගැනීමට නොහැකි වුණා.");
+        } finally {
+            setLoadingLeaderboard(false);
+        }
+    };
+
+    return (
+        <div className="min-h-screen bg-slate-950 text-white selection:bg-yellow-500 selection:text-black">
+            <StudentNavbar />
+            
+            <div className="max-w-6xl mx-auto px-4 py-10 flex flex-col items-center">
+                
+                {/* Game Switcher Tabs */}
+                <div className="flex bg-slate-900 p-1 rounded-2xl mb-12 border border-slate-800 shadow-xl">
+                    <button 
+                        onClick={() => setActiveTab('BATTLE')}
+                        className={`flex items-center gap-2 px-8 py-3 rounded-xl font-bold text-sm transition-all ${activeTab === 'BATTLE' ? 'bg-yellow-500 text-black shadow-lg shadow-yellow-500/20' : 'text-slate-400 hover:text-white'}`}
+                    >
+                        <Zap size={18} />
+                        Chem Battle 100
+                    </button>
+                    <button 
+                        onClick={() => setActiveTab('LAB')}
+                        className={`flex items-center gap-2 px-8 py-3 rounded-xl font-bold text-sm transition-all ${activeTab === 'LAB' ? 'bg-yellow-500 text-black shadow-lg shadow-yellow-500/20' : 'text-slate-400 hover:text-white'}`}
+                    >
+                        <Beaker size={18} />
+                        Lab Chaos
+                    </button>
+                </div>
+
+                <motion.div
+                    key={activeTab}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="w-full flex justify-center"
+                >
+                    {activeTab === 'BATTLE' ? (
+                        <ChemBattle100 onOpenLeaderboard={fetchLeaderboard} />
+                    ) : (
+                        <LabGame onOpenLeaderboard={fetchLeaderboard} />
+                    )}
+                </motion.div>
+
+                <div className="mt-16 text-slate-700 text-[10px] font-mono uppercase tracking-widest text-center">
+                    ChemBridge Arcade // Powered by Meme Engine v1.0
+                </div>
+            </div>
+
+            <LeaderboardModal 
+                show={showLeaderboard} 
+                onClose={() => setShowLeaderboard(false)} 
+                data={leaderboardData} 
+                loading={loadingLeaderboard} 
+                gameTitle={leaderboardGame}
+            />
+
+            <style>{`
+                @keyframes shake {
+                    0%, 100% { transform: translateX(0); }
+                    25% { transform: translateX(-5px); }
+                    75% { transform: translateX(5px); }
+                }
+                .shake-anim { animation: shake 0.2s ease-in-out infinite; }
+            `}</style>
+        </div>
+    );
+}
