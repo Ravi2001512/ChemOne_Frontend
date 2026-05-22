@@ -5,7 +5,7 @@ const VesakDecorations = ({ children }) => {
   // Traditional Buddhist flag colors (Six colors / Shadvarna, sequence repeated)
   const lanterns = [
     { color: 'blue' }, { color: 'yellow' }, { color: 'red' }, { color: 'white' }, { color: 'orange' },
-    { color: 'mixed' }, // The combined aura color
+    { color: 'mixed' },
     { color: 'blue' }, { color: 'yellow' }, { color: 'red' }, { color: 'white' }, { color: 'orange' }
   ];
 

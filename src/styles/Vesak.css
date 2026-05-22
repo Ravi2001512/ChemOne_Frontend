@@ -20,7 +20,7 @@
     radial-gradient(circle at 50% 20%, rgba(255, 218, 133, 0.15) 0%, transparent 50%),
     radial-gradient(circle at 20% 80%, rgba(255, 107, 107, 0.05) 0%, transparent 40%);
   pointer-events: none;
-  z-index: 9998; /* Soft ambient glow sits over the content to give everything a festive aura */
+  z-index: 9998;
 }
 
 .vesak-container {
@@ -30,7 +30,7 @@
   width: 100%;
   height: 100%;
   pointer-events: none;
-  z-index: 9999; /* Interactive overlay for decorations (lanterns, moon, petals) */
+  z-index: 9999;
 }
 
 .vesak-content {
@@ -43,22 +43,23 @@
   position: absolute;
   top: 120px;
   right: 10%;
-  width: 90px;
-  height: 90px;
+  width: 150px;
+  height: 150px;
   background: radial-gradient(circle at 30% 30%, #ffffff 0%, #fff6df 70%, #ffebbc 100%);
   border-radius: 50%;
   box-shadow:
-    0 0 40px rgba(255, 235, 188, 0.6),
-    0 0 100px rgba(255, 218, 133, 0.3);
+    0 0 60px rgba(255, 235, 188, 0.7),
+    0 0 140px rgba(255, 218, 133, 0.4),
+    0 0 220px rgba(255, 200, 100, 0.2);
   animation: moonPulse 6s ease-in-out infinite alternate;
 }
 
 .moon-glow {
   position: absolute;
-  top: -30px;
-  left: -30px;
-  right: -30px;
-  bottom: -30px;
+  top: -50px;
+  left: -50px;
+  right: -50px;
+  bottom: -50px;
   background: radial-gradient(circle, rgba(255, 235, 188, 0.3) 0%, transparent 70%);
   border-radius: 50%;
   filter: blur(15px);
@@ -82,6 +83,7 @@
     transform: scale(0.9);
     opacity: 0.6;
   }
+
   100% {
     transform: scale(1.1);
     opacity: 0.9;
@@ -105,7 +107,7 @@
   flex-direction: column;
   align-items: center;
   position: relative;
-  transform-origin: top center; /* Sway realistically from top connection point */
+  transform-origin: top center;
   animation: lanternSway 4s ease-in-out infinite alternate;
 }
 
@@ -191,7 +193,6 @@
   justify-content: space-between;
   width: 24px;
   margin-top: 12px;
-  /* Pulls up closer to diamond bottom corner */
 }
 
 .tassel {
@@ -199,7 +200,7 @@
   height: 25px;
   background: #ffcc00;
   border-radius: 1px;
-  transform-origin: top center; /* Sway realistically from top attachment */
+  transform-origin: top center;
   animation: tasselSway 4s ease-in-out infinite alternate;
 }
 
@@ -234,7 +235,6 @@
   top: -20px;
   background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 99%, #fecfef 100%);
   border-radius: 0 100% 40% 100%;
-  /* Perfect organic petal shape */
   transform: rotate(45deg);
   filter: drop-shadow(0 0 5px rgba(254, 207, 239, 0.6));
   animation: fall linear infinite;
@@ -262,6 +262,7 @@
 }
 
 @keyframes glowFlicker {
+
   0%,
   100% {
     transform: scale(0.8);
@@ -326,7 +327,7 @@
   filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.4));
   transition: transform 0.3s ease;
   cursor: pointer;
-  pointer-events: auto; /* Enable hover micro-animations! */
+  pointer-events: auto;
 }
 
 .paha-lamp:hover {
@@ -339,7 +340,7 @@
   background: linear-gradient(to bottom, #cf7144, #7a3c20);
   border-radius: 50% 50% 50% 50% / 30% 30% 70% 70%;
   position: relative;
-  box-shadow: 
+  box-shadow:
     inset 0 -2px 5px rgba(0, 0, 0, 0.6),
     inset 0 2px 5px rgba(255, 255, 255, 0.2);
   z-index: 2;
@@ -355,7 +356,7 @@
   height: 7px;
   background: rgba(38, 20, 12, 0.95);
   border-radius: 50%;
-  box-shadow: inset 0 1px 3px rgba(0,0,0,0.8);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.8);
 }
 
 .lamp-wick {
@@ -401,6 +402,7 @@
     transform: scale(0.96) rotate(-1.5deg);
     filter: drop-shadow(0 0 7px rgba(255, 150, 0, 0.8)) drop-shadow(0 0 14px rgba(255, 100, 0, 0.5));
   }
+
   100% {
     transform: scale(1.04) rotate(1.5deg);
     filter: drop-shadow(0 0 11px rgba(255, 160, 0, 0.95)) drop-shadow(0 0 20px rgba(255, 110, 0, 0.7));
@@ -418,8 +420,8 @@
   }
 
   .vesak-moon {
-    width: 50px;
-    height: 50px;
+    width: 80px;
+    height: 80px;
     top: 80px;
     right: 5%;
   }
