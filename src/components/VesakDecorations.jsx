@@ -66,6 +66,19 @@ const VesakDecorations = ({ children }) => {
             </div>
           ))}
         </div>
+
+        {/* Traditional Clay Lamps (Vesak Pahan) at the bottom */}
+        <div className="vesak-lamps">
+          {Array.from({ length: 6 }).map((_, idx) => (
+            <div key={idx} className="paha-lamp">
+              <div className="lamp-flame">
+                <div className="flame-inner" />
+              </div>
+              <div className="lamp-wick" />
+              <div className="lamp-clay" />
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* Content Layer */}

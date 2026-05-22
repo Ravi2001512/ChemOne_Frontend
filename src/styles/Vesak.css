@@ -41,7 +41,7 @@
 /* 2. The Gorgeous Full Poya Moon */
 .vesak-moon {
   position: absolute;
-  top: 40px;
+  top: 120px;
   right: 10%;
   width: 90px;
   height: 90px;
@@ -290,16 +290,137 @@
   }
 }
 
-/* 5. Responsive Styles */
+/* 5. Traditional Clay Oil Lamps (Vesak Pahan) */
+.vesak-lamps {
+  position: absolute;
+  bottom: 20px;
+  left: 0;
+  width: 100%;
+  display: flex;
+  justify-content: space-around;
+  padding: 0 10%;
+  box-sizing: border-box;
+  z-index: 5;
+}
+
+.vesak-lamps::before {
+  content: '';
+  position: absolute;
+  bottom: -20px;
+  left: 0;
+  width: 100%;
+  height: 80px;
+  background: linear-gradient(to top, rgba(255, 140, 0, 0.12) 0%, transparent 100%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.paha-lamp {
+  position: relative;
+  width: 60px;
+  height: 50px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.4));
+  transition: transform 0.3s ease;
+  cursor: pointer;
+  pointer-events: auto; /* Enable hover micro-animations! */
+}
+
+.paha-lamp:hover {
+  transform: scale(1.15) translateY(-5px);
+}
+
+.lamp-clay {
+  width: 54px;
+  height: 18px;
+  background: linear-gradient(to bottom, #cf7144, #7a3c20);
+  border-radius: 50% 50% 50% 50% / 30% 30% 70% 70%;
+  position: relative;
+  box-shadow: 
+    inset 0 -2px 5px rgba(0, 0, 0, 0.6),
+    inset 0 2px 5px rgba(255, 255, 255, 0.2);
+  z-index: 2;
+}
+
+/* Pool of coconut oil */
+.lamp-clay::before {
+  content: '';
+  position: absolute;
+  top: 1px;
+  left: 6px;
+  right: 6px;
+  height: 7px;
+  background: rgba(38, 20, 12, 0.95);
+  border-radius: 50%;
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.8);
+}
+
+.lamp-wick {
+  position: absolute;
+  bottom: 12px;
+  width: 3px;
+  height: 8px;
+  background: linear-gradient(to top, #0f0a07, #241710);
+  border-radius: 2px 2px 0 0;
+  z-index: 3;
+  transform: rotate(-5deg);
+}
+
+.lamp-flame {
+  position: absolute;
+  bottom: 16px;
+  width: 14px;
+  height: 28px;
+  background: linear-gradient(to top, rgba(255, 60, 0, 0.95) 0%, rgba(255, 174, 0, 0.95) 50%, rgba(255, 255, 210, 0.95) 100%);
+  border-radius: 50% 50% 20% 20% / 60% 60% 40% 40%;
+  filter: drop-shadow(0 0 8px rgba(255, 150, 0, 0.9)) drop-shadow(0 0 18px rgba(255, 100, 0, 0.6));
+  animation: flameFlicker 0.12s ease-in-out infinite alternate;
+  z-index: 4;
+  transform-origin: bottom center;
+}
+
+.flame-inner {
+  position: absolute;
+  bottom: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 5px;
+  height: 12px;
+  background: #ffffff;
+  border-radius: 50% 50% 30% 30% / 60% 60% 40% 40%;
+  opacity: 0.95;
+  box-shadow: 0 0 4px #ffffff;
+}
+
+/* Beautiful dynamic flicker keyframes */
+@keyframes flameFlicker {
+  0% {
+    transform: scale(0.96) rotate(-1.5deg);
+    filter: drop-shadow(0 0 7px rgba(255, 150, 0, 0.8)) drop-shadow(0 0 14px rgba(255, 100, 0, 0.5));
+  }
+  100% {
+    transform: scale(1.04) rotate(1.5deg);
+    filter: drop-shadow(0 0 11px rgba(255, 160, 0, 0.95)) drop-shadow(0 0 20px rgba(255, 110, 0, 0.7));
+  }
+}
+
+/* 6. Responsive Styles */
 @media (max-width: 768px) {
   .lantern-node:nth-child(n+5) {
+    display: none;
+  }
+
+  .paha-lamp:nth-child(n+4) {
     display: none;
   }
 
   .vesak-moon {
     width: 50px;
     height: 50px;
-    top: 20px;
+    top: 80px;
     right: 5%;
   }
 
