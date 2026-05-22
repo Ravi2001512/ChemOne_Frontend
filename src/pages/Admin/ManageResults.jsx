@@ -2,7 +2,7 @@ import { useState, useEffect, Fragment } from "react";
 import AdminNavbar from "../../components/AdminNavbar";
 import API from "../../services/api";
 import toast from 'react-hot-toast';
-import { Search, Save, Trophy, Send, Plus, Trash2, X, Calendar, Hash, Users, BarChart3, Edit3, AlertTriangle, CheckSquare, Square } from 'lucide-react';
+import { Search, Save, Trophy, Plus, Trash2, X, Calendar, Hash, Users, BarChart3, Edit3, AlertTriangle, CheckSquare, Square } from 'lucide-react';
 
 const ManageResults = () => {
     const [exams, setExams] = useState([]);
@@ -14,7 +14,6 @@ const ManageResults = () => {
     const [marksByExam, setMarksByExam] = useState({}); // { [examId]: { [studentId]: score } }
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
-    const [sending, setSending] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
     const [selectedBatch, setSelectedBatch] = useState(() => {
         return localStorage.getItem("manageResults_selectedBatch") || "All Batches";
@@ -301,82 +300,7 @@ const ManageResults = () => {
         }
     };
 
-    const handleSendEmails = async () => {
-        if (selectedExamIds.length === 0) return;
-        try {
-            setSending(true);
-            let successCount = 0;
-            for (const examId of selectedExamIds) {
-                const response = await API.post(`/physical-exams/${examId}/notify-results`, {
-                    batch: selectedBatch
-                });
-                if (response.data.success) successCount++;
-            }
-            toast.success(`Emails sent for ${successCount} exam(s).`);
-        } catch (err) {
-            console.error("Error sending emails:", err);
-            toast.error("Failed to send some emails.");
-        } finally {
-            setSending(false);
-        }
-    };
-
-    const handleSaveAndNotifyAll = async () => {
-        if (selectedExamIds.length === 0) {
-            toast.error("No active exam session selected.");
-            return;
-        }
-        try {
-            setSaving(true);
-            setSending(true);
-            
-            // 1. Save all
-            let saveSuccess = false;
-            let savedExams = [];
-            for (const examId of selectedExamIds) {
-                const examMarks = marksByExam[examId] || {};
-                const resultsToUpload = Object.entries(examMarks)
-                    .filter(([_, score]) => score !== "" && score !== undefined)
-                    .map(([studentId, score]) => ({ studentId, score: Number(score) }));
-
-                if (resultsToUpload.length > 0) {
-                    const response = await API.post("/physical-exams/upload-results", {
-                        examId,
-                        results: resultsToUpload
-                    });
-                    if (response.data.success) {
-                        saveSuccess = true;
-                        savedExams.push(examId);
-                    }
-                }
-            }
-
-            if (!saveSuccess) {
-                toast.error("No marks to save.");
-                return;
-            }
-
-            // 2. Notify for those exams
-            let notifyCount = 0;
-            for (const examId of savedExams) {
-                const response = await API.post(`/physical-exams/${examId}/notify-results`, {
-                    batch: selectedBatch
-                });
-                if (response.data.success) notifyCount++;
-            }
-
-            toast.success(`Results saved and notifications sent for ${notifyCount} exam(s).`);
-            fetchAllResults();
-        } catch (err) {
-            console.error("Error in save & notify all:", err);
-            toast.error("An error occurred during save & notify.");
-        } finally {
-            setSaving(false);
-            setSending(false);
-        }
-    };
-
-    const handleSaveAndNotifySingle = async (student) => {
+    const handleSaveSingle = async (student) => {
         if (selectedExamIds.length === 0) {
             toast.error("No active exam session selected.");
             return;
@@ -398,30 +322,26 @@ const ManageResults = () => {
                     });
 
                     if (saveResponse.data.success) {
-                        // Notify
-                        await API.post(`/physical-exams/${examId}/notify-results`, {
-                            studentId: student._id
-                        });
                         successCount++;
                     }
                 }
             }
 
             if (successCount > 0) {
-                toast.success(`Saved & notified ${student.name} for ${successCount} exam(s).`);
+                toast.success(`Saved ${student.name}'s marks for ${successCount} exam(s).`);
                 fetchAllResults();
             } else {
                 toast.error("No marks entered for this student.");
             }
         } catch (err) {
-            console.error("Error saving/notifying single student:", err);
-            toast.error("Failed to save or notify.");
+            console.error("Error saving student marks:", err);
+            toast.error("Failed to save.");
         } finally {
             setSaving(false);
         }
     };
 
-    const handleSaveAndNotifySelected = async () => {
+    const handleSaveSelected = async () => {
         if (selectedExamIds.length === 0) {
             toast.error("No active exam session selected.");
             return;
@@ -433,46 +353,38 @@ const ManageResults = () => {
 
         try {
             setSaving(true);
-            setSending(true);
             let successCount = 0;
 
-            for (const studentId of selectedStudentIds) {
-                const student = students.find(s => s._id === studentId);
-                if (!student) continue;
+            for (const examId of selectedExamIds) {
+                const examMarks = marksByExam[examId] || {};
+                const resultsToUpload = Object.entries(examMarks)
+                    .filter(([studentId, score]) => selectedStudentIds.includes(studentId) && score !== "" && score !== undefined)
+                    .map(([studentId, score]) => ({ studentId, score: Number(score) }));
 
-                for (const examId of selectedExamIds) {
-                    const examMarks = marksByExam[examId] || {};
-                    const score = examMarks[studentId];
+                if (resultsToUpload.length > 0) {
+                    const saveResponse = await API.post("/physical-exams/upload-results", {
+                        examId,
+                        results: resultsToUpload
+                    });
 
-                    if (score !== "" && score !== undefined) {
-                        const saveResponse = await API.post("/physical-exams/upload-results", {
-                            examId,
-                            results: [{ studentId, score: Number(score) }]
-                        });
-
-                        if (saveResponse.data.success) {
-                            await API.post(`/physical-exams/${examId}/notify-results`, {
-                                studentId
-                            });
-                            successCount++;
-                        }
+                    if (saveResponse.data.success) {
+                        successCount++;
                     }
                 }
             }
 
             if (successCount > 0) {
-                toast.success(`Saved & notified selected students for ${successCount} record(s).`);
+                toast.success(`Saved selected students' marks for ${successCount} exam(s).`);
                 setSelectedStudentIds([]);
                 fetchAllResults();
             } else {
                 toast.error("No marks found for selected students.");
             }
         } catch (err) {
-            console.error("Error saving/notifying selected:", err);
-            toast.error("Failed to process some students.");
+            console.error("Error saving selected:", err);
+            toast.error("Failed to save some results.");
         } finally {
             setSaving(false);
-            setSending(false);
         }
     };
 
@@ -748,7 +660,7 @@ const ManageResults = () => {
                                 ) : (
                                     <Save className="w-3.5 h-3.5" />
                                 )}
-                                <span>Save All (No Email)</span>
+                                <span>Save All</span>
                             </button>
 
                             <button
@@ -762,16 +674,16 @@ const ManageResults = () => {
 
                             {selectedStudentIds.length > 0 && (
                                 <button
-                                    onClick={handleSaveAndNotifySelected}
-                                    disabled={saving || sending}
+                                    onClick={handleSaveSelected}
+                                    disabled={saving}
                                     className="px-6 py-2 bg-rose-600 text-white font-black rounded-xl text-[10px] uppercase tracking-widest hover:bg-rose-700 active:scale-95 transition-all shadow-lg shadow-rose-200 dark:shadow-none flex items-center gap-2"
                                 >
-                                    {(saving || sending) ? (
+                                    {saving ? (
                                         <div className="animate-spin rounded-full h-3 w-3 border-2 border-white border-t-transparent"></div>
                                     ) : (
-                                        <Send className="w-3.5 h-3.5" />
+                                        <Save className="w-3.5 h-3.5" />
                                     )}
-                                    <span>Save & Notify Selected ({selectedStudentIds.length})</span>
+                                    <span>Save Selected ({selectedStudentIds.length})</span>
                                 </button>
                             )}
                         </div>
@@ -915,12 +827,12 @@ const ManageResults = () => {
                                                                  })}
                                                                  <td className="px-8 py-5 whitespace-nowrap text-center">
                                                                     <button
-                                                                        onClick={() => handleSaveAndNotifySingle(student)}
-                                                                        disabled={saving || sending}
+                                                                        onClick={() => handleSaveSingle(student)}
+                                                                        disabled={saving}
                                                                         className="inline-flex items-center gap-2 px-4 py-2 bg-rose-600 text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-rose-700 active:scale-95 transition-all disabled:opacity-50 shadow-sm"
                                                                     >
                                                                         <Save className="w-3 h-3" />
-                                                                        <span>Save & Notify</span>
+                                                                        <span>Save</span>
                                                                     </button>
                                                                 </td>
                                                             </tr>
