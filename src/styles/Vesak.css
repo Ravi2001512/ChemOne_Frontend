@@ -1,11 +1,26 @@
-/* Vesak Decoration Styles - Premium Version */
+/* Base Layout Wrapper */
+.vesak-theme-wrapper {
+  position: relative;
+  width: 100%;
+  min-height: 100vh;
+  overflow-x: hidden;
+  background: #040814;
+  /* Deep night sky */
+  color: #ffffff;
+}
 
-:root {
-  --buddhist-blue: #0033ad;
-  --buddhist-yellow: #f9d71c;
-  --buddhist-red: #ff0000;
-  --buddhist-white: #ffffff;
-  --buddhist-orange: #ff9800;
+/* 1. Immersive Ambient Background */
+.vesak-ambient {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background:
+    radial-gradient(circle at 50% 20%, rgba(255, 218, 133, 0.15) 0%, transparent 50%),
+    radial-gradient(circle at 20% 80%, rgba(255, 107, 107, 0.05) 0%, transparent 40%);
+  pointer-events: none;
+  z-index: 9998; /* Soft ambient glow sits over the content to give everything a festive aura */
 }
 
 .vesak-container {
@@ -15,190 +30,284 @@
   width: 100%;
   height: 100%;
   pointer-events: none;
-  z-index: 9999;
-  overflow: hidden;
+  z-index: 9999; /* Interactive overlay for decorations (lanterns, moon, petals) */
 }
 
-/* The string/wire connecting lanterns */
+.vesak-content {
+  position: relative;
+  z-index: 3;
+}
+
+/* 2. The Gorgeous Full Poya Moon */
+.vesak-moon {
+  position: absolute;
+  top: 40px;
+  right: 10%;
+  width: 90px;
+  height: 90px;
+  background: radial-gradient(circle at 30% 30%, #ffffff 0%, #fff6df 70%, #ffebbc 100%);
+  border-radius: 50%;
+  box-shadow:
+    0 0 40px rgba(255, 235, 188, 0.6),
+    0 0 100px rgba(255, 218, 133, 0.3);
+  animation: moonPulse 6s ease-in-out infinite alternate;
+}
+
+.moon-glow {
+  position: absolute;
+  top: -30px;
+  left: -30px;
+  right: -30px;
+  bottom: -30px;
+  background: radial-gradient(circle, rgba(255, 235, 188, 0.3) 0%, transparent 70%);
+  border-radius: 50%;
+  filter: blur(15px);
+  animation: glowPulse 4s ease-in-out infinite alternate;
+}
+
+@keyframes moonPulse {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 40px rgba(255, 235, 188, 0.6), 0 0 100px rgba(255, 218, 133, 0.3);
+  }
+
+  100% {
+    transform: scale(1.03);
+    box-shadow: 0 0 55px rgba(255, 240, 205, 0.8), 0 0 130px rgba(255, 218, 133, 0.5);
+  }
+}
+
+@keyframes glowPulse {
+  0% {
+    transform: scale(0.9);
+    opacity: 0.6;
+  }
+  100% {
+    transform: scale(1.1);
+    opacity: 0.9;
+  }
+}
+
+/* 3. Lantern String & Swaying Lanterns */
 .lantern-string {
   position: absolute;
-  top: -10px;
-  width: 110%;
-  left: -5%;
-  height: 100px;
-  border-bottom: 2px solid rgba(255, 255, 255, 0.1);
-  border-radius: 50%;
+  top: 0;
+  left: 0;
+  width: 100%;
   display: flex;
   justify-content: space-around;
-  align-items: flex-end;
-  padding: 0 10%;
+  padding: 0 5%;
+  box-sizing: border-box;
 }
 
-.lantern {
-  position: relative;
-  width: 80px;
-  height: 120px;
-  transform-origin: top center;
-  animation: sway 4s ease-in-out infinite;
+.lantern-node {
   display: flex;
   flex-direction: column;
   align-items: center;
-}
-
-.lantern::before {
-  content: '';
-  position: absolute;
-  top: -40px;
-  width: 1px;
-  height: 40px;
-  background: rgba(255, 255, 255, 0.2);
-}
-
-.lantern-body {
-  width: 50px;
-  height: 60px;
-  background: var(--lantern-color, #ffeb3b);
   position: relative;
-  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
-  box-shadow: inset 0 0 15px rgba(0,0,0,0.2);
+  transform-origin: top center; /* Sway realistically from top connection point */
+  animation: lanternSway 4s ease-in-out infinite alternate;
+}
+
+.lantern-node:nth-child(even) {
+  animation-duration: 5s;
+  animation-delay: -1.5s;
+}
+
+.lantern-wire {
+  width: 2px;
+  height: 30px;
+  background: linear-gradient(to bottom, #222, #555);
+}
+
+/* Lantern Shapes & Glowing Effects */
+.lantern-body {
+  position: relative;
+  width: 45px;
+  height: 45px;
+  border-radius: 8px;
+  transform: rotate(45deg);
+  /* Diamond shape */
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  box-shadow: inset 0 0 15px rgba(255, 255, 255, 0.5);
   display: flex;
-  justify-content: center;
   align-items: center;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  justify-content: center;
 }
 
-.lantern-body::before {
-  content: '';
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  background-image: 
-    radial-gradient(circle at 50% 50%, transparent 20%, rgba(255,255,255,0.1) 21%, transparent 25%),
-    linear-gradient(45deg, transparent 48%, rgba(255,255,255,0.1) 50%, transparent 52%);
-  background-size: 10px 10px;
-  opacity: 0.5;
-}
-
-.lantern-body::after {
-  content: '';
+.lantern-inner-glow {
   width: 70%;
   height: 70%;
-  background: white;
-  opacity: 0.3;
-  filter: blur(8px);
   border-radius: 50%;
-  animation: pulse-glow 2s ease-in-out infinite alternate;
+  background: #fff;
+  filter: blur(4px);
+  animation: glowFlicker 3s infinite alternate;
 }
 
+.lantern-details {
+  position: absolute;
+  top: 15%;
+  left: 15%;
+  right: 15%;
+  bottom: 15%;
+  border: 1px dashed rgba(255, 255, 255, 0.25);
+  pointer-events: none;
+}
+
+/* Traditional Color Themes */
+.blue .lantern-body {
+  background: #0055ff;
+  filter: drop-shadow(0 0 15px rgba(0, 85, 255, 0.8));
+}
+
+.yellow .lantern-body {
+  background: #ffcc00;
+  filter: drop-shadow(0 0 15px rgba(255, 204, 0, 0.8));
+}
+
+.red .lantern-body {
+  background: #ff2a2a;
+  filter: drop-shadow(0 0 15px rgba(255, 42, 42, 0.8));
+}
+
+.white .lantern-body {
+  background: #ffffff;
+  filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.8));
+}
+
+.orange .lantern-body {
+  background: #ff7700;
+  filter: drop-shadow(0 0 15px rgba(255, 119, 0, 0.8));
+}
+
+.mixed .lantern-body {
+  background: linear-gradient(45deg, #ff2a2a, #ffcc00, #0055ff);
+  filter: drop-shadow(0 0 18px rgba(255, 204, 0, 0.9));
+}
+
+/* Hanging Tassels */
 .lantern-tassels {
   display: flex;
-  gap: 3px;
-  margin-top: -5px;
+  justify-content: space-between;
+  width: 24px;
+  margin-top: 12px;
+  /* Pulls up closer to diamond bottom corner */
 }
 
 .tassel {
   width: 3px;
-  height: 40px;
-  background: var(--lantern-color, #ffeb3b);
-  opacity: 0.8;
-  border-radius: 0 0 2px 2px;
-  transform-origin: top center;
-  animation: tassel-sway 4s ease-in-out infinite;
+  height: 25px;
+  background: #ffcc00;
+  border-radius: 1px;
+  transform-origin: top center; /* Sway realistically from top attachment */
+  animation: tasselSway 4s ease-in-out infinite alternate;
 }
 
-.tassel:nth-child(2) { height: 50px; animation-delay: 0.2s; }
-.tassel:nth-child(3) { height: 40px; animation-delay: 0.4s; }
-
-@keyframes sway {
-  0%, 100% { transform: rotate(-8deg); }
-  50% { transform: rotate(8deg); }
+.blue .tassel {
+  background: #00d9ff;
 }
 
-@keyframes tassel-sway {
-  0%, 100% { transform: rotate(-15deg); }
-  50% { transform: rotate(15deg); }
+.red .tassel {
+  background: #ff5e5e;
 }
 
-@keyframes pulse-glow {
-  from { opacity: 0.2; transform: scale(0.8); }
-  to { opacity: 0.5; transform: scale(1.1); }
+.white .tassel {
+  background: #e0e0e0;
 }
 
-/* Colors for Buddhist Flag */
-.lantern.blue { --lantern-color: var(--buddhist-blue); filter: drop-shadow(0 0 15px rgba(0, 51, 173, 0.4)); }
-.lantern.yellow { --lantern-color: var(--buddhist-yellow); filter: drop-shadow(0 0 15px rgba(249, 215, 28, 0.4)); }
-.lantern.red { --lantern-color: var(--buddhist-red); filter: drop-shadow(0 0 15px rgba(255, 0, 0, 0.4)); }
-.lantern.white { --lantern-color: var(--buddhist-white); filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.4)); }
-.lantern.orange { --lantern-color: var(--buddhist-orange); filter: drop-shadow(0 0 15px rgba(255, 152, 0, 0.4)); }
-
-.lantern:nth-child(odd) { animation-delay: -1s; }
-.lantern:nth-child(3n) { animation-delay: -2.5s; }
-
-/* Moon */
-.vesak-moon {
-  position: absolute;
-  top: 40px;
-  right: 40px;
-  width: 100px;
-  height: 100px;
-  background: #fff;
-  border-radius: 50%;
-  box-shadow: 
-    0 0 40px rgba(255, 255, 255, 0.8), 
-    0 0 100px rgba(255, 255, 255, 0.4),
-    0 0 200px rgba(255, 255, 255, 0.2);
-  opacity: 0.95;
-  animation: moon-glow 5s ease-in-out infinite alternate;
+.orange .tassel {
+  background: #ffaa44;
 }
 
-@keyframes moon-glow {
-  from { box-shadow: 0 0 40px rgba(255, 255, 255, 0.8), 0 0 100px rgba(255, 255, 255, 0.4); }
-  to { box-shadow: 0 0 60px rgba(255, 255, 255, 0.9), 0 0 150px rgba(255, 255, 255, 0.6); }
-}
-
-.vesak-moon::before {
-  content: '';
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  background: radial-gradient(circle at 30% 30%, rgba(255,255,255,1) 0%, rgba(240,240,240,0.5) 100%);
-  border-radius: 50%;
-}
-
-/* Petals / Falling lights */
+/* 4. Soft Falling Lotus Petals */
 .petals {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
+  overflow: hidden;
 }
 
 .petal {
   position: absolute;
-  background: #fff;
-  border-radius: 50% 0 50% 50%;
-  opacity: 0.3;
+  top: -20px;
+  background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 99%, #fecfef 100%);
+  border-radius: 0 100% 40% 100%;
+  /* Perfect organic petal shape */
+  transform: rotate(45deg);
+  filter: drop-shadow(0 0 5px rgba(254, 207, 239, 0.6));
   animation: fall linear infinite;
 }
 
+/* Keyframe Animations */
+@keyframes lanternSway {
+  0% {
+    transform: rotate(-5deg);
+  }
+
+  100% {
+    transform: rotate(5deg);
+  }
+}
+
+@keyframes tasselSway {
+  0% {
+    transform: rotate(-8deg) skewX(-5deg);
+  }
+
+  100% {
+    transform: rotate(8deg) skewX(5deg);
+  }
+}
+
+@keyframes glowFlicker {
+  0%,
+  100% {
+    transform: scale(0.8);
+    opacity: 0.8;
+  }
+
+  50% {
+    transform: scale(1.1);
+    opacity: 1;
+  }
+}
+
 @keyframes fall {
-  to { transform: translateY(100vh) rotate(360deg); }
+  0% {
+    top: -5%;
+    transform: translateX(0) rotate(45deg);
+  }
+
+  50% {
+    transform: translateX(80px) rotate(225deg);
+  }
+
+  100% {
+    top: 105%;
+    transform: translateX(-40px) rotate(405deg);
+  }
 }
 
-.vesak-ambient {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: radial-gradient(circle at 50% 0%, rgba(255, 235, 59, 0.03) 0%, transparent 60%);
-  pointer-events: none;
-  z-index: 9998;
-}
-
+/* 5. Responsive Styles */
 @media (max-width: 768px) {
-  .lantern:nth-child(n+5) { display: none; }
-  .lantern { width: 60px; }
-  .vesak-moon { width: 40px; height: 40px; top: 20px; right: 20px; }
+  .lantern-node:nth-child(n+5) {
+    display: none;
+  }
+
+  .vesak-moon {
+    width: 50px;
+    height: 50px;
+    top: 20px;
+    right: 5%;
+  }
+
+  .moon-glow {
+    top: -15px;
+    left: -15px;
+    right: -15px;
+    bottom: -15px;
+    filter: blur(8px);
+  }
 }
