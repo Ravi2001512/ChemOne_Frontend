@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import API from "../services/api";
 import StudentNavbar from "../components/StudentNavbar";
 import AdminNavbar from "../components/AdminNavbar";
 
 function Settings() {
+  const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -83,6 +85,12 @@ function Settings() {
               </button>
             )}
           </div>
+          <button
+            onClick={() => navigate('/student/qr')}
+            className="px-6 py-2 bg-yellow-600 hover:bg-sky-500 text-white rounded-xl font-semibold transition-all shadow-lg shadow-indigo-500/20 active:scale-95"
+          >
+            Create QR Code
+          </button>
         </header>
 
         {error && (

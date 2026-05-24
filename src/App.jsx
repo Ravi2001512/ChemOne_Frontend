@@ -24,8 +24,6 @@ import Games from "./pages/Student/Games"
 import { Toaster } from 'react-hot-toast';
 import { useEffect } from 'react';
 import AutoLogout from "./components/AutoLogout";
-import VesakDecorations from './components/VesakDecorations';
-
 
 const AdminRoute = ({ children }) => {
   const user = JSON.parse(sessionStorage.getItem('user') || '{}');
@@ -93,18 +91,25 @@ function App() {
           <Route path="/admin/students" element={<AdminRoute><ManageStudents /></AdminRoute>} />
           <Route path="/admin/manage-results" element={<AdminRoute><ManageResults /></AdminRoute>} />
 
+          <Route path="/student" element={<StudentDashboard />} />
+          <Route path="/student/spot-test" element={<ViewSpotTest />} />
+          <Route path="/student/spot-test/:id" element={<TakeSpotTest />} />
+          <Route path="/student/daily-worksheet" element={<Dailyworksheet />} />
+          <Route path="/student/results" element={<ViewPhysicalResults />} />
+          <Route path="/student/ai-chatbot" element={<GuestRestrictRoute><ChatBot /></GuestRestrictRoute>} />
+          <Route path="/student/about" element={<About />} />
+          <Route path="/student/games" element={<Games />} />
           <Route path="/student" element={<StudentRoute><StudentDashboard /></StudentRoute>} />
           <Route path="/student/spot-test" element={<StudentRoute><ViewSpotTest /></StudentRoute>} />
           <Route path="/student/spot-test/:id" element={<StudentRoute><TakeSpotTest /></StudentRoute>} />
           <Route path="/student/daily-worksheet" element={<StudentRoute><Dailyworksheet /></StudentRoute>} />
           <Route path="/student/results" element={<StudentRoute><ViewPhysicalResults /></StudentRoute>} />
-          <Route path="/student/ai-chatbot" element={<StudentRoute><GuestRestrictRoute><ChatBot /></GuestRestrictRoute></StudentRoute>} />
+          <Route path="/student/ai-chatbot" element={<StudentRoute><ChatBot /></StudentRoute>} />
           <Route path="/student/about" element={<StudentRoute><About /></StudentRoute>} />
           <Route path="/student/games" element={<StudentRoute><Games /></StudentRoute>} />
         </Routes>
       </BrowserRouter>
-    </VesakDecorations>
-  )
+      );
 }
 
-export default App;
+      export default App;
