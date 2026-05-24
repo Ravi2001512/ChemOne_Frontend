@@ -24,11 +24,12 @@ import Games from "./pages/Student/Games"
 import { Toaster } from 'react-hot-toast';
 import { useEffect } from 'react';
 import AutoLogout from "./components/AutoLogout";
+import Qr from "./pages/Student/Qr";
 
 const AdminRoute = ({ children }) => {
   const user = JSON.parse(sessionStorage.getItem('user') || '{}');
   const token = sessionStorage.getItem('token');
-  
+
   if (!token || user.role !== 'instructor') {
     return <Navigate to="/login" replace />;
   }
@@ -42,7 +43,7 @@ const StudentRoute = ({ children }) => {
   if (!token) {
     return <Navigate to="/login" replace />;
   }
-  
+
   if (user.role === 'instructor') {
     return <Navigate to="/admin" replace />;
   }
@@ -106,6 +107,7 @@ function App() {
         <Route path="/student/ai-chatbot" element={<StudentRoute><ChatBot /></StudentRoute>} />
         <Route path="/student/about" element={<StudentRoute><About /></StudentRoute>} />
         <Route path="/student/games" element={<StudentRoute><Games /></StudentRoute>} />
+        <Route path="/student/qr" element={<StudentRoute><Qr /></StudentRoute>} />
       </Routes>
     </BrowserRouter>
   );
