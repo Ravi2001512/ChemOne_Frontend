@@ -25,6 +25,7 @@ import { Toaster } from 'react-hot-toast';
 import { useEffect } from 'react';
 import AutoLogout from "./components/AutoLogout";
 import Qr from "./pages/Student/Qr";
+import QRscanner from "./pages/Admin/QRscanner";
 
 const AdminRoute = ({ children }) => {
   const user = JSON.parse(sessionStorage.getItem('user') || '{}');
@@ -90,6 +91,7 @@ function App() {
         <Route path="/admin/manage-daily-worksheet" element={<AdminRoute><ManageDailyWorksheet /></AdminRoute>} />
         <Route path="/admin/students" element={<AdminRoute><ManageStudents /></AdminRoute>} />
         <Route path="/admin/manage-results" element={<AdminRoute><ManageResults /></AdminRoute>} />
+        <Route path="/admin/qr-scanner" element={<AdminRoute><QRscanner /></AdminRoute>} />
 
         <Route path="/student" element={<StudentDashboard />} />
         <Route path="/student/spot-test" element={<ViewSpotTest />} />

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ClipboardList, Users, BarChart3, Settings, FileText, Bell, BookOpen, ArrowRight } from 'lucide-react';
+import { ClipboardList, Users, BarChart3, Settings, FileText, Bell, BookOpen, ArrowRight, QrCode } from 'lucide-react';
 import AdminNavbar from '../../components/AdminNavbar';
 
 /* ─── Main Component ──────────────────────────────────────────── */
@@ -70,12 +70,12 @@ const AdminDashboard = () => {
       tag: 'System',
     },
     {
-      title: 'QR ',
-      description: 'Configure system settings and account preferences',
-      icon: Settings,
-      onClick: () => navigate('/settings'),
-      color: 'violet',
-      tag: 'System',
+      title: 'QR Scanner',
+      description: 'Scan  qr code of students',
+      icon: QrCode,
+      onClick: () => navigate('/admin/qr-scanner'),
+      color: 'yellow',
+      tag: 'QR',
     },
   ];
 
@@ -110,7 +110,7 @@ const AdminDashboard = () => {
           </div>
         </div>
 
-        {/* ── SECTION LABEL ───────────────────────────────────── */}
+        {/*SECTION LABEL*/}
         <div className="flex items-center gap-4 mb-8">
           <p className="font-mono text-[11px] tracking-[0.18em] uppercase text-slate-400 dark:text-zinc-500 whitespace-nowrap transition-colors duration-300">
             // Quick Actions
@@ -118,7 +118,7 @@ const AdminDashboard = () => {
           <div className="flex-1 h-px bg-slate-200 dark:bg-white/10 transition-colors duration-300" />
         </div>
 
-        {/* ── ACTION CARDS ─────────────────────────────────────── */}
+        {/* ACTION CARDS */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {dashboardCards.map((card, index) => (
             <ActionCard key={index} card={card} />
@@ -129,7 +129,7 @@ const AdminDashboard = () => {
   );
 };
 
-/* ─── Individual Card Component ───────────────────────────────── */
+/* Individual Card Component */
 const ActionCard = ({ card }) => {
   const Icon = card.icon;
 
@@ -141,6 +141,7 @@ const ActionCard = ({ card }) => {
     acid: 'text-acid bg-acid/10 border-acid/20 shadow-acid/10',
     sky: 'text-sky-500 bg-sky-500/10 border-sky-500/20 shadow-sky-500/10',
     violet: 'text-violet-500 bg-violet-500/10 border-violet-500/20 shadow-violet-500/10',
+    yellow: 'text-yellow-500 bg-yellow-500/10 border-yellow-500/20 shadow-yellow-500/10',
   };
 
   const config = colorConfig[card.color] || colorConfig.indigo;
