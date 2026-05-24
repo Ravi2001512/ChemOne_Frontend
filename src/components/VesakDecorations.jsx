@@ -2,36 +2,70 @@ import React, { useMemo } from 'react';
 import '../styles/Vesak.css';
 
 const VesakDecorations = ({ children }) => {
-  // Traditional Buddhist flag colors (Six colors / Shadvarna, sequence repeated)
-  const lanterns = [
-    { color: 'blue' }, { color: 'yellow' }, { color: 'red' }, { color: 'white' }, { color: 'orange' },
-    { color: 'mixed' },
-    { color: 'blue' }, { color: 'yellow' }, { color: 'red' }, { color: 'white' }, { color: 'orange' }
-  ];
 
-  // useMemo prevents petals from recalculating and glitching on re-renders
+  /* Floating petals */
   const petals = useMemo(() => {
-    return Array.from({ length: 25 }).map((_, i) => ({
+    return Array.from({ length: 25 }).map(() => ({
       left: `${Math.random() * 100}%`,
-      delay: `${Math.random() * -20}s`, // Negative delay ensures petals are already falling on load
+      delay: `${Math.random() * -20}s`,
       duration: `${12 + Math.random() * 18}s`,
       size: `${8 + Math.random() * 12}px`,
       opacity: 0.4 + Math.random() * 0.5,
     }));
   }, []);
 
+  /* High-fidelity traditional tassels grouped by attachment points */
+  const tasselsLeft = useMemo(() => {
+    return Array.from({ length: 8 }).map((_, i) => ({
+      left: `${i * 3.2}px`,
+      height: `${80 + Math.random() * 45}px`,
+      width: `${3 + Math.random() * 2}px`,
+      delay: `${i * -0.15 - Math.random() * 0.4}s`,
+      rotate: `${-10 + Math.random() * 20}deg`,
+      opacity: 0.65 + Math.random() * 0.35,
+    }));
+  }, []);
+
+  const tasselsRight = useMemo(() => {
+    return Array.from({ length: 8 }).map((_, i) => ({
+      left: `${i * 3.2}px`,
+      height: `${80 + Math.random() * 45}px`,
+      width: `${3 + Math.random() * 2}px`,
+      delay: `${i * -0.15 - Math.random() * 0.4}s`,
+      rotate: `${-10 + Math.random() * 20}deg`,
+      opacity: 0.65 + Math.random() * 0.35,
+    }));
+  }, []);
+
+  const tasselsBottom = useMemo(() => {
+    return Array.from({ length: 36 }).map((_, i) => {
+      const baseHeight = 155 + Math.sin(i * 0.2) * 20;
+      const height = baseHeight + Math.random() * 30;
+      return {
+        left: `${i * 4.4}px`,
+        height: `${height}px`,
+        width: `${4.5 + Math.random() * 3.5}px`, // Wide flat paper ribbons like the reference photo
+        delay: `${i * -0.07 - Math.random() * 0.3}s`,
+        rotate: `${-6 + Math.random() * 12}deg`,
+        opacity: 0.75 + Math.random() * 0.25,
+      };
+    });
+  }, []);
+
   return (
     <div className="vesak-theme-wrapper">
-      {/* Deep, peaceful ambient night background */}
+
+      {/* Ambient background */}
       <div className="vesak-ambient" />
 
       <div className="vesak-container">
-        {/* Poya Full Moon with a soft, divine glow */}
+
+        {/* Moon */}
         <div className="vesak-moon">
           <div className="moon-glow" />
         </div>
 
-        {/* Softly drifting lotus petals */}
+        {/* Falling petals */}
         <div className="petals">
           {petals.map((p, i) => (
             <div
@@ -49,177 +83,151 @@ const VesakDecorations = ({ children }) => {
           ))}
         </div>
 
-        {/* Hanging traditional 3D-faceted Vesak lanterns cluster next to the moon */}
-        <div className="vesak-lantern-cluster">
-          {/* 1. Purple/Lavender Lantern (Top-Left) */}
-          <div className="traditional-lantern purple-lantern">
-            <div className="lantern-wire-3d" />
-            <div className="lantern-glow-3d" />
-            
-            {/* Sparkles */}
-            <div className="sparkles-container">
-              <div className="sparkle-star s1" />
-              <div className="sparkle-star s2" />
-              <div className="sparkle-star s3" />
-            </div>
+        {/* Vesak Lantern */}
+        <div className="large-traditional-lantern">
 
-            {/* 3D-Faceted Main Body */}
-            <div className="lantern-body-3d">
-              <div className="facet facet-c-tl" />
-              <div className="facet facet-c-tr" />
-              <div className="facet facet-c-br" />
-              <div className="facet facet-c-bl" />
-              <div className="facet facet-ear-tl" />
-              <div className="facet facet-ear-tr" />
-              <div className="facet facet-ear-br" />
-              <div className="facet facet-ear-bl" />
-            </div>
+          {/* Hanging wire */}
+          <div className="large-lantern-wire" />
 
-            {/* Organic Breeze-Swaying Wavy Tassels (SVG) */}
-            <div className="tassel-side-left">
-              <svg viewBox="0 0 40 100" fill="none">
-                <path d="M 30 0 C 15 20, 5 40, 10 60 C 12 70, 5 80, 2 95" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" className="tassel-line" />
-                <path d="M 32 0 C 20 25, 10 50, 15 75 C 18 85, 12 90, 8 100" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="tassel-line" />
-                <path d="M 28 0 C 10 15, 0 35, 5 55 C 8 65, 0 75, -2 88" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" className="tassel-line" />
-              </svg>
-            </div>
-            <div className="tassel-side-right">
-              <svg viewBox="0 0 40 100" fill="none">
-                <path d="M 10 0 C 25 20, 35 40, 30 60 C 28 70, 35 80, 38 95" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" className="tassel-line" />
-                <path d="M 8 0 C 20 25, 30 50, 25 75 C 22 85, 28 90, 32 100" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="tassel-line" />
-                <path d="M 12 0 C 30 15, 40 35, 35 55 C 32 65, 40 75, 42 88" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" className="tassel-line" />
-              </svg>
-            </div>
-            <div className="tassel-bottom">
-              <svg viewBox="0 0 80 150" fill="none">
-                <path d="M 40 0 C 35 30, 20 60, 30 90 C 35 110, 25 130, 20 145" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" className="tassel-line" />
-                <path d="M 36 0 C 25 25, 10 50, 20 80 C 25 100, 15 120, 12 135" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" className="tassel-line" />
-                <path d="M 44 0 C 45 25, 30 50, 40 75 C 45 95, 35 115, 32 130" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="tassel-line" />
-                <path d="M 38 0 C 20 30, 5 55, 12 85 C 16 105, 5 125, -2 140" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="tassel-line" />
-                <path d="M 42 0 C 50 30, 35 60, 45 90 C 50 110, 40 130, 38 148" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" className="tassel-line" />
-                <path d="M 46 0 C 55 25, 45 55, 52 80 C 56 95, 48 115, 45 128" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" className="tassel-line" />
-                <path d="M 34 0 C 15 20, -5 40, 2 70 C 5 85, -2 105, -5 120" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="tassel-line" />
-                <path d="M 48 0 C 60 25, 50 55, 58 85 C 62 100, 55 120, 52 138" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" className="tassel-line" />
-              </svg>
-            </div>
+          {/* Lantern glow */}
+          <div className="large-lantern-glow" />
+
+          {/* Sparkles */}
+          <div className="large-sparkles-container">
+            <div className="sparkle-star s1" />
+            <div className="sparkle-star s2" />
+            <div className="sparkle-star s3" />
+            <div className="sparkle-star s4" />
+            <div className="sparkle-star s5" />
           </div>
 
-          {/* 2. Orange/Gold Lantern (Top-Right) */}
-          <div className="traditional-lantern orange-lantern">
-            <div className="lantern-wire-3d" />
-            <div className="lantern-glow-3d" />
-            
-            {/* Sparkles */}
-            <div className="sparkles-container">
-              <div className="sparkle-star s1" />
-              <div className="sparkle-star s2" />
-              <div className="sparkle-star s3" />
-              <div className="sparkle-star s4" />
-            </div>
+          {/* Lantern body - Styled as the Traditional Sri Lankan rotated cube with ears */}
+          <div className="large-lantern-body traditional-vesak-body">
 
-            {/* 3D-Faceted Main Body */}
-            <div className="lantern-body-3d">
-              <div className="facet facet-c-tl" />
-              <div className="facet facet-c-tr" />
-              <div className="facet facet-c-br" />
-              <div className="facet facet-c-bl" />
-              <div className="facet facet-ear-tl" />
-              <div className="facet facet-ear-tr" />
-              <div className="facet facet-ear-br" />
-              <div className="facet facet-ear-bl" />
-            </div>
+            <svg viewBox="0 0 220 220" className="large-lantern-svg">
 
-            {/* Organic Breeze-Swaying Wavy Tassels (SVG) */}
-            <div className="tassel-side-left">
-              <svg viewBox="0 0 40 100" fill="none">
-                <path d="M 30 0 C 15 20, 5 40, 10 60 C 12 70, 5 80, 2 95" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" className="tassel-line" />
-                <path d="M 32 0 C 20 25, 10 50, 15 75 C 18 85, 12 90, 8 100" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="tassel-line" />
-                <path d="M 28 0 C 10 15, 0 35, 5 55 C 8 65, 0 75, -2 88" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" className="tassel-line" />
-              </svg>
-            </div>
-            <div className="tassel-side-right">
-              <svg viewBox="0 0 40 100" fill="none">
-                <path d="M 10 0 C 25 20, 35 40, 30 60 C 28 70, 35 80, 38 95" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" className="tassel-line" />
-                <path d="M 8 0 C 20 25, 30 50, 25 75 C 22 85, 28 90, 32 100" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="tassel-line" />
-                <path d="M 12 0 C 30 15, 40 35, 35 55 C 32 65, 40 75, 42 88" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" className="tassel-line" />
-              </svg>
-            </div>
-            <div className="tassel-bottom">
-              <svg viewBox="0 0 80 150" fill="none">
-                <path d="M 40 0 C 35 30, 20 60, 30 90 C 35 110, 25 130, 20 145" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" className="tassel-line" />
-                <path d="M 36 0 C 25 25, 10 50, 20 80 C 25 100, 15 120, 12 135" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" className="tassel-line" />
-                <path d="M 44 0 C 45 25, 30 50, 40 75 C 45 95, 35 115, 32 130" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="tassel-line" />
-                <path d="M 38 0 C 20 30, 5 55, 12 85 C 16 105, 5 125, -2 140" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="tassel-line" />
-                <path d="M 42 0 C 50 30, 35 60, 45 90 C 50 110, 40 130, 38 148" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" className="tassel-line" />
-                <path d="M 46 0 C 55 25, 45 55, 52 80 C 56 95, 48 115, 45 128" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" className="tassel-line" />
-                <path d="M 34 0 C 15 20, -5 40, 2 70 C 5 85, -2 105, -5 120" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="tassel-line" />
-                <path d="M 48 0 C 60 25, 50 55, 58 85 C 62 100, 55 120, 52 138" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" className="tassel-line" />
-              </svg>
-            </div>
+              <defs>
+                {/* Glowing gradients matching the warm paper texture of the photo */}
+                <radialGradient id="traditionalGlow" cx="50%" cy="50%" r="55%">
+                  <stop offset="0%" stopColor="#ffffff" />
+                  <stop offset="35%" stopColor="#ffff85" />
+                  <stop offset="75%" stopColor="#ffda16" />
+                  <stop offset="100%" stopColor="#bf7c00" />
+                </radialGradient>
+                <linearGradient id="earGlow" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#fffda0" />
+                  <stop offset="65%" stopColor="#ffe42e" />
+                  <stop offset="100%" stopColor="#a36600" />
+                </linearGradient>
+              </defs>
+
+              {/* Central Diamond (Rotated Square Face) */}
+              <polygon
+                points="110,45 170,105 110,165 50,105"
+                fill="url(#traditionalGlow)"
+                stroke="#8d230f"
+                strokeWidth="2.8"
+                strokeLinejoin="round"
+              />
+
+              {/* Wooden frame outline divisions inside center diamond (Red/brown crossing diagonals) */}
+              <line
+                x1="110"
+                y1="45"
+                x2="110"
+                y2="165"
+                stroke="#8d230f"
+                strokeWidth="2.2"
+              />
+              <line
+                x1="50"
+                y1="105"
+                x2="170"
+                y2="105"
+                stroke="#8d230f"
+                strokeWidth="2.2"
+              />
+
+              {/* Ears (Four outer triangular panels) */}
+              {/* Top-Left Ear */}
+              <polygon points="110,45 50,105 40,35" fill="url(#earGlow)" stroke="#8d230f" strokeWidth="2.8" strokeLinejoin="round" />
+              {/* Top-Right Ear */}
+              <polygon points="110,45 170,105 180,35" fill="url(#earGlow)" stroke="#8d230f" strokeWidth="2.8" strokeLinejoin="round" />
+              {/* Bottom-Left Ear */}
+              <polygon points="50,105 110,165 40,175" fill="url(#earGlow)" stroke="#8d230f" strokeWidth="2.8" strokeLinejoin="round" />
+              {/* Bottom-Right Ear */}
+              <polygon points="170,105 110,165 180,175" fill="url(#earGlow)" stroke="#8d230f" strokeWidth="2.8" strokeLinejoin="round" />
+
+              {/* Top wire connector cap */}
+              <polygon points="110,45 95,15 125,15" fill="url(#earGlow)" stroke="#8d230f" strokeWidth="2.2" strokeLinejoin="round" />
+
+            </svg>
+
           </div>
 
-          {/* 3. Teal/Cyan Lantern (Bottom-Center, Foreground) */}
-          <div className="traditional-lantern teal-lantern">
-            <div className="lantern-wire-3d" />
-            <div className="lantern-glow-3d" />
-            
-            {/* Sparkles */}
-            <div className="sparkles-container">
-              <div className="sparkle-star s1" />
-              <div className="sparkle-star s2" />
-              <div className="sparkle-star s3" />
-              <div className="sparkle-star s4" />
-              <div className="sparkle-star s5" />
-            </div>
-
-            {/* 3D-Faceted Main Body */}
-            <div className="lantern-body-3d">
-              <div className="facet facet-c-tl" />
-              <div className="facet facet-c-tr" />
-              <div className="facet facet-c-br" />
-              <div className="facet facet-c-bl" />
-              <div className="facet facet-ear-tl" />
-              <div className="facet facet-ear-tr" />
-              <div className="facet facet-ear-br" />
-              <div className="facet facet-ear-bl" />
-            </div>
-
-            {/* Organic Breeze-Swaying Wavy Tassels (SVG) */}
-            <div className="tassel-side-left">
-              <svg viewBox="0 0 40 100" fill="none">
-                <path d="M 30 0 C 15 20, 5 40, 10 60 C 12 70, 5 80, 2 95" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" className="tassel-line" />
-                <path d="M 32 0 C 20 25, 10 50, 15 75 C 18 85, 12 90, 8 100" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="tassel-line" />
-                <path d="M 28 0 C 10 15, 0 35, 5 55 C 8 65, 0 75, -2 88" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" className="tassel-line" />
-              </svg>
-            </div>
-            <div className="tassel-side-right">
-              <svg viewBox="0 0 40 100" fill="none">
-                <path d="M 10 0 C 25 20, 35 40, 30 60 C 28 70, 35 80, 38 95" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" className="tassel-line" />
-                <path d="M 8 0 C 20 25, 30 50, 25 75 C 22 85, 28 90, 32 100" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="tassel-line" />
-                <path d="M 12 0 C 30 15, 40 35, 35 55 C 32 65, 40 75, 42 88" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" className="tassel-line" />
-              </svg>
-            </div>
-            <div className="tassel-bottom">
-              <svg viewBox="0 0 80 150" fill="none">
-                <path d="M 40 0 C 35 30, 20 60, 30 90 C 35 110, 25 130, 20 145" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" className="tassel-line" />
-                <path d="M 36 0 C 25 25, 10 50, 20 80 C 25 100, 15 120, 12 135" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" className="tassel-line" />
-                <path d="M 44 0 C 45 25, 30 50, 40 75 C 45 95, 35 115, 32 130" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="tassel-line" />
-                <path d="M 38 0 C 20 30, 5 55, 12 85 C 16 105, 5 125, -2 140" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="tassel-line" />
-                <path d="M 42 0 C 50 30, 35 60, 45 90 C 50 110, 40 130, 38 148" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" className="tassel-line" />
-                <path d="M 46 0 C 55 25, 45 55, 52 80 C 56 95, 48 115, 45 128" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" className="tassel-line" />
-                <path d="M 34 0 C 15 20, -5 40, 2 70 C 5 85, -2 105, -5 120" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="tassel-line" />
-                <path d="M 48 0 C 60 25, 50 55, 58 85 C 62 100, 55 120, 52 138" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" className="tassel-line" />
-              </svg>
-            </div>
+          {/* Left Ear Tassels (Hanging from left corner of the diamond body) */}
+          <div className="large-tassels-left">
+            {tasselsLeft.map((t, i) => (
+              <div
+                key={i}
+                className="hex-tassel"
+                style={{
+                  left: t.left,
+                  height: t.height,
+                  width: t.width,
+                  opacity: t.opacity,
+                  animationDelay: t.delay,
+                  transform: `rotate(${t.rotate})`
+                }}
+              />
+            ))}
           </div>
+
+          {/* Right Ear Tassels (Hanging from right corner of the diamond body) */}
+          <div className="large-tassels-right">
+            {tasselsRight.map((t, i) => (
+              <div
+                key={i}
+                className="hex-tassel"
+                style={{
+                  left: t.left,
+                  height: t.height,
+                  width: t.width,
+                  opacity: t.opacity,
+                  animationDelay: t.delay,
+                  transform: `rotate(${t.rotate})`
+                }}
+              />
+            ))}
+          </div>
+
+          {/* Main Bottom Tassels Curtain (Densely hanging from the bottom panels of the body) */}
+          <div className="large-tassels-bottom">
+            {tasselsBottom.map((t, i) => (
+              <div
+                key={i}
+                className="hex-tassel"
+                style={{
+                  left: t.left,
+                  height: t.height,
+                  width: t.width,
+                  opacity: t.opacity,
+                  animationDelay: t.delay,
+                  transform: `rotate(${t.rotate})`
+                }}
+              />
+            ))}
+          </div>
+
         </div>
 
       </div>
 
-      {/* Content Layer */}
+      {/* Content */}
       <div className="vesak-content">
         {children}
       </div>
+
     </div>
   );
 };
