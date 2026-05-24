@@ -69,6 +69,14 @@ const AdminDashboard = () => {
       color: 'violet',
       tag: 'System',
     },
+    {
+      title: 'QR ',
+      description: 'Configure system settings and account preferences',
+      icon: Settings,
+      onClick: () => navigate('/settings'),
+      color: 'violet',
+      tag: 'System',
+    },
   ];
 
   return (
