@@ -49,22 +49,169 @@ const VesakDecorations = ({ children }) => {
           ))}
         </div>
 
-        {/* Hanging lanterns line */}
-        <div className="lantern-string">
-          {lanterns.map((l, index) => (
-            <div key={index} className={`lantern-node ${l.color}`}>
-              <div className="lantern-wire" />
-              <div className="lantern-body">
-                <div className="lantern-inner-glow" />
-                <div className="lantern-details" />
-              </div>
-              <div className="lantern-tassels">
-                <div className="tassel" />
-                <div className="tassel" />
-                <div className="tassel" />
-              </div>
+        {/* Hanging traditional 3D-faceted Vesak lanterns cluster next to the moon */}
+        <div className="vesak-lantern-cluster">
+          {/* 1. Purple/Lavender Lantern (Top-Left) */}
+          <div className="traditional-lantern purple-lantern">
+            <div className="lantern-wire-3d" />
+            <div className="lantern-glow-3d" />
+            
+            {/* Sparkles */}
+            <div className="sparkles-container">
+              <div className="sparkle-star s1" />
+              <div className="sparkle-star s2" />
+              <div className="sparkle-star s3" />
             </div>
-          ))}
+
+            {/* 3D-Faceted Main Body */}
+            <div className="lantern-body-3d">
+              <div className="facet facet-c-tl" />
+              <div className="facet facet-c-tr" />
+              <div className="facet facet-c-br" />
+              <div className="facet facet-c-bl" />
+              <div className="facet facet-ear-tl" />
+              <div className="facet facet-ear-tr" />
+              <div className="facet facet-ear-br" />
+              <div className="facet facet-ear-bl" />
+            </div>
+
+            {/* Organic Breeze-Swaying Wavy Tassels (SVG) */}
+            <div className="tassel-side-left">
+              <svg viewBox="0 0 40 100" fill="none">
+                <path d="M 30 0 C 15 20, 5 40, 10 60 C 12 70, 5 80, 2 95" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" className="tassel-line" />
+                <path d="M 32 0 C 20 25, 10 50, 15 75 C 18 85, 12 90, 8 100" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="tassel-line" />
+                <path d="M 28 0 C 10 15, 0 35, 5 55 C 8 65, 0 75, -2 88" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" className="tassel-line" />
+              </svg>
+            </div>
+            <div className="tassel-side-right">
+              <svg viewBox="0 0 40 100" fill="none">
+                <path d="M 10 0 C 25 20, 35 40, 30 60 C 28 70, 35 80, 38 95" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" className="tassel-line" />
+                <path d="M 8 0 C 20 25, 30 50, 25 75 C 22 85, 28 90, 32 100" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="tassel-line" />
+                <path d="M 12 0 C 30 15, 40 35, 35 55 C 32 65, 40 75, 42 88" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" className="tassel-line" />
+              </svg>
+            </div>
+            <div className="tassel-bottom">
+              <svg viewBox="0 0 80 150" fill="none">
+                <path d="M 40 0 C 35 30, 20 60, 30 90 C 35 110, 25 130, 20 145" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" className="tassel-line" />
+                <path d="M 36 0 C 25 25, 10 50, 20 80 C 25 100, 15 120, 12 135" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" className="tassel-line" />
+                <path d="M 44 0 C 45 25, 30 50, 40 75 C 45 95, 35 115, 32 130" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="tassel-line" />
+                <path d="M 38 0 C 20 30, 5 55, 12 85 C 16 105, 5 125, -2 140" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="tassel-line" />
+                <path d="M 42 0 C 50 30, 35 60, 45 90 C 50 110, 40 130, 38 148" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" className="tassel-line" />
+                <path d="M 46 0 C 55 25, 45 55, 52 80 C 56 95, 48 115, 45 128" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" className="tassel-line" />
+                <path d="M 34 0 C 15 20, -5 40, 2 70 C 5 85, -2 105, -5 120" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="tassel-line" />
+                <path d="M 48 0 C 60 25, 50 55, 58 85 C 62 100, 55 120, 52 138" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" className="tassel-line" />
+              </svg>
+            </div>
+          </div>
+
+          {/* 2. Orange/Gold Lantern (Top-Right) */}
+          <div className="traditional-lantern orange-lantern">
+            <div className="lantern-wire-3d" />
+            <div className="lantern-glow-3d" />
+            
+            {/* Sparkles */}
+            <div className="sparkles-container">
+              <div className="sparkle-star s1" />
+              <div className="sparkle-star s2" />
+              <div className="sparkle-star s3" />
+              <div className="sparkle-star s4" />
+            </div>
+
+            {/* 3D-Faceted Main Body */}
+            <div className="lantern-body-3d">
+              <div className="facet facet-c-tl" />
+              <div className="facet facet-c-tr" />
+              <div className="facet facet-c-br" />
+              <div className="facet facet-c-bl" />
+              <div className="facet facet-ear-tl" />
+              <div className="facet facet-ear-tr" />
+              <div className="facet facet-ear-br" />
+              <div className="facet facet-ear-bl" />
+            </div>
+
+            {/* Organic Breeze-Swaying Wavy Tassels (SVG) */}
+            <div className="tassel-side-left">
+              <svg viewBox="0 0 40 100" fill="none">
+                <path d="M 30 0 C 15 20, 5 40, 10 60 C 12 70, 5 80, 2 95" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" className="tassel-line" />
+                <path d="M 32 0 C 20 25, 10 50, 15 75 C 18 85, 12 90, 8 100" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="tassel-line" />
+                <path d="M 28 0 C 10 15, 0 35, 5 55 C 8 65, 0 75, -2 88" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" className="tassel-line" />
+              </svg>
+            </div>
+            <div className="tassel-side-right">
+              <svg viewBox="0 0 40 100" fill="none">
+                <path d="M 10 0 C 25 20, 35 40, 30 60 C 28 70, 35 80, 38 95" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" className="tassel-line" />
+                <path d="M 8 0 C 20 25, 30 50, 25 75 C 22 85, 28 90, 32 100" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="tassel-line" />
+                <path d="M 12 0 C 30 15, 40 35, 35 55 C 32 65, 40 75, 42 88" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" className="tassel-line" />
+              </svg>
+            </div>
+            <div className="tassel-bottom">
+              <svg viewBox="0 0 80 150" fill="none">
+                <path d="M 40 0 C 35 30, 20 60, 30 90 C 35 110, 25 130, 20 145" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" className="tassel-line" />
+                <path d="M 36 0 C 25 25, 10 50, 20 80 C 25 100, 15 120, 12 135" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" className="tassel-line" />
+                <path d="M 44 0 C 45 25, 30 50, 40 75 C 45 95, 35 115, 32 130" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="tassel-line" />
+                <path d="M 38 0 C 20 30, 5 55, 12 85 C 16 105, 5 125, -2 140" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="tassel-line" />
+                <path d="M 42 0 C 50 30, 35 60, 45 90 C 50 110, 40 130, 38 148" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" className="tassel-line" />
+                <path d="M 46 0 C 55 25, 45 55, 52 80 C 56 95, 48 115, 45 128" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" className="tassel-line" />
+                <path d="M 34 0 C 15 20, -5 40, 2 70 C 5 85, -2 105, -5 120" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="tassel-line" />
+                <path d="M 48 0 C 60 25, 50 55, 58 85 C 62 100, 55 120, 52 138" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" className="tassel-line" />
+              </svg>
+            </div>
+          </div>
+
+          {/* 3. Teal/Cyan Lantern (Bottom-Center, Foreground) */}
+          <div className="traditional-lantern teal-lantern">
+            <div className="lantern-wire-3d" />
+            <div className="lantern-glow-3d" />
+            
+            {/* Sparkles */}
+            <div className="sparkles-container">
+              <div className="sparkle-star s1" />
+              <div className="sparkle-star s2" />
+              <div className="sparkle-star s3" />
+              <div className="sparkle-star s4" />
+              <div className="sparkle-star s5" />
+            </div>
+
+            {/* 3D-Faceted Main Body */}
+            <div className="lantern-body-3d">
+              <div className="facet facet-c-tl" />
+              <div className="facet facet-c-tr" />
+              <div className="facet facet-c-br" />
+              <div className="facet facet-c-bl" />
+              <div className="facet facet-ear-tl" />
+              <div className="facet facet-ear-tr" />
+              <div className="facet facet-ear-br" />
+              <div className="facet facet-ear-bl" />
+            </div>
+
+            {/* Organic Breeze-Swaying Wavy Tassels (SVG) */}
+            <div className="tassel-side-left">
+              <svg viewBox="0 0 40 100" fill="none">
+                <path d="M 30 0 C 15 20, 5 40, 10 60 C 12 70, 5 80, 2 95" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" className="tassel-line" />
+                <path d="M 32 0 C 20 25, 10 50, 15 75 C 18 85, 12 90, 8 100" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="tassel-line" />
+                <path d="M 28 0 C 10 15, 0 35, 5 55 C 8 65, 0 75, -2 88" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" className="tassel-line" />
+              </svg>
+            </div>
+            <div className="tassel-side-right">
+              <svg viewBox="0 0 40 100" fill="none">
+                <path d="M 10 0 C 25 20, 35 40, 30 60 C 28 70, 35 80, 38 95" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" className="tassel-line" />
+                <path d="M 8 0 C 20 25, 30 50, 25 75 C 22 85, 28 90, 32 100" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="tassel-line" />
+                <path d="M 12 0 C 30 15, 40 35, 35 55 C 32 65, 40 75, 42 88" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" className="tassel-line" />
+              </svg>
+            </div>
+            <div className="tassel-bottom">
+              <svg viewBox="0 0 80 150" fill="none">
+                <path d="M 40 0 C 35 30, 20 60, 30 90 C 35 110, 25 130, 20 145" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" className="tassel-line" />
+                <path d="M 36 0 C 25 25, 10 50, 20 80 C 25 100, 15 120, 12 135" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" className="tassel-line" />
+                <path d="M 44 0 C 45 25, 30 50, 40 75 C 45 95, 35 115, 32 130" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="tassel-line" />
+                <path d="M 38 0 C 20 30, 5 55, 12 85 C 16 105, 5 125, -2 140" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="tassel-line" />
+                <path d="M 42 0 C 50 30, 35 60, 45 90 C 50 110, 40 130, 38 148" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" className="tassel-line" />
+                <path d="M 46 0 C 55 25, 45 55, 52 80 C 56 95, 48 115, 45 128" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" className="tassel-line" />
+                <path d="M 34 0 C 15 20, -5 40, 2 70 C 5 85, -2 105, -5 120" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="tassel-line" />
+                <path d="M 48 0 C 60 25, 50 55, 58 85 C 62 100, 55 120, 52 138" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" className="tassel-line" />
+              </svg>
+            </div>
+          </div>
         </div>
 
         {/* Traditional Clay Lamps (Vesak Pahan) at the bottom */}
