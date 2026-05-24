@@ -1,11 +1,26 @@
-/* Vesak Decoration Styles - Premium Version */
+/* Base Layout Wrapper */
+.vesak-theme-wrapper {
+  position: relative;
+  width: 100%;
+  min-height: 100vh;
+  overflow-x: hidden;
+  background: #040814;
+  /* Deep night sky */
+  color: #ffffff;
+}
 
-:root {
-  --buddhist-blue: #0033ad;
-  --buddhist-yellow: #f9d71c;
-  --buddhist-red: #ff0000;
-  --buddhist-white: #ffffff;
-  --buddhist-orange: #ff9800;
+/* 1. Immersive Ambient Background */
+.vesak-ambient {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background:
+    radial-gradient(circle at 50% 20%, rgba(255, 218, 133, 0.15) 0%, transparent 50%),
+    radial-gradient(circle at 20% 80%, rgba(255, 107, 107, 0.05) 0%, transparent 40%);
+  pointer-events: none;
+  z-index: 9998;
 }
 
 .vesak-container {
@@ -16,189 +31,723 @@
   height: 100%;
   pointer-events: none;
   z-index: 9999;
-  overflow: hidden;
 }
 
-/* The string/wire connecting lanterns */
-.lantern-string {
-  position: absolute;
-  top: -10px;
-  width: 110%;
-  left: -5%;
-  height: 100px;
-  border-bottom: 2px solid rgba(255, 255, 255, 0.1);
-  border-radius: 50%;
-  display: flex;
-  justify-content: space-around;
-  align-items: flex-end;
-  padding: 0 10%;
-}
-
-.lantern {
+.vesak-content {
   position: relative;
-  width: 80px;
-  height: 120px;
-  transform-origin: top center;
-  animation: sway 4s ease-in-out infinite;
+  z-index: 3;
+}
+
+/* 2. The Gorgeous Full Poya Moon */
+.vesak-moon {
+  position: absolute;
+  top: 120px;
+  right: 10%;
+  width: 150px;
+  height: 150px;
+  background: radial-gradient(circle at 30% 30%, #fffdf5 0%, #ffe9aa 60%, #ffd666 100%);
+  border-radius: 50%;
+  box-shadow:
+    0 0 45px rgba(255, 204, 0, 0.45),
+    0 0 100px rgba(255, 170, 0, 0.25),
+    0 0 180px rgba(255, 150, 0, 0.12);
+  animation: moonPulse 6s ease-in-out infinite alternate;
+}
+
+.moon-glow {
+  position: absolute;
+  top: -50px;
+  left: -50px;
+  right: -50px;
+  bottom: -50px;
+  background: radial-gradient(circle, rgba(255, 215, 0, 0.22) 0%, transparent 70%);
+  border-radius: 50%;
+  filter: blur(15px);
+  animation: glowPulse 4s ease-in-out infinite alternate;
+}
+
+@keyframes moonPulse {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 35px rgba(255, 204, 0, 0.45), 0 0 80px rgba(255, 170, 0, 0.2);
+  }
+
+  100% {
+    transform: scale(1.025);
+    box-shadow: 0 0 50px rgba(255, 215, 0, 0.6), 0 0 110px rgba(255, 170, 0, 0.3);
+  }
+}
+
+@keyframes glowPulse {
+  0% {
+    transform: scale(0.92);
+    opacity: 0.5;
+  }
+
+  100% {
+    transform: scale(1.08);
+    opacity: 0.8;
+  }
+}
+
+/* 3. Hanging 3D Vesak Lanterns Cluster */
+.vesak-lantern-cluster {
+  position: absolute;
+  top: 40px;
+  right: 17%;
+  width: 280px;
+  height: 420px;
+  pointer-events: none;
+  z-index: 9999;
+}
+
+.traditional-lantern {
+  position: absolute;
   display: flex;
   flex-direction: column;
   align-items: center;
+  transform-origin: top center;
+  filter: drop-shadow(0 10px 25px rgba(0, 0, 0, 0.5));
 }
 
-.lantern::before {
-  content: '';
+/* 3D Lantern Sizes & Positions */
+.purple-lantern {
+  left: 0;
+  top: 0;
+  width: 90px;
+  height: 90px;
+  color: #eed3ff;
+  /* Tassel color */
+  animation: breezeSway 4.8s ease-in-out infinite alternate;
+}
+
+.orange-lantern {
+  right: 0;
+  top: 15px;
+  width: 95px;
+  height: 95px;
+  color: #ffeeb3;
+  /* Tassel color */
+  animation: breezeSway 5.5s ease-in-out infinite alternate -1.5s;
+}
+
+.teal-lantern {
+  left: 80px;
+  top: 45px;
+  width: 105px;
+  height: 105px;
+  z-index: 10;
+  color: #e3fffd;
+  /* Tassel color */
+  animation: breezeSway 5.1s ease-in-out infinite alternate -2.8s;
+}
+
+/* Wires hanging from the ceiling */
+.lantern-wire-3d {
   position: absolute;
-  top: -40px;
-  width: 1px;
-  height: 40px;
-  background: rgba(255, 255, 255, 0.2);
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 1.5px;
+  background: linear-gradient(to top, rgba(255, 255, 255, 0.45) 0%, rgba(255, 255, 255, 0.05) 100%);
 }
 
-.lantern-body {
-  width: 50px;
-  height: 60px;
-  background: var(--lantern-color, #ffeb3b);
-  position: relative;
-  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
-  box-shadow: inset 0 0 15px rgba(0,0,0,0.2);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+.purple-lantern .lantern-wire-3d {
+  height: 90px;
 }
 
-.lantern-body::before {
-  content: '';
+.orange-lantern .lantern-wire-3d {
+  height: 120px;
+}
+
+.teal-lantern .lantern-wire-3d {
+  height: 165px;
+}
+
+/* Inner Glow derrière the 3D paper facets */
+.lantern-glow-3d {
   position: absolute;
-  width: 100%;
-  height: 100%;
-  background-image: 
-    radial-gradient(circle at 50% 50%, transparent 20%, rgba(255,255,255,0.1) 21%, transparent 25%),
-    linear-gradient(45deg, transparent 48%, rgba(255,255,255,0.1) 50%, transparent 52%);
-  background-size: 10px 10px;
-  opacity: 0.5;
-}
-
-.lantern-body::after {
-  content: '';
+  top: 15%;
+  left: 15%;
   width: 70%;
   height: 70%;
-  background: white;
-  opacity: 0.3;
-  filter: blur(8px);
   border-radius: 50%;
-  animation: pulse-glow 2s ease-in-out infinite alternate;
+  filter: blur(25px);
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0.85;
 }
 
-.lantern-tassels {
-  display: flex;
-  gap: 3px;
-  margin-top: -5px;
+.purple-lantern .lantern-glow-3d {
+  background: radial-gradient(circle, #e6a8ff 0%, transparent 70%);
 }
 
-.tassel {
-  width: 3px;
-  height: 40px;
-  background: var(--lantern-color, #ffeb3b);
-  opacity: 0.8;
-  border-radius: 0 0 2px 2px;
-  transform-origin: top center;
-  animation: tassel-sway 4s ease-in-out infinite;
+.orange-lantern .lantern-glow-3d {
+  background: radial-gradient(circle, #ffa200 0%, transparent 70%);
 }
 
-.tassel:nth-child(2) { height: 50px; animation-delay: 0.2s; }
-.tassel:nth-child(3) { height: 40px; animation-delay: 0.4s; }
-
-@keyframes sway {
-  0%, 100% { transform: rotate(-8deg); }
-  50% { transform: rotate(8deg); }
+.teal-lantern .lantern-glow-3d {
+  background: radial-gradient(circle, #aefffa 0%, transparent 70%);
 }
 
-@keyframes tassel-sway {
-  0%, 100% { transform: rotate(-15deg); }
-  50% { transform: rotate(15deg); }
-}
-
-@keyframes pulse-glow {
-  from { opacity: 0.2; transform: scale(0.8); }
-  to { opacity: 0.5; transform: scale(1.1); }
-}
-
-/* Colors for Buddhist Flag */
-.lantern.blue { --lantern-color: var(--buddhist-blue); filter: drop-shadow(0 0 15px rgba(0, 51, 173, 0.4)); }
-.lantern.yellow { --lantern-color: var(--buddhist-yellow); filter: drop-shadow(0 0 15px rgba(249, 215, 28, 0.4)); }
-.lantern.red { --lantern-color: var(--buddhist-red); filter: drop-shadow(0 0 15px rgba(255, 0, 0, 0.4)); }
-.lantern.white { --lantern-color: var(--buddhist-white); filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.4)); }
-.lantern.orange { --lantern-color: var(--buddhist-orange); filter: drop-shadow(0 0 15px rgba(255, 152, 0, 0.4)); }
-
-.lantern:nth-child(odd) { animation-delay: -1s; }
-.lantern:nth-child(3n) { animation-delay: -2.5s; }
-
-/* Moon */
-.vesak-moon {
-  position: absolute;
-  top: 40px;
-  right: 40px;
-  width: 100px;
-  height: 100px;
-  background: #fff;
-  border-radius: 50%;
-  box-shadow: 
-    0 0 40px rgba(255, 255, 255, 0.8), 
-    0 0 100px rgba(255, 255, 255, 0.4),
-    0 0 200px rgba(255, 255, 255, 0.2);
-  opacity: 0.95;
-  animation: moon-glow 5s ease-in-out infinite alternate;
-}
-
-@keyframes moon-glow {
-  from { box-shadow: 0 0 40px rgba(255, 255, 255, 0.8), 0 0 100px rgba(255, 255, 255, 0.4); }
-  to { box-shadow: 0 0 60px rgba(255, 255, 255, 0.9), 0 0 150px rgba(255, 255, 255, 0.6); }
-}
-
-.vesak-moon::before {
-  content: '';
-  position: absolute;
+/* 3D-Faceted Main Body using custom clip-paths */
+.lantern-body-3d {
+  position: relative;
   width: 100%;
   height: 100%;
-  background: radial-gradient(circle at 30% 30%, rgba(255,255,255,1) 0%, rgba(240,240,240,0.5) 100%);
-  border-radius: 50%;
+  z-index: 3;
 }
 
-/* Petals / Falling lights */
+.facet {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  transition: all 0.3s ease;
+}
+
+/* Facet layout using percentage polygons */
+.facet-c-tl {
+  clip-path: polygon(50% 50%, 20% 50%, 50% 20%);
+}
+
+.facet-c-tr {
+  clip-path: polygon(50% 50%, 50% 20%, 80% 50%);
+}
+
+.facet-c-br {
+  clip-path: polygon(50% 50%, 80% 50%, 50% 80%);
+}
+
+.facet-c-bl {
+  clip-path: polygon(50% 50%, 50% 80%, 20% 50%);
+}
+
+.facet-ear-tl {
+  clip-path: polygon(20% 50%, 50% 20%, 10% 10%);
+}
+
+.facet-ear-tr {
+  clip-path: polygon(50% 20%, 80% 50%, 90% 10%);
+}
+
+.facet-ear-br {
+  clip-path: polygon(80% 50%, 50% 80%, 90% 90%);
+}
+
+.facet-ear-bl {
+  clip-path: polygon(50% 80%, 20% 50%, 10% 90%);
+}
+
+/* Facet Color Themes: Linear gradients for depth */
+.purple-lantern .facet-c-tl {
+  background: linear-gradient(135deg, #d384ff, #8300de);
+}
+
+.purple-lantern .facet-c-tr {
+  background: linear-gradient(225deg, #e7beff, #aa33ff);
+}
+
+.purple-lantern .facet-c-br {
+  background: linear-gradient(315deg, #eed6ff, #aa33ff);
+}
+
+.purple-lantern .facet-c-bl {
+  background: linear-gradient(45deg, #d384ff, #6200ab);
+}
+
+.purple-lantern .facet-ear-tl {
+  background: linear-gradient(135deg, #b044ff, #570099);
+  opacity: 0.9;
+}
+
+.purple-lantern .facet-ear-tr {
+  background: linear-gradient(225deg, #e7beff, #8300de);
+  opacity: 0.9;
+}
+
+.purple-lantern .facet-ear-br {
+  background: linear-gradient(315deg, #eed6ff, #6200ab);
+  opacity: 0.9;
+}
+
+.purple-lantern .facet-ear-bl {
+  background: linear-gradient(45deg, #b044ff, #570099);
+  opacity: 0.9;
+}
+
+.purple-lantern {
+  filter: drop-shadow(0 0 25px rgba(182, 95, 255, 0.65)) drop-shadow(0 10px 20px rgba(0, 0, 0, 0.5));
+}
+
+.orange-lantern .facet-c-tl {
+  background: linear-gradient(135deg, #ffc954, #d45d00);
+}
+
+.orange-lantern .facet-c-tr {
+  background: linear-gradient(225deg, #ffe5aa, #ffa012);
+}
+
+.orange-lantern .facet-c-br {
+  background: linear-gradient(315deg, #fff0cc, #ffa012);
+}
+
+.orange-lantern .facet-c-bl {
+  background: linear-gradient(45deg, #ffc954, #a83f00);
+}
+
+.orange-lantern .facet-ear-tl {
+  background: linear-gradient(135deg, #ff8c00, #802e00);
+  opacity: 0.9;
+}
+
+.orange-lantern .facet-ear-tr {
+  background: linear-gradient(225deg, #ffe5aa, #d45d00);
+  opacity: 0.9;
+}
+
+.orange-lantern .facet-ear-br {
+  background: linear-gradient(315deg, #fff0cc, #a83f00);
+  opacity: 0.9;
+}
+
+.orange-lantern .facet-ear-bl {
+  background: linear-gradient(45deg, #ff8c00, #802e00);
+  opacity: 0.9;
+}
+
+.orange-lantern {
+  filter: drop-shadow(0 0 25px rgba(255, 140, 0, 0.65)) drop-shadow(0 10px 20px rgba(0, 0, 0, 0.5));
+}
+
+.teal-lantern .facet-c-tl {
+  background: linear-gradient(135deg, #99fff9, #008f8a);
+}
+
+.teal-lantern .facet-c-tr {
+  background: linear-gradient(225deg, #c7fffc, #00bcba);
+}
+
+.teal-lantern .facet-c-br {
+  background: linear-gradient(315deg, #e3fffd, #00bcba);
+}
+
+.teal-lantern .facet-c-bl {
+  background: linear-gradient(45deg, #99fff9, #006b67);
+}
+
+.teal-lantern .facet-ear-tl {
+  background: linear-gradient(135deg, #00b3b0, #004240);
+  opacity: 0.9;
+}
+
+.teal-lantern .facet-ear-tr {
+  background: linear-gradient(225deg, #c7fffc, #008f8a);
+  opacity: 0.9;
+}
+
+.teal-lantern .facet-ear-br {
+  background: linear-gradient(315deg, #e3fffd, #006b67);
+  opacity: 0.9;
+}
+
+.teal-lantern .facet-ear-bl {
+  background: linear-gradient(45deg, #00b3b0, #004240);
+  opacity: 0.9;
+}
+
+.teal-lantern {
+  filter: drop-shadow(0 0 30px rgba(0, 188, 187, 0.8)) drop-shadow(0 10px 20px rgba(0, 0, 0, 0.5));
+}
+
+/* Wavy Tassels Containers and Swaying keyframes */
+.tassel-side-left {
+  position: absolute;
+  left: -8px;
+  top: 45%;
+  width: 32px;
+  height: 80px;
+  z-index: 2;
+  transform-origin: top right;
+  animation: waveLeft 3.6s ease-in-out infinite alternate;
+}
+
+.tassel-side-right {
+  position: absolute;
+  right: -8px;
+  top: 45%;
+  width: 32px;
+  height: 80px;
+  z-index: 2;
+  transform-origin: top left;
+  animation: waveRight 3.6s ease-in-out infinite alternate -0.5s;
+}
+
+.tassel-bottom {
+  position: absolute;
+  left: 50%;
+  top: 75%;
+  width: 60px;
+  height: 110px;
+  z-index: 2;
+  transform: translateX(-50%);
+  transform-origin: top center;
+  animation: waveBottom 4.2s ease-in-out infinite alternate;
+}
+
+.tassel-line {
+  stroke: currentColor;
+  stroke-linecap: round;
+  opacity: 0.9;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.25));
+}
+
+/* Twinkling Sparkles */
+.sparkles-container {
+  position: absolute;
+  top: -15px;
+  left: -15px;
+  right: -15px;
+  bottom: -15px;
+  pointer-events: none;
+  z-index: 12;
+}
+
+.sparkle-star {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  background: #ffffff;
+  box-shadow: 0 0 10px 2px #ffffff, 0 0 18px 4px currentColor;
+  animation: twinkle 3.2s infinite ease-in-out;
+}
+
+.sparkle-star::before,
+.sparkle-star::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  background: #ffffff;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 6px 1px #ffffff;
+}
+
+.sparkle-star::before {
+  width: 14px;
+  height: 2px;
+}
+
+.sparkle-star::after {
+  width: 2px;
+  height: 14px;
+}
+
+.s1 {
+  top: 22%;
+  left: 8%;
+  color: inherit;
+  animation-delay: 0s;
+}
+
+.s2 {
+  top: 45%;
+  right: 5%;
+  color: inherit;
+  animation-delay: 0.7s;
+}
+
+.s3 {
+  bottom: 20%;
+  left: 12%;
+  color: inherit;
+  animation-delay: 1.4s;
+}
+
+.s4 {
+  top: 78%;
+  right: 18%;
+  color: inherit;
+  animation-delay: 2.1s;
+}
+
+.s5 {
+  top: 12%;
+  right: 28%;
+  color: inherit;
+  animation-delay: 1.1s;
+}
+
+/* Dynamic Sway & Twinkle Animations */
+@keyframes breezeSway {
+  0% {
+    transform: rotate(-3.5deg);
+  }
+
+  100% {
+    transform: rotate(4deg);
+  }
+}
+
+@keyframes waveLeft {
+  0% {
+    transform: rotate(-3deg) skewY(-1deg);
+  }
+
+  100% {
+    transform: rotate(10deg) skewY(3deg);
+  }
+}
+
+@keyframes waveRight {
+  0% {
+    transform: rotate(3deg) skewY(1deg);
+  }
+
+  100% {
+    transform: rotate(-10deg) skewY(-3deg);
+  }
+}
+
+@keyframes waveBottom {
+  0% {
+    transform: translateX(-50%) rotate(-4deg);
+  }
+
+  100% {
+    transform: translateX(-50%) rotate(5deg);
+  }
+}
+
+@keyframes twinkle {
+
+  0%,
+  100% {
+    opacity: 0.15;
+    transform: scale(0.6) rotate(0deg);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.15) rotate(90deg);
+  }
+}
+
+/* 4. Soft Falling Lotus Petals */
 .petals {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
+  overflow: hidden;
 }
 
 .petal {
   position: absolute;
-  background: #fff;
-  border-radius: 50% 0 50% 50%;
-  opacity: 0.3;
+  top: -20px;
+  background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 99%, #fecfef 100%);
+  border-radius: 0 100% 40% 100%;
+  transform: rotate(45deg);
+  filter: drop-shadow(0 0 5px rgba(254, 207, 239, 0.6));
   animation: fall linear infinite;
 }
 
-@keyframes fall {
-  to { transform: translateY(100vh) rotate(360deg); }
+/* Keyframe Animations */
+@keyframes lanternSway {
+  0% {
+    transform: rotate(-5deg);
+  }
+
+  100% {
+    transform: rotate(5deg);
+  }
 }
 
-.vesak-ambient {
-  position: fixed;
-  top: 0;
+@keyframes tasselSway {
+  0% {
+    transform: rotate(-8deg) skewX(-5deg);
+  }
+
+  100% {
+    transform: rotate(8deg) skewX(5deg);
+  }
+}
+
+@keyframes glowFlicker {
+
+  0%,
+  100% {
+    transform: scale(0.8);
+    opacity: 0.8;
+  }
+
+  50% {
+    transform: scale(1.1);
+    opacity: 1;
+  }
+}
+
+@keyframes fall {
+  0% {
+    top: -5%;
+    transform: translateX(0) rotate(45deg);
+  }
+
+  50% {
+    transform: translateX(80px) rotate(225deg);
+  }
+
+  100% {
+    top: 105%;
+    transform: translateX(-40px) rotate(405deg);
+  }
+}
+
+/* 5. Traditional Clay Oil Lamps (Vesak Pahan) */
+.vesak-lamps {
+  position: absolute;
+  bottom: 20px;
   left: 0;
   width: 100%;
-  height: 100%;
-  background: radial-gradient(circle at 50% 0%, rgba(255, 235, 59, 0.03) 0%, transparent 60%);
-  pointer-events: none;
-  z-index: 9998;
+  display: flex;
+  justify-content: space-around;
+  padding: 0 10%;
+  box-sizing: border-box;
+  z-index: 5;
 }
 
+.vesak-lamps::before {
+  content: '';
+  position: absolute;
+  bottom: -20px;
+  left: 0;
+  width: 100%;
+  height: 80px;
+  background: linear-gradient(to top, rgba(255, 140, 0, 0.12) 0%, transparent 100%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.paha-lamp {
+  position: relative;
+  width: 60px;
+  height: 50px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.4));
+  transition: transform 0.3s ease;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.paha-lamp:hover {
+  transform: scale(1.15) translateY(-5px);
+}
+
+.lamp-clay {
+  width: 54px;
+  height: 18px;
+  background: linear-gradient(to bottom, #cf7144, #7a3c20);
+  border-radius: 50% 50% 50% 50% / 30% 30% 70% 70%;
+  position: relative;
+  box-shadow:
+    inset 0 -2px 5px rgba(0, 0, 0, 0.6),
+    inset 0 2px 5px rgba(255, 255, 255, 0.2);
+  z-index: 2;
+}
+
+/* Pool of coconut oil */
+.lamp-clay::before {
+  content: '';
+  position: absolute;
+  top: 1px;
+  left: 6px;
+  right: 6px;
+  height: 7px;
+  background: rgba(38, 20, 12, 0.95);
+  border-radius: 50%;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.8);
+}
+
+.lamp-wick {
+  position: absolute;
+  bottom: 12px;
+  width: 3px;
+  height: 8px;
+  background: linear-gradient(to top, #0f0a07, #241710);
+  border-radius: 2px 2px 0 0;
+  z-index: 3;
+  transform: rotate(-5deg);
+}
+
+.lamp-flame {
+  position: absolute;
+  bottom: 16px;
+  width: 14px;
+  height: 28px;
+  background: linear-gradient(to top, rgba(255, 60, 0, 0.95) 0%, rgba(255, 174, 0, 0.95) 50%, rgba(255, 255, 210, 0.95) 100%);
+  border-radius: 50% 50% 20% 20% / 60% 60% 40% 40%;
+  filter: drop-shadow(0 0 8px rgba(255, 150, 0, 0.9)) drop-shadow(0 0 18px rgba(255, 100, 0, 0.6));
+  animation: flameFlicker 0.12s ease-in-out infinite alternate;
+  z-index: 4;
+  transform-origin: bottom center;
+}
+
+.flame-inner {
+  position: absolute;
+  bottom: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 5px;
+  height: 12px;
+  background: #ffffff;
+  border-radius: 50% 50% 30% 30% / 60% 60% 40% 40%;
+  opacity: 0.95;
+  box-shadow: 0 0 4px #ffffff;
+}
+
+/* Beautiful dynamic flicker keyframes */
+@keyframes flameFlicker {
+  0% {
+    transform: scale(0.96) rotate(-1.5deg);
+    filter: drop-shadow(0 0 7px rgba(255, 150, 0, 0.8)) drop-shadow(0 0 14px rgba(255, 100, 0, 0.5));
+  }
+
+  100% {
+    transform: scale(1.04) rotate(1.5deg);
+    filter: drop-shadow(0 0 11px rgba(255, 160, 0, 0.95)) drop-shadow(0 0 20px rgba(255, 110, 0, 0.7));
+  }
+}
+
+/* 6. Responsive Styles */
 @media (max-width: 768px) {
-  .lantern:nth-child(n+5) { display: none; }
-  .lantern { width: 60px; }
-  .vesak-moon { width: 40px; height: 40px; top: 20px; right: 20px; }
+  .vesak-lantern-cluster {
+    top: 20px;
+    right: 12%;
+    transform: scale(0.55);
+    transform-origin: top right;
+  }
+
+  .paha-lamp:nth-child(n+4) {
+    display: none;
+  }
+
+  .vesak-moon {
+    width: 80px;
+    height: 80px;
+    top: 80px;
+    right: 5%;
+  }
+
+  .moon-glow {
+    top: -15px;
+    left: -15px;
+    right: -15px;
+    bottom: -15px;
+    filter: blur(8px);
+  }
 }
