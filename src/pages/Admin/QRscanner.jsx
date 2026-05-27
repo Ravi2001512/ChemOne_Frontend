@@ -54,22 +54,8 @@ const QRscanner = () => {
             return "";
         }
     });
-    const [student, setStudent] = useState(() => {
-        try {
-            const saved = localStorage.getItem("qr_scanner_student");
-            return saved ? JSON.parse(saved) : null;
-        } catch (e) {
-            return null;
-        }
-    });
-    const [history, setHistory] = useState(() => {
-        try {
-            const saved = localStorage.getItem("qr_scanner_history");
-            return saved ? JSON.parse(saved) : [];
-        } catch (e) {
-            return [];
-        }
-    });
+    const [student, setStudent] = useState(null);
+    const [history, setHistory] = useState([]);
     const [loading, setLoading] = useState(false);
     const [togglingMonth, setTogglingMonth] = useState(null);
 
@@ -86,26 +72,6 @@ const QRscanner = () => {
 
     useEffect(() => {
         try {
-            if (student) {
-                localStorage.setItem("qr_scanner_student", JSON.stringify(student));
-            } else {
-                localStorage.removeItem("qr_scanner_student");
-            }
-        } catch (e) {
-            console.error("Failed to save student to localStorage", e);
-        }
-    }, [student]);
-
-    useEffect(() => {
-        try {
-            localStorage.setItem("qr_scanner_history", JSON.stringify(history));
-        } catch (e) {
-            console.error("Failed to save history to localStorage", e);
-        }
-    }, [history]);
-
-    useEffect(() => {
-        try {
             if (searchIndex) {
                 localStorage.setItem("qr_scanner_search_index", searchIndex);
             } else {
@@ -116,16 +82,7 @@ const QRscanner = () => {
         }
     }, [searchIndex]);
 
-    useEffect(() => {
-        requestAnimationFrame(() => setMounted(true));
-        return () => {
-            cleanupScanner();
-        };
-    }, []);
-
-    // ============================
     // CLEANUP SCANNER (safe)
-    // ============================
     const cleanupScanner = useCallback(async () => {
         if (scannerRef.current) {
             try {
@@ -142,6 +99,53 @@ const QRscanner = () => {
         }
         isProcessingRef.current = false;
     }, []);
+
+    // SCAN SESSION FETCH & POLL
+    const fetchScanSession = useCallback(async () => {
+        try {
+            const response = await API.get("/auth/scan-session");
+            const session = response.data;
+
+            setStudent((prev) => {
+                const prevId = prev?._id || null;
+                const nextId = session.activeStudent?._id || null;
+                if (prevId !== nextId) {
+                    return session.activeStudent;
+                }
+                const prevPaid = prev?.paidMonths || [];
+                const nextPaid = session.activeStudent?.paidMonths || [];
+                if (prevPaid.length !== nextPaid.length || !prevPaid.every(m => nextPaid.includes(m))) {
+                    return session.activeStudent;
+                }
+                return prev;
+            });
+
+            setHistory((prev) => {
+                const prevHistoryStr = JSON.stringify(prev);
+                const nextHistoryStr = JSON.stringify(session.history || []);
+                if (prevHistoryStr !== nextHistoryStr) {
+                    return session.history || [];
+                }
+                return prev;
+            });
+        } catch (err) {
+            console.error("Failed to fetch scan session:", err);
+        }
+    }, []);
+
+    useEffect(() => {
+        requestAnimationFrame(() => setMounted(true));
+        fetchScanSession();
+
+        const intervalId = setInterval(() => {
+            fetchScanSession();
+        }, 2000);
+
+        return () => {
+            clearInterval(intervalId);
+            cleanupScanner();
+        };
+    }, [fetchScanSession]);
 
     // ============================
     // SUCCESS BEEP
@@ -240,17 +244,13 @@ const QRscanner = () => {
         }
     };
 
-    // ============================
     // STOP SCANNER
-    // ============================
     const stopScanning = async () => {
         await cleanupScanner();
         setIsScanning(false);
     };
 
-    // ============================
     // QR DETECTED
-    // ============================
     const handleQRDetected = async (decodedText) => {
         // Stop camera immediately
         await cleanupScanner();
@@ -269,14 +269,15 @@ const QRscanner = () => {
     const fetchStudentDetails = async (indexNo) => {
         setLoading(true);
         try {
-            const response = await API.get(`/auth/students/search/${indexNo.trim()}`);
-            setStudent(response.data);
-            toast.success(`Loaded: ${response.data.name}`);
-            const cleanIndex = indexNo.trim();
-            setHistory((prev) => {
-                const filtered = prev.filter((item) => item !== cleanIndex);
-                return [cleanIndex, ...filtered];
-            });
+            const response = await API.post("/auth/scan-session", { indexNumber: indexNo.trim() });
+            const session = response.data;
+            if (session.activeStudent) {
+                setStudent(session.activeStudent);
+                toast.success(`Loaded: ${session.activeStudent.name}`);
+            }
+            if (session.history) {
+                setHistory(session.history);
+            }
         } catch (err) {
             console.error(err);
             toast.error(err.response?.data?.message || "Student not found.");
@@ -397,8 +398,8 @@ const QRscanner = () => {
                             <button
                                 onClick={() => setActiveTab("scan")}
                                 className={`px-5 py-2 rounded-xl text-xs font-bold transition-all ${activeTab === "scan"
-                                        ? "bg-white dark:bg-slate-700 shadow text-indigo-600 dark:text-white"
-                                        : "text-slate-500"
+                                    ? "bg-white dark:bg-slate-700 shadow text-indigo-600 dark:text-white"
+                                    : "text-slate-500"
                                     }`}
                             >
                                 <Camera size={14} className="inline mr-1" />
@@ -411,8 +412,8 @@ const QRscanner = () => {
                                     setActiveTab("manual");
                                 }}
                                 className={`px-5 py-2 rounded-xl text-xs font-bold transition-all ${activeTab === "manual"
-                                        ? "bg-white dark:bg-slate-700 shadow text-indigo-600 dark:text-white"
-                                        : "text-slate-500"
+                                    ? "bg-white dark:bg-slate-700 shadow text-indigo-600 dark:text-white"
+                                    : "text-slate-500"
                                     }`}
                             >
                                 <Search size={14} className="inline mr-1" />
@@ -523,7 +524,15 @@ const QRscanner = () => {
                                         Scan History
                                     </h3>
                                     <button
-                                        onClick={() => setHistory([])}
+                                        onClick={async () => {
+                                            try {
+                                                await API.delete("/auth/scan-session/history");
+                                                setHistory([]);
+                                            } catch (err) {
+                                                console.error("Failed to clear scan history:", err);
+                                                toast.error("Failed to clear scan history.");
+                                            }
+                                        }}
                                         className="text-xs text-red-500 hover:text-red-600 font-semibold"
                                     >
                                         Clear History
@@ -610,8 +619,8 @@ const QRscanner = () => {
                                                 key={month}
                                                 onClick={() => !isToggling && togglePayment(month)}
                                                 className={`rounded-2xl p-5 border cursor-pointer transition-all active:scale-[0.97] select-none ${isPaid
-                                                        ? "bg-emerald-50 dark:bg-emerald-950/30 border-emerald-300 dark:border-emerald-800"
-                                                        : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700"
+                                                    ? "bg-emerald-50 dark:bg-emerald-950/30 border-emerald-300 dark:border-emerald-800"
+                                                    : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700"
                                                     }`}
                                             >
                                                 <div className="flex items-center justify-between">
@@ -643,9 +652,15 @@ const QRscanner = () => {
 
                                 {/* CLEAR */}
                                 <button
-                                    onClick={() => {
-                                        setStudent(null);
-                                        setSearchIndex("");
+                                    onClick={async () => {
+                                        try {
+                                            await API.delete("/auth/scan-session/active");
+                                            setStudent(null);
+                                            setSearchIndex("");
+                                        } catch (err) {
+                                            console.error("Failed to clear active student:", err);
+                                            toast.error("Failed to clear active student.");
+                                        }
                                     }}
                                     className="w-full py-3 rounded-xl bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 font-bold text-slate-700 dark:text-white transition-all text-sm"
                                 >
