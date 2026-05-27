@@ -15,7 +15,8 @@ import {
     Sparkles,
     CreditCard,
     UserCheck,
-    Award
+    Award,
+    History
 } from "lucide-react";
 
 import AdminNavbar from "../../components/AdminNavbar";
@@ -33,20 +34,87 @@ const QRscanner = () => {
     const navigate = useNavigate();
 
     const [mounted, setMounted] = useState(false);
-    const [activeTab, setActiveTab] = useState("scan");
+    const [activeTab, setActiveTab] = useState(() => {
+        try {
+            return localStorage.getItem("qr_scanner_active_tab") || "scan";
+        } catch (e) {
+            return "scan";
+        }
+    });
 
     // Scanner
     const [isScanning, setIsScanning] = useState(false);
     const [scannerError, setScannerError] = useState("");
 
     // Student
-    const [searchIndex, setSearchIndex] = useState("");
-    const [student, setStudent] = useState(null);
+    const [searchIndex, setSearchIndex] = useState(() => {
+        try {
+            return localStorage.getItem("qr_scanner_search_index") || "";
+        } catch (e) {
+            return "";
+        }
+    });
+    const [student, setStudent] = useState(() => {
+        try {
+            const saved = localStorage.getItem("qr_scanner_student");
+            return saved ? JSON.parse(saved) : null;
+        } catch (e) {
+            return null;
+        }
+    });
+    const [history, setHistory] = useState(() => {
+        try {
+            const saved = localStorage.getItem("qr_scanner_history");
+            return saved ? JSON.parse(saved) : [];
+        } catch (e) {
+            return [];
+        }
+    });
     const [loading, setLoading] = useState(false);
     const [togglingMonth, setTogglingMonth] = useState(null);
 
     const scannerRef = useRef(null);
     const isProcessingRef = useRef(false); // Prevent duplicate scans
+
+    useEffect(() => {
+        try {
+            localStorage.setItem("qr_scanner_active_tab", activeTab);
+        } catch (e) {
+            console.error("Failed to save activeTab to localStorage", e);
+        }
+    }, [activeTab]);
+
+    useEffect(() => {
+        try {
+            if (student) {
+                localStorage.setItem("qr_scanner_student", JSON.stringify(student));
+            } else {
+                localStorage.removeItem("qr_scanner_student");
+            }
+        } catch (e) {
+            console.error("Failed to save student to localStorage", e);
+        }
+    }, [student]);
+
+    useEffect(() => {
+        try {
+            localStorage.setItem("qr_scanner_history", JSON.stringify(history));
+        } catch (e) {
+            console.error("Failed to save history to localStorage", e);
+        }
+    }, [history]);
+
+    useEffect(() => {
+        try {
+            if (searchIndex) {
+                localStorage.setItem("qr_scanner_search_index", searchIndex);
+            } else {
+                localStorage.removeItem("qr_scanner_search_index");
+            }
+        } catch (e) {
+            console.error("Failed to save searchIndex to localStorage", e);
+        }
+    }, [searchIndex]);
 
     useEffect(() => {
         requestAnimationFrame(() => setMounted(true));
@@ -158,7 +226,7 @@ const QRscanner = () => {
                         playSuccessBeep();
                         handleQRDetected(decodedText);
                     },
-                    () => {}
+                    () => { }
                 );
 
                 setIsScanning(true);
@@ -197,15 +265,18 @@ const QRscanner = () => {
         fetchStudentDetails(indexNo);
     };
 
-    // ============================
     // FETCH STUDENT
-    // ============================
     const fetchStudentDetails = async (indexNo) => {
         setLoading(true);
         try {
             const response = await API.get(`/auth/students/search/${indexNo.trim()}`);
             setStudent(response.data);
             toast.success(`Loaded: ${response.data.name}`);
+            const cleanIndex = indexNo.trim();
+            setHistory((prev) => {
+                const filtered = prev.filter((item) => item !== cleanIndex);
+                return [cleanIndex, ...filtered];
+            });
         } catch (err) {
             console.error(err);
             toast.error(err.response?.data?.message || "Student not found.");
@@ -214,9 +285,7 @@ const QRscanner = () => {
         }
     };
 
-    // ============================
     // MANUAL SEARCH
-    // ============================
     const handleManualSearch = (e) => {
         e.preventDefault();
         if (!searchIndex.trim()) {
@@ -226,9 +295,7 @@ const QRscanner = () => {
         fetchStudentDetails(searchIndex);
     };
 
-    // ============================
     // TOGGLE PAYMENT
-    // ============================
     const togglePayment = async (monthName) => {
         if (!student) return;
 
@@ -294,9 +361,8 @@ const QRscanner = () => {
             <AdminNavbar />
 
             <main
-                className={`max-w-7xl mx-auto px-4 py-28 transition-all duration-500 ${
-                    mounted ? "opacity-100" : "opacity-0"
-                }`}
+                className={`max-w-7xl mx-auto px-4 py-28 transition-all duration-500 ${mounted ? "opacity-100" : "opacity-0"
+                    }`}
             >
                 {/* HEADER */}
                 <div className="flex items-center justify-between mb-8">
@@ -330,11 +396,10 @@ const QRscanner = () => {
                         <div className="flex p-1 bg-slate-100 dark:bg-slate-800 rounded-2xl self-start">
                             <button
                                 onClick={() => setActiveTab("scan")}
-                                className={`px-5 py-2 rounded-xl text-xs font-bold transition-all ${
-                                    activeTab === "scan"
+                                className={`px-5 py-2 rounded-xl text-xs font-bold transition-all ${activeTab === "scan"
                                         ? "bg-white dark:bg-slate-700 shadow text-indigo-600 dark:text-white"
                                         : "text-slate-500"
-                                }`}
+                                    }`}
                             >
                                 <Camera size={14} className="inline mr-1" />
                                 Camera
@@ -345,11 +410,10 @@ const QRscanner = () => {
                                     stopScanning();
                                     setActiveTab("manual");
                                 }}
-                                className={`px-5 py-2 rounded-xl text-xs font-bold transition-all ${
-                                    activeTab === "manual"
+                                className={`px-5 py-2 rounded-xl text-xs font-bold transition-all ${activeTab === "manual"
                                         ? "bg-white dark:bg-slate-700 shadow text-indigo-600 dark:text-white"
                                         : "text-slate-500"
-                                }`}
+                                    }`}
                             >
                                 <Search size={14} className="inline mr-1" />
                                 Manual
@@ -449,6 +513,41 @@ const QRscanner = () => {
                                 </form>
                             </div>
                         )}
+
+                        {/* SCANNED HISTORY */}
+                        {history.length > 0 && (
+                            <div className="mt-6 bg-white dark:bg-slate-900 rounded-3xl p-6 shadow-xl border border-slate-100 dark:border-slate-800">
+                                <div className="flex items-center justify-between mb-4">
+                                    <h3 className="text-sm font-black text-slate-800 dark:text-white flex items-center gap-2">
+                                        <History size={16} className="text-indigo-600" />
+                                        Scan History
+                                    </h3>
+                                    <button
+                                        onClick={() => setHistory([])}
+                                        className="text-xs text-red-500 hover:text-red-600 font-semibold"
+                                    >
+                                        Clear History
+                                    </button>
+                                </div>
+
+                                <div className="divide-y divide-slate-100 dark:divide-slate-800 max-h-[240px] overflow-y-auto pr-1">
+                                    {history.map((indexNo) => (
+                                        <div
+                                            key={indexNo}
+                                            onClick={() => fetchStudentDetails(indexNo)}
+                                            className="py-2.5 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800/50 px-2 rounded-xl cursor-pointer transition-all group"
+                                        >
+                                            <span className="font-mono text-xs text-slate-600 dark:text-slate-300 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 font-semibold">
+                                                {indexNo}
+                                            </span>
+                                            <span className="text-[10px] text-slate-400 dark:text-slate-500 group-hover:underline">
+                                                Load Details →
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     {/* RIGHT */}
@@ -510,11 +609,10 @@ const QRscanner = () => {
                                             <div
                                                 key={month}
                                                 onClick={() => !isToggling && togglePayment(month)}
-                                                className={`rounded-2xl p-5 border cursor-pointer transition-all active:scale-[0.97] select-none ${
-                                                    isPaid
+                                                className={`rounded-2xl p-5 border cursor-pointer transition-all active:scale-[0.97] select-none ${isPaid
                                                         ? "bg-emerald-50 dark:bg-emerald-950/30 border-emerald-300 dark:border-emerald-800"
                                                         : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700"
-                                                }`}
+                                                    }`}
                                             >
                                                 <div className="flex items-center justify-between">
                                                     <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
