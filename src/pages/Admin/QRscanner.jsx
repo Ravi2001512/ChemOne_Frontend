@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Html5Qrcode } from "html5-qrcode";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
@@ -27,6 +27,8 @@ const MONTHS = [
     "September", "October", "November", "December"
 ];
 
+const SCANNER_ID = "qr-reader";
+
 const QRscanner = () => {
     const navigate = useNavigate();
 
@@ -35,8 +37,6 @@ const QRscanner = () => {
 
     // Scanner
     const [isScanning, setIsScanning] = useState(false);
-    const [cameras, setCameras] = useState([]);
-    const [selectedCameraId, setSelectedCameraId] = useState("");
     const [scannerError, setScannerError] = useState("");
 
     // Student
@@ -45,284 +45,261 @@ const QRscanner = () => {
     const [loading, setLoading] = useState(false);
     const [togglingMonth, setTogglingMonth] = useState(null);
 
-    const qrScannerRef = useRef(null);
-
-    const scannerContainerId = "qr-reader";
+    const scannerRef = useRef(null);
+    const isProcessingRef = useRef(false); // Prevent duplicate scans
 
     useEffect(() => {
         requestAnimationFrame(() => setMounted(true));
-
-        initCameras();
-
         return () => {
-            stopScanning();
+            cleanupScanner();
         };
     }, []);
 
-    // =========================
+    // ============================
+    // CLEANUP SCANNER (safe)
+    // ============================
+    const cleanupScanner = useCallback(async () => {
+        if (scannerRef.current) {
+            try {
+                const state = scannerRef.current.getState();
+                // State 2 = SCANNING, State 3 = PAUSED
+                if (state === 2 || state === 3) {
+                    await scannerRef.current.stop();
+                }
+                scannerRef.current.clear();
+            } catch (err) {
+                console.warn("Cleanup warning:", err);
+            }
+            scannerRef.current = null;
+        }
+        isProcessingRef.current = false;
+    }, []);
+
+    // ============================
     // SUCCESS BEEP
-    // =========================
+    // ============================
     const playSuccessBeep = () => {
         try {
-            const audioCtx = new (window.AudioContext ||
-                window.webkitAudioContext)();
-
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
             osc.connect(gain);
-            gain.connect(audioCtx.destination);
-
-            osc.frequency.value = 880;
+            gain.connect(ctx.destination);
             osc.type = "sine";
-
-            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(
-                0.001,
-                audioCtx.currentTime + 0.2
-            );
-
+            osc.frequency.value = 880;
+            gain.gain.setValueAtTime(0.1, ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.2);
             osc.start();
-            osc.stop(audioCtx.currentTime + 0.2);
-        } catch (err) {
-            console.warn(err);
+            osc.stop(ctx.currentTime + 0.2);
+        } catch (e) {
+            // ignore
         }
     };
 
-    // =========================
-    // LOAD CAMERAS
-    // =========================
-    const initCameras = async () => {
-        try {
-            setScannerError("");
-
-            const devices = await Html5Qrcode.getCameras();
-
-            if (devices && devices.length > 0) {
-                setCameras(devices);
-                setSelectedCameraId(devices[0].id);
-            } else {
-                setScannerError("No cameras found.");
-            }
-        } catch (err) {
-            console.error(err);
-
-            setScannerError(
-                "Camera permission denied or camera unavailable."
-            );
-        }
-    };
-
-    // =========================
+    // ============================
     // START SCANNER
-    // =========================
+    // ============================
     const startScanning = async () => {
+        setScannerError("");
+        isProcessingRef.current = false;
+
+        // Make sure old instance is fully gone
+        await cleanupScanner();
+
+        // Small delay to ensure DOM element is clean
+        await new Promise((r) => setTimeout(r, 300));
+
         try {
-            setScannerError("");
+            const html5QrCode = new Html5Qrcode(SCANNER_ID, { verbose: false });
+            scannerRef.current = html5QrCode;
 
-            if (!selectedCameraId) {
-                toast.error("No camera selected");
-                return;
-            }
+            // Use environment facing camera (back camera on phones), fallback to any camera
+            const cameraConfig = { facingMode: "environment" };
 
-            // stop old scanner first
-            if (qrScannerRef.current) {
-                await stopScanning();
-            }
-
-            const scanner = new Html5Qrcode(scannerContainerId);
-
-            qrScannerRef.current = scanner;
-
-            await scanner.start(
-                selectedCameraId,
+            await html5QrCode.start(
+                cameraConfig,
                 {
                     fps: 10,
-                    qrbox: {
-                        width: 250,
-                        height: 250
-                    },
-                    aspectRatio: 1.0
+                    qrbox: { width: 250, height: 250 },
+                    disableFlip: false,
                 },
                 (decodedText) => {
+                    // Guard: only process once
+                    if (isProcessingRef.current) return;
+                    isProcessingRef.current = true;
+
                     playSuccessBeep();
                     handleQRDetected(decodedText);
                 },
-                () => { }
+                () => {
+                    // Error callback (fires every failed frame — ignore)
+                }
             );
 
             setIsScanning(true);
-
         } catch (err) {
-            console.error(err);
+            console.error("Start scanning failed:", err);
 
-            setScannerError(
-                "Failed to start camera scanner."
-            );
+            // If environment camera fails, try with user-facing camera
+            try {
+                const html5QrCode = new Html5Qrcode(SCANNER_ID, { verbose: false });
+                scannerRef.current = html5QrCode;
 
-            setIsScanning(false);
+                await html5QrCode.start(
+                    { facingMode: "user" },
+                    {
+                        fps: 10,
+                        qrbox: { width: 250, height: 250 },
+                        disableFlip: false,
+                    },
+                    (decodedText) => {
+                        if (isProcessingRef.current) return;
+                        isProcessingRef.current = true;
+                        playSuccessBeep();
+                        handleQRDetected(decodedText);
+                    },
+                    () => {}
+                );
+
+                setIsScanning(true);
+            } catch (err2) {
+                console.error("Fallback camera also failed:", err2);
+                setScannerError(
+                    "Could not access any camera. Please allow camera permission and make sure no other app is using it."
+                );
+                setIsScanning(false);
+            }
         }
     };
 
-    // =========================
+    // ============================
     // STOP SCANNER
-    // =========================
+    // ============================
     const stopScanning = async () => {
-        try {
-            if (qrScannerRef.current) {
-                await qrScannerRef.current.stop();
-                await qrScannerRef.current.clear();
-
-                qrScannerRef.current = null;
-            }
-        } catch (err) {
-            console.error("Stop scanner error:", err);
-        }
-
+        await cleanupScanner();
         setIsScanning(false);
     };
 
-    // =========================
-    // SWITCH CAMERA
-    // =========================
-    const handleCameraChange = async (e) => {
-        const nextCameraId = e.target.value;
-
-        setSelectedCameraId(nextCameraId);
-
-        if (isScanning) {
-            await stopScanning();
-
-            setTimeout(() => {
-                startScanning();
-            }, 300);
-        }
-    };
-
-    // =========================
+    // ============================
     // QR DETECTED
-    // =========================
+    // ============================
     const handleQRDetected = async (decodedText) => {
-        await stopScanning();
+        // Stop camera immediately
+        await cleanupScanner();
+        setIsScanning(false);
 
         let indexNo = decodedText.trim();
-
         if (indexNo.startsWith("ID:")) {
             indexNo = indexNo.replace("ID:", "");
         }
 
         toast.success(`QR Detected: ${indexNo}`);
-
         fetchStudentDetails(indexNo);
     };
 
-    // =========================
+    // ============================
     // FETCH STUDENT
-    // =========================
+    // ============================
     const fetchStudentDetails = async (indexNo) => {
+        setLoading(true);
         try {
-            setLoading(true);
-
-            const response = await API.get(
-                `/auth/students/search/${indexNo.trim()}`
-            );
-
+            const response = await API.get(`/auth/students/search/${indexNo.trim()}`);
             setStudent(response.data);
-
-            toast.success(`Loaded ${response.data.name}`);
-
+            toast.success(`Loaded: ${response.data.name}`);
         } catch (err) {
             console.error(err);
-
-            toast.error(
-                err.response?.data?.message ||
-                "Student not found."
-            );
+            toast.error(err.response?.data?.message || "Student not found.");
         } finally {
             setLoading(false);
         }
     };
 
-    // =========================
+    // ============================
     // MANUAL SEARCH
-    // =========================
+    // ============================
     const handleManualSearch = (e) => {
         e.preventDefault();
-
         if (!searchIndex.trim()) {
-            toast.error("Enter index number");
+            toast.error("Please enter an Index Number");
             return;
         }
-
         fetchStudentDetails(searchIndex);
     };
 
-    // =========================
+    // ============================
     // TOGGLE PAYMENT
-    // =========================
+    // ============================
     const togglePayment = async (monthName) => {
         if (!student) return;
 
-        const isPaid =
-            student.paidMonths?.includes(monthName);
-
+        const isPaid = student.paidMonths?.includes(monthName);
         setTogglingMonth(monthName);
 
         try {
-            const res = await API.post(
-                `/auth/students/${student._id}/payment`,
-                {
-                    month: monthName,
-                    isPaid: !isPaid
-                }
-            );
+            const res = await API.post(`/auth/students/${student._id}/payment`, {
+                month: monthName,
+                isPaid: !isPaid
+            });
 
             setStudent((prev) => ({
                 ...prev,
                 paidMonths: res.data.paidMonths
             }));
 
-            toast.success(
-                !isPaid
-                    ? `${monthName} marked paid`
-                    : `${monthName} marked unpaid`
-            );
-
+            toast.success(!isPaid ? `${monthName} marked paid` : `${monthName} marked unpaid`);
         } catch (err) {
             console.error(err);
-
-            toast.error(
-                err.response?.data?.message ||
-                "Failed updating payment"
-            );
-
+            toast.error(err.response?.data?.message || "Failed updating payment");
         } finally {
             setTogglingMonth(null);
         }
     };
 
-    const totalPaidMonths =
-        student?.paidMonths?.length || 0;
-
-    const paymentRatio = (
-        (totalPaidMonths / 12) *
-        100
-    ).toFixed(0);
+    const totalPaidMonths = student?.paidMonths?.length || 0;
+    const paymentRatio = ((totalPaidMonths / 12) * 100).toFixed(0);
 
     return (
         <div className="min-h-screen bg-blue-50 dark:bg-black">
+            <style>{`
+                /* Force html5-qrcode video to fill our container properly */
+                #${SCANNER_ID} {
+                    position: relative !important;
+                    padding: 0 !important;
+                    border: none !important;
+                }
+                #${SCANNER_ID} video {
+                    width: 100% !important;
+                    height: auto !important;
+                    border-radius: 12px !important;
+                    object-fit: contain !important;
+                }
+                #${SCANNER_ID} img[alt="Info icon"] {
+                    display: none !important;
+                }
+                #${SCANNER_ID}__scan_region {
+                    min-height: 280px !important;
+                }
+                #${SCANNER_ID}__scan_region > br {
+                    display: none !important;
+                }
+                #${SCANNER_ID}__dashboard_section,
+                #${SCANNER_ID}__dashboard_section_swaplink,
+                #${SCANNER_ID}__status_span,
+                #${SCANNER_ID}__header_message,
+                #${SCANNER_ID} > div:last-child {
+                    display: none !important;
+                }
+            `}</style>
 
             <AdminNavbar />
 
             <main
-                className={`max-w-7xl mx-auto px-4 py-28 transition-all duration-500 ${mounted
-                        ? "opacity-100"
-                        : "opacity-0"
-                    }`}
+                className={`max-w-7xl mx-auto px-4 py-28 transition-all duration-500 ${
+                    mounted ? "opacity-100" : "opacity-0"
+                }`}
             >
                 {/* HEADER */}
                 <div className="flex items-center justify-between mb-8">
-
                     <button
                         onClick={() => navigate("/admin")}
                         className="flex items-center gap-2 text-sm font-semibold text-slate-500 hover:text-indigo-600"
@@ -337,36 +314,29 @@ const QRscanner = () => {
                 </div>
 
                 {/* HERO */}
-                <div className="bg-white rounded-3xl p-8 shadow-xl mb-10">
-
+                <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 shadow-xl mb-10 border border-slate-100 dark:border-slate-800">
                     <div className="flex flex-col md:flex-row justify-between gap-6">
-
                         <div>
-                            <h1 className="text-4xl font-black flex items-center gap-3">
+                            <h1 className="text-4xl font-black flex items-center gap-3 text-slate-900 dark:text-white">
                                 QR Payment Board
-                                <Sparkles
-                                    className="text-yellow-500"
-                                    size={24}
-                                />
+                                <Sparkles className="text-yellow-500" size={24} />
                             </h1>
-
                             <p className="text-slate-500 mt-2">
                                 Scan student QR codes instantly.
                             </p>
                         </div>
 
                         {/* TABS */}
-                        <div className="flex p-1 bg-slate-100 rounded-2xl">
-
+                        <div className="flex p-1 bg-slate-100 dark:bg-slate-800 rounded-2xl self-start">
                             <button
-                                onClick={() => {
-                                    setActiveTab("scan");
-                                }}
-                                className={`px-5 py-2 rounded-xl text-xs font-bold ${activeTab === "scan"
-                                        ? "bg-white shadow"
-                                        : ""
-                                    }`}
+                                onClick={() => setActiveTab("scan")}
+                                className={`px-5 py-2 rounded-xl text-xs font-bold transition-all ${
+                                    activeTab === "scan"
+                                        ? "bg-white dark:bg-slate-700 shadow text-indigo-600 dark:text-white"
+                                        : "text-slate-500"
+                                }`}
                             >
+                                <Camera size={14} className="inline mr-1" />
                                 Camera
                             </button>
 
@@ -375,11 +345,13 @@ const QRscanner = () => {
                                     stopScanning();
                                     setActiveTab("manual");
                                 }}
-                                className={`px-5 py-2 rounded-xl text-xs font-bold ${activeTab === "manual"
-                                        ? "bg-white shadow"
-                                        : ""
-                                    }`}
+                                className={`px-5 py-2 rounded-xl text-xs font-bold transition-all ${
+                                    activeTab === "manual"
+                                        ? "bg-white dark:bg-slate-700 shadow text-indigo-600 dark:text-white"
+                                        : "text-slate-500"
+                                }`}
                             >
+                                <Search size={14} className="inline mr-1" />
                                 Manual
                             </button>
                         </div>
@@ -388,37 +360,29 @@ const QRscanner = () => {
 
                 {/* MAIN GRID */}
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-
                     {/* LEFT */}
                     <div className="lg:col-span-5">
-
                         {activeTab === "scan" ? (
-                            <div className="bg-white rounded-3xl p-8 shadow-xl">
-
-                                <h3 className="text-lg font-black flex items-center gap-2 mb-2">
-                                    <Camera size={18} />
+                            <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 shadow-xl border border-slate-100 dark:border-slate-800">
+                                <h3 className="text-lg font-black flex items-center gap-2 mb-2 text-slate-900 dark:text-white">
+                                    <Camera size={18} className="text-indigo-600" />
                                     Camera Scanner
                                 </h3>
 
                                 <p className="text-xs text-slate-500 mb-6">
-                                    Scan student QR code
+                                    Point your camera at the student's QR code.
                                 </p>
 
-                                {/* SCANNER */}
-                                <div className="relative w-full min-h-[320px] rounded-2xl overflow-hidden border bg-black">
-
-                                    <div
-                                        id={scannerContainerId}
-                                        className="w-full h-full"
-                                    />
+                                {/* SCANNER CONTAINER - Always in DOM */}
+                                <div className="relative w-full rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-700 bg-black min-h-[300px]">
+                                    <div id={SCANNER_ID} className="w-full" />
 
                                     {!isScanning && (
-                                        <div className="absolute inset-0 flex flex-col items-center justify-center text-white">
-
-                                            <QrCode size={48} />
-
-                                            <p className="mt-4 text-sm font-bold">
-                                                Scanner inactive
+                                        <div className="absolute inset-0 flex flex-col items-center justify-center text-white bg-slate-900/80 z-10">
+                                            <QrCode size={48} className="mb-3 opacity-50" />
+                                            <p className="text-sm font-bold">Scanner Inactive</p>
+                                            <p className="text-xs text-slate-400 mt-1">
+                                                Press Start to activate
                                             </p>
                                         </div>
                                     )}
@@ -426,85 +390,60 @@ const QRscanner = () => {
 
                                 {/* ERROR */}
                                 {scannerError && (
-                                    <div className="mt-4 p-3 rounded-xl bg-red-50 border border-red-200 text-red-600 text-xs">
-                                        {scannerError}
-                                    </div>
-                                )}
-
-                                {/* CAMERA SELECT */}
-                                {cameras.length > 1 && (
-                                    <div className="mt-5">
-
-                                        <label className="block text-xs font-bold mb-2">
-                                            Camera Device
-                                        </label>
-
-                                        <select
-                                            value={selectedCameraId}
-                                            onChange={handleCameraChange}
-                                            className="w-full border rounded-xl px-3 py-3"
-                                        >
-                                            {cameras.map((cam, index) => (
-                                                <option
-                                                    key={cam.id}
-                                                    value={cam.id}
-                                                >
-                                                    {cam.label ||
-                                                        `Camera ${index + 1}`}
-                                                </option>
-                                            ))}
-                                        </select>
+                                    <div className="mt-4 p-3 rounded-xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-xs flex items-start gap-2">
+                                        <XCircle size={14} className="mt-0.5 flex-shrink-0" />
+                                        <span>{scannerError}</span>
                                     </div>
                                 )}
 
                                 {/* BUTTONS */}
                                 <div className="mt-6">
-
                                     {!isScanning ? (
                                         <button
                                             onClick={startScanning}
-                                            className="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold"
+                                            className="w-full py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold transition-all active:scale-[0.98] flex items-center justify-center gap-2"
                                         >
+                                            <Camera size={16} />
                                             Start Scanner
                                         </button>
                                     ) : (
                                         <button
                                             onClick={stopScanning}
-                                            className="w-full py-3 rounded-xl bg-black text-white font-bold"
+                                            className="w-full py-3.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold transition-all active:scale-[0.98] flex items-center justify-center gap-2"
                                         >
+                                            <XCircle size={16} />
                                             Stop Scanner
                                         </button>
                                     )}
                                 </div>
                             </div>
-
                         ) : (
                             // MANUAL SEARCH
-                            <div className="bg-white rounded-3xl p-8 shadow-xl">
-
-                                <h3 className="text-lg font-black mb-5">
+                            <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 shadow-xl border border-slate-100 dark:border-slate-800">
+                                <h3 className="text-lg font-black mb-5 text-slate-900 dark:text-white flex items-center gap-2">
+                                    <Search size={18} className="text-indigo-600" />
                                     Manual Search
                                 </h3>
 
-                                <form
-                                    onSubmit={handleManualSearch}
-                                    className="space-y-4"
-                                >
-
-                                    <input
-                                        type="text"
-                                        value={searchIndex}
-                                        onChange={(e) =>
-                                            setSearchIndex(e.target.value)
-                                        }
-                                        placeholder="STU-26-0001"
-                                        className="w-full border rounded-xl px-4 py-3"
-                                    />
+                                <form onSubmit={handleManualSearch} className="space-y-4">
+                                    <div>
+                                        <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">
+                                            Student Index Number
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={searchIndex}
+                                            onChange={(e) => setSearchIndex(e.target.value)}
+                                            placeholder="STU-26-0001"
+                                            className="w-full border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white font-mono outline-none focus:border-indigo-500"
+                                        />
+                                    </div>
 
                                     <button
                                         type="submit"
-                                        className="w-full py-3 rounded-xl bg-indigo-600 text-white font-bold"
+                                        className="w-full py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold transition-all active:scale-[0.98] flex items-center justify-center gap-2"
                                     >
+                                        <Search size={16} />
                                         Search Student
                                     </button>
                                 </form>
@@ -514,114 +453,89 @@ const QRscanner = () => {
 
                     {/* RIGHT */}
                     <div className="lg:col-span-7">
-
                         {loading ? (
-                            <div className="bg-white rounded-3xl p-10 shadow-xl flex flex-col items-center justify-center min-h-[400px]">
-
-                                <RefreshCw
-                                    size={40}
-                                    className="animate-spin mb-4"
-                                />
-
-                                <p className="font-bold">
-                                    Loading student...
-                                </p>
+                            <div className="bg-white dark:bg-slate-900 rounded-3xl p-10 shadow-xl flex flex-col items-center justify-center min-h-[400px] border border-slate-100 dark:border-slate-800">
+                                <RefreshCw size={40} className="animate-spin mb-4 text-indigo-600" />
+                                <p className="font-bold text-slate-700 dark:text-white">Loading student...</p>
                             </div>
-
                         ) : student ? (
                             <div className="space-y-6">
-
                                 {/* PROFILE */}
-                                <div className="bg-white rounded-3xl p-8 shadow-xl">
-
+                                <div className="bg-white dark:bg-slate-900 rounded-3xl p-8 shadow-xl border border-slate-100 dark:border-slate-800">
                                     <div className="flex items-center justify-between flex-wrap gap-6">
-
                                         <div className="flex items-center gap-4">
-
-                                            <div className="w-16 h-16 rounded-2xl bg-indigo-100 flex items-center justify-center text-indigo-600 text-2xl font-black">
+                                            <div className="w-16 h-16 rounded-2xl bg-indigo-100 dark:bg-indigo-950 flex items-center justify-center text-indigo-600 text-2xl font-black">
                                                 {student.name?.charAt(0)}
                                             </div>
-
                                             <div>
-                                                <h2 className="text-2xl font-black">
+                                                <h2 className="text-2xl font-black text-slate-900 dark:text-white">
                                                     {student.name}
                                                 </h2>
-
-                                                <p className="text-sm text-slate-500 mt-1">
-                                                    {student.indexNumber}
-                                                </p>
+                                                <div className="flex items-center gap-3 text-sm text-slate-500 mt-1 font-mono">
+                                                    <span>{student.indexNumber}</span>
+                                                    <span className="w-1 h-1 bg-slate-300 rounded-full" />
+                                                    <span>Batch {student.batch}</span>
+                                                </div>
                                             </div>
                                         </div>
 
-                                        <div>
-                                            <p className="text-3xl font-black">
-                                                {paymentRatio}%
+                                        <div className="bg-slate-50 dark:bg-slate-950 rounded-2xl p-4 border border-slate-100 dark:border-slate-800">
+                                            <p className="text-3xl font-black text-slate-900 dark:text-white">
+                                                {totalPaidMonths}<span className="text-sm text-slate-400">/12</span>
                                             </p>
+                                            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-1">
+                                                Paid ({paymentRatio}%)
+                                            </p>
+                                        </div>
+                                    </div>
 
-                                            <p className="text-xs text-slate-500">
-                                                Payment Complete
-                                            </p>
+                                    {/* Progress Bar */}
+                                    <div className="mt-6">
+                                        <div className="w-full h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                                            <div
+                                                className="h-full bg-gradient-to-r from-indigo-500 to-emerald-500 rounded-full transition-all duration-500"
+                                                style={{ width: `${paymentRatio}%` }}
+                                            />
                                         </div>
                                     </div>
                                 </div>
 
                                 {/* MONTH GRID */}
                                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-
                                     {MONTHS.map((month) => {
-
-                                        const isPaid =
-                                            student.paidMonths?.includes(month);
-
-                                        const isToggling =
-                                            togglingMonth === month;
+                                        const isPaid = student.paidMonths?.includes(month);
+                                        const isToggling = togglingMonth === month;
 
                                         return (
                                             <div
                                                 key={month}
-                                                onClick={() =>
-                                                    !isToggling &&
-                                                    togglePayment(month)
-                                                }
-                                                className={`rounded-2xl p-5 border cursor-pointer transition-all ${isPaid
-                                                        ? "bg-emerald-100 border-emerald-300"
-                                                        : "bg-white border-slate-200"
-                                                    }`}
+                                                onClick={() => !isToggling && togglePayment(month)}
+                                                className={`rounded-2xl p-5 border cursor-pointer transition-all active:scale-[0.97] select-none ${
+                                                    isPaid
+                                                        ? "bg-emerald-50 dark:bg-emerald-950/30 border-emerald-300 dark:border-emerald-800"
+                                                        : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700"
+                                                }`}
                                             >
                                                 <div className="flex items-center justify-between">
-
-                                                    <span className="text-xs font-bold uppercase">
+                                                    <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
                                                         Month
                                                     </span>
 
                                                     {isToggling ? (
-                                                        <RefreshCw
-                                                            size={14}
-                                                            className="animate-spin"
-                                                        />
+                                                        <RefreshCw size={14} className="animate-spin text-slate-400" />
                                                     ) : isPaid ? (
-                                                        <CheckCircle
-                                                            size={18}
-                                                            className="text-emerald-600"
-                                                        />
+                                                        <CheckCircle size={18} className="text-emerald-600" />
                                                     ) : (
-                                                        <XCircle
-                                                            size={18}
-                                                            className="text-slate-300"
-                                                        />
+                                                        <XCircle size={18} className="text-slate-300" />
                                                     )}
                                                 </div>
 
-                                                <div className="mt-5">
-
-                                                    <h4 className="text-lg font-black">
+                                                <div className="mt-4">
+                                                    <h4 className={`text-lg font-black ${isPaid ? "text-emerald-700 dark:text-emerald-400" : "text-slate-900 dark:text-white"}`}>
                                                         {month}
                                                     </h4>
-
                                                     <p className="text-xs text-slate-500 mt-1">
-                                                        {isPaid
-                                                            ? "Paid"
-                                                            : "Click to pay"}
+                                                        {isPaid ? "Paid ✓" : "Click to pay"}
                                                     </p>
                                                 </div>
                                             </div>
@@ -635,28 +549,20 @@ const QRscanner = () => {
                                         setStudent(null);
                                         setSearchIndex("");
                                     }}
-                                    className="w-full py-3 rounded-xl bg-slate-200 font-bold"
+                                    className="w-full py-3 rounded-xl bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 font-bold text-slate-700 dark:text-white transition-all text-sm"
                                 >
-                                    Clear Student
+                                    Clear & Scan Next Student
                                 </button>
                             </div>
-
                         ) : (
                             // EMPTY STATE
-                            <div className="bg-white rounded-3xl p-10 shadow-xl flex flex-col items-center justify-center min-h-[450px]">
-
-                                <UserCheck
-                                    size={48}
-                                    className="text-slate-300"
-                                />
-
-                                <h3 className="text-xl font-black mt-5">
+                            <div className="bg-white dark:bg-slate-900 rounded-3xl p-10 shadow-xl flex flex-col items-center justify-center min-h-[450px] border border-slate-100 dark:border-slate-800">
+                                <UserCheck size={48} className="text-slate-300 dark:text-slate-600" />
+                                <h3 className="text-xl font-black mt-5 text-slate-800 dark:text-white">
                                     Waiting for Student
                                 </h3>
-
                                 <p className="text-sm text-slate-500 mt-2 text-center max-w-sm">
-                                    Scan a QR code or search manually
-                                    to display payment records.
+                                    Scan a QR code or search manually to display payment records.
                                 </p>
                             </div>
                         )}
