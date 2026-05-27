@@ -33,20 +33,71 @@ const QRscanner = () => {
     const navigate = useNavigate();
 
     const [mounted, setMounted] = useState(false);
-    const [activeTab, setActiveTab] = useState("scan");
+    const [activeTab, setActiveTab] = useState(() => {
+        try {
+            return localStorage.getItem("qr_scanner_active_tab") || "scan";
+        } catch (e) {
+            return "scan";
+        }
+    });
 
     // Scanner
     const [isScanning, setIsScanning] = useState(false);
     const [scannerError, setScannerError] = useState("");
 
     // Student
-    const [searchIndex, setSearchIndex] = useState("");
-    const [student, setStudent] = useState(null);
+    const [searchIndex, setSearchIndex] = useState(() => {
+        try {
+            return localStorage.getItem("qr_scanner_search_index") || "";
+        } catch (e) {
+            return "";
+        }
+    });
+    const [student, setStudent] = useState(() => {
+        try {
+            const saved = localStorage.getItem("qr_scanner_student");
+            return saved ? JSON.parse(saved) : null;
+        } catch (e) {
+            return null;
+        }
+    });
     const [loading, setLoading] = useState(false);
     const [togglingMonth, setTogglingMonth] = useState(null);
 
     const scannerRef = useRef(null);
     const isProcessingRef = useRef(false); // Prevent duplicate scans
+
+    useEffect(() => {
+        try {
+            localStorage.setItem("qr_scanner_active_tab", activeTab);
+        } catch (e) {
+            console.error("Failed to save activeTab to localStorage", e);
+        }
+    }, [activeTab]);
+
+    useEffect(() => {
+        try {
+            if (student) {
+                localStorage.setItem("qr_scanner_student", JSON.stringify(student));
+            } else {
+                localStorage.removeItem("qr_scanner_student");
+            }
+        } catch (e) {
+            console.error("Failed to save student to localStorage", e);
+        }
+    }, [student]);
+
+    useEffect(() => {
+        try {
+            if (searchIndex) {
+                localStorage.setItem("qr_scanner_search_index", searchIndex);
+            } else {
+                localStorage.removeItem("qr_scanner_search_index");
+            }
+        } catch (e) {
+            console.error("Failed to save searchIndex to localStorage", e);
+        }
+    }, [searchIndex]);
 
     useEffect(() => {
         requestAnimationFrame(() => setMounted(true));
