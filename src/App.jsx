@@ -1,6 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Analytics } from "@vercel/analytics/react";
-import VesakDecorations from "./components/VesakDecorations";
+//import VesakDecorations from "./components/VesakDecorations";
 import Signup from "./pages/Signup";
 import Login from "./pages/Login";
 import ForgotPassword from "./pages/ForgotPassword";
@@ -70,8 +70,8 @@ function App() {
   }, []);
 
   return (
-    <VesakDecorations>
-      <BrowserRouter>
+    //<VesakDecorations>
+    <BrowserRouter>
       <Analytics />
       <AutoLogout />
       <Toaster position="top-center" reverseOrder={false} />
@@ -113,8 +113,8 @@ function App() {
         <Route path="/student/games" element={<StudentRoute><Games /></StudentRoute>} />
         <Route path="/student/qr" element={<StudentRoute><Qr /></StudentRoute>} />
       </Routes>
-      </BrowserRouter>
-    </VesakDecorations>
+    </BrowserRouter>
+    //</VesakDecorations>
   );
 }
 
