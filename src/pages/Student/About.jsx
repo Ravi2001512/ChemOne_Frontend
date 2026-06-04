@@ -81,7 +81,7 @@ const About = () => {
                         About <span className="bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">ChemBridge</span>
                     </h1>
                     <p className="text-lg sm:text-xl text-slate-600 dark:text-slate-400 max-w-2xl mx-auto leading-relaxed">
-                        Empowering students to achieve excellence through cutting-edge learning platforms, dedicated mentorship, and proven strategies.
+                        At ChemBridge, we combine expert teaching, innovative technology, and comprehensive study resources to help students strengthen their Chemistry knowledge, improve performance, and achieve their academic goals.
                     </p>
                 </div>
             </div>
@@ -108,7 +108,7 @@ const About = () => {
                                 </div>
                                 <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-3">Learn from the Best</h2>
                                 <p className="text-slate-600 dark:text-slate-400 leading-relaxed mb-6">
-                                    Our platform is driven by individuals who are passionate about education and committed to bringing out the fullest potential in every chemistry student.
+                                    At ChemBridge, we believe every student can excel in Chemistry. Through expert guidance, interactive learning experiences, and exam-focused resources, we help students build knowledge, confidence, and success.
                                 </p>
                             </div>
                         </div>
