@@ -11,8 +11,8 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import StudentNavbar from '../../components/StudentNavbar';
+import Countdown from '../../components/Countdown';
 
-/* ─── Main Component ──────────────────────────────────────────── */
 const StudentDashboard = () => {
   const navigate = useNavigate();
   const [userRole, setUserRole] = useState(null);
@@ -102,35 +102,41 @@ const StudentDashboard = () => {
           {/* Decorative glow blob */}
           <div className="absolute -top-16 -right-16 w-64 h-64 rounded-full bg-indigo-500/10 dark:bg-acid/10 blur-3xl pointer-events-none" />
 
-          <div className="relative z-10">
-            <p className="font-mono text-[11px] tracking-[0.2em] uppercase text-indigo-600 dark:text-acid mb-3 transition-colors duration-300">
-              // Student Portal
-            </p>
-            <h1 className="font-grotesk text-4xl md:text-5xl font-extrabold text-slate-900 dark:text-white leading-tight mb-4 transition-colors duration-300">
-              Welcome back,{' '}
-              <span className="text-indigo-600 dark:text-acid transition-colors duration-300">
-                {userName || 'Student'}
-              </span>{' '}
-              👋
-            </h1>
-            <p className="font-grotesk text-lg text-slate-600 dark:text-zinc-400 max-w-2xl leading-relaxed mb-8 transition-colors duration-300">
-              Ready to continue your chemistry journey? Jump into your latest
-              test, practice with worksheets, and track your progress.
-            </p>
+          <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+            <div className="lg:col-span-7">
+              <p className="font-mono text-[11px] tracking-[0.2em] uppercase text-indigo-600 dark:text-acid mb-3 transition-colors duration-300">
+                // Student Portal
+              </p>
+              <h1 className="font-grotesk text-4xl md:text-5xl font-extrabold text-slate-900 dark:text-white leading-tight mb-4 transition-colors duration-300">
+                Welcome back,{' '}
+                <span className="text-indigo-600 dark:text-acid transition-colors duration-300">
+                  {userName || 'Student'}
+                </span>{' '}
+                👋
+              </h1>
+              <p className="font-grotesk text-lg text-slate-600 dark:text-zinc-400 max-w-2xl leading-relaxed mb-8 transition-colors duration-300">
+                Ready to continue your chemistry journey? Jump into your latest
+                test, practice with worksheets, and track your progress.
+              </p>
 
-            {/* CTA Button */}
-            <button
-              onClick={() =>
-                window.open(
-                  'https://play.google.com/store/apps/details?id=com.joazco.vsper&hl=en_SG',
-                  '_blank'
-                )
-              }
-              className="inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 dark:bg-acid text-white dark:text-ink rounded-xl font-grotesk font-bold text-sm transition-all duration-200 hover:-translate-y-0.5 shadow-lg shadow-indigo-600/20 dark:shadow-acid/20"
-            >
-              <ExternalLink size={16} />
-              View VSPER 3D Structures
-            </button>
+              {/* CTA Button */}
+              <button
+                onClick={() =>
+                  window.open(
+                    'https://play.google.com/store/apps/details?id=com.joazco.vsper&hl=en_SG',
+                    '_blank'
+                  )
+                }
+                className="inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 dark:bg-acid text-white dark:text-ink rounded-xl font-grotesk font-bold text-sm transition-all duration-200 hover:-translate-y-0.5 shadow-lg shadow-indigo-600/20 dark:shadow-acid/20"
+              >
+                <ExternalLink size={16} />
+                View VSPER 3D Structures
+              </button>
+            </div>
+
+            <div className="lg:col-span-5 w-full">
+              <Countdown targetDate="2026-08-10T08:00:00" title="Final Countdown to August 10th" />
+            </div>
           </div>
         </div>
 
