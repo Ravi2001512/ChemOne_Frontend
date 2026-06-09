@@ -135,7 +135,7 @@ const StudentDashboard = () => {
             </div>
 
             <div className="lg:col-span-5 w-full">
-              <Countdown targetDate="2026-08-10T08:00:00" title="Final Countdown to August 10th" />
+              <Countdown />
             </div>
           </div>
         </div>
