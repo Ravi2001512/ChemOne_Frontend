@@ -33,6 +33,7 @@ const ManageResults = () => {
     // Exam creation state
     const [newDateForExam, setNewDateForExam] = useState(new Date().toISOString().split('T')[0]);
     const [selectedPaperType, setSelectedPaperType] = useState("Walasmulla Paper");
+    const [selectedPaperNumber, setSelectedPaperNumber] = useState(1);
 
     const paperTypes = [
         "Walasmulla Paper",
@@ -165,16 +166,17 @@ const ManageResults = () => {
             toast.error("Please select a date.");
             return;
         }
+        const examTitle = `${selectedPaperType} ${selectedPaperNumber}`;
         try {
             setCreating(true);
             const response = await API.post("/physical-exams/create", {
-                title: selectedPaperType,
+                title: examTitle,
                 date: new Date(newDateForExam),
                 batch: ["all"],
                 totalMarks: 100
             });
             if (response.data.success) {
-                toast.success(`${selectedPaperType} created successfully!`);
+                toast.success(`${examTitle} created successfully!`);
                 const created = response.data.exam;
                 setExams(prev => [created, ...prev]);
                 if (isMultiSelect) {
@@ -495,6 +497,19 @@ const ManageResults = () => {
                                     <Edit3 className="absolute right-3 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-300 pointer-events-none" />
                                 </div>
 
+                                {/* Paper Number Input */}
+                                <div className="relative">
+                                    <Hash className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+                                    <input
+                                        type="number"
+                                        min="1"
+                                        placeholder="No."
+                                        className="pl-9 pr-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold focus:ring-2 focus:ring-rose-500 transition-all outline-none text-slate-900 dark:text-white w-24"
+                                        value={selectedPaperNumber}
+                                        onChange={(e) => setSelectedPaperNumber(e.target.value === '' ? '' : Number(e.target.value))}
+                                    />
+                                </div>
+
                                 <div className="relative">
                                     <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
                                     <input
@@ -514,7 +529,7 @@ const ManageResults = () => {
                                     ) : (
                                         <Plus className="w-3.5 h-3.5" />
                                     )}
-                                    <span>Add {selectedPaperType.split(' ')[0]} Paper</span>
+                                    <span>Add {selectedPaperType.split(' ')[0]} Paper {selectedPaperNumber}</span>
                                 </button>
                                 <div className="h-8 w-[1px] bg-slate-200 dark:bg-slate-700 mx-1"></div>
                                 <span className="text-[10px] font-black text-rose-600 bg-rose-50 dark:bg-rose-500/10 px-3 py-2 rounded-xl uppercase tracking-widest">
