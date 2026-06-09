@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 
-const Countdown = ({ 
-    targetDate = "2026-08-10T08:00:00", 
-    title = "Final Countdown to August 10th" 
+const Countdown = ({
+    targetDate = "2026-08-10T08:00:00",
 }) => {
     const calculateTimeLeft = () => {
         const difference = +new Date(targetDate) - +new Date();
@@ -35,13 +34,8 @@ const Countdown = ({
             {/* Sinhala Title */}
             <div className="text-center mb-6">
                 <h2 className="text-xl md:text-2xl font-extrabold text-slate-800 dark:text-amber-400 mb-1.5 leading-relaxed font-grotesk">
-                    දැන් කට්ට කෑවොත්, <br className="sm:hidden" /> පස්සේ රජෙක් වගේ ඉන්න පුළුවන්.
+                    The final countdown <br className="sm:hidden" /> for the 2026 A/L exams
                 </h2>
-                {title && (
-                    <p className="text-slate-400 dark:text-zinc-500 text-[10px] tracking-[0.2em] uppercase font-mono font-bold">
-                        // {title}
-                    </p>
-                )}
             </div>
 
             {/* Timer Grid */}
@@ -57,7 +51,7 @@ const Countdown = ({
                         <span className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-indigo-600 dark:text-acid font-mono tracking-tight transition-colors duration-300">
                             {formatNumber(item.val)}
                         </span>
-                        
+
                         {/* Labels */}
                         <div className="flex flex-col items-center mt-2">
                             <span className="text-[10px] md:text-xs text-slate-700 dark:text-amber-500/80 font-bold font-grotesk">{item.label}</span>
@@ -75,7 +69,7 @@ const Countdown = ({
             {/* Motivational Footer */}
             <div className="mt-6 px-4 py-2 bg-indigo-50 dark:bg-acid/10 border border-indigo-100 dark:border-acid/20 rounded-full transition-all duration-300">
                 <p className="text-indigo-600 dark:text-acid text-xs font-semibold text-center font-grotesk">
-                    🔥 "අන්තිම මොහොතේ ගේම ගහන එක අපේ ලේ වලම තියෙනවා!"
+                    🔥 "අත් අරින්න එපා... අන්තිම තත්පරේ දක්වා ගේම ගහමු!"
                 </p>
             </div>
         </div>
