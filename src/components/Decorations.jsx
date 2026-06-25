@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
-import '../styles/Vesak.css';
+import '../styles/Decorations.css';
 
-const VesakDecorations = ({ children }) => {
+const Decorations = ({ children }) => {
   // Traditional Buddhist flag colors (Six colors / Shadvarna, sequence repeated)
   const lanterns = [
     { color: 'blue' }, { color: 'yellow' }, { color: 'red' }, { color: 'white' }, { color: 'orange' },
@@ -55,7 +55,7 @@ const VesakDecorations = ({ children }) => {
           <div className="traditional-lantern purple-lantern">
             <div className="lantern-wire-3d" />
             <div className="lantern-glow-3d" />
-            
+
             {/* Sparkles */}
             <div className="sparkles-container">
               <div className="sparkle-star s1" />
@@ -108,7 +108,7 @@ const VesakDecorations = ({ children }) => {
           <div className="traditional-lantern orange-lantern">
             <div className="lantern-wire-3d" />
             <div className="lantern-glow-3d" />
-            
+
             {/* Sparkles */}
             <div className="sparkles-container">
               <div className="sparkle-star s1" />
@@ -162,7 +162,7 @@ const VesakDecorations = ({ children }) => {
           <div className="traditional-lantern teal-lantern">
             <div className="lantern-wire-3d" />
             <div className="lantern-glow-3d" />
-            
+
             {/* Sparkles */}
             <div className="sparkles-container">
               <div className="sparkle-star s1" />
@@ -224,4 +224,4 @@ const VesakDecorations = ({ children }) => {
   );
 };
 
-export default VesakDecorations;
+export default Decorations;
