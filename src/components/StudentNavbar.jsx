@@ -1,17 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { LayoutDashboard, FileEdit, Settings, LogOut, Beaker, FileText, Info, Menu, X, Sun, Moon } from 'lucide-react';
+import { LayoutDashboard, FileEdit, Settings, LogOut, Beaker, FileText, Info, Menu, X } from 'lucide-react';
 
 const StudentNavbar = () => {
     const navigate = useNavigate();
     const location = useLocation();
 
-    const [isDarkMode, setIsDarkMode] = useState(false);
     const [userRole, setUserRole] = useState(null);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
 
     useEffect(() => {
-        setIsDarkMode(document.documentElement.classList.contains("dark"));
         const storedUser = sessionStorage.getItem('user');
         if (storedUser) {
             try {
@@ -19,18 +17,6 @@ const StudentNavbar = () => {
             } catch (e) { }
         }
     }, []);
-
-    const toggleDarkMode = () => {
-        if (isDarkMode) {
-            document.documentElement.classList.remove('dark');
-            localStorage.setItem('theme', 'light');
-            setIsDarkMode(false);
-        } else {
-            document.documentElement.classList.add('dark');
-            localStorage.setItem('theme', 'dark');
-            setIsDarkMode(true);
-        }
-    };
 
     const handleLogout = () => {
         sessionStorage.removeItem('token');
@@ -95,13 +81,6 @@ const StudentNavbar = () => {
 
                     <div className="hidden md:flex md:items-center md:gap-4">
                         <button
-                            onClick={toggleDarkMode}
-                            className="p-2 rounded-lg text-slate-400 hover:text-acid transition-colors"
-                            title="Toggle Dark Mode"
-                        >
-                            {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-                        </button>
-                        <button
                             onClick={handleLogout}
                             className="font-mono text-[11px] tracking-widest uppercase px-4 py-2 border border-white/10 rounded-lg text-white hover:bg-white/5 transition-colors"
                         >
@@ -111,12 +90,6 @@ const StudentNavbar = () => {
 
                     {/* Mobile Menu Button */}
                     <div className="flex md:hidden items-center gap-2">
-                        <button
-                            onClick={toggleDarkMode}
-                            className="p-2 rounded-lg text-slate-400 hover:text-acid"
-                        >
-                            {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-                        </button>
                         <button
                             onClick={() => setIsMenuOpen(!isMenuOpen)}
                             className="p-2 rounded-lg text-slate-400 hover:bg-white/5 focus:outline-none"
