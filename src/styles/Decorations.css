@@ -720,8 +720,40 @@
   }
 }
 
-/* 6. Responsive Styles */
+/* 6. Poson Background Scene */
+.poson-scene {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 9997; /* High z-index to stay above content with solid backgrounds */
+  overflow: hidden;
+}
+
+.poson-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  opacity: 0.15; /* Reduced opacity to prevent washing out the foreground text */
+  animation: posonBreathe 15s ease-in-out infinite alternate;
+  mix-blend-mode: screen; /* Helps blend with dark backgrounds smoothly */
+}
+
+@keyframes posonBreathe {
+  0% { transform: scale(1); }
+  100% { transform: scale(1.05); }
+}
+
+/* 7. Responsive Styles */
 @media (max-width: 768px) {
+  .poson-image {
+    object-position: bottom center; /* Keeps the main subject visible on portrait screens */
+    opacity: 0.12; /* Slightly reduced on mobile to prevent clutter with text */
+  }
+
   .vesak-lantern-cluster {
     top: 20px;
     right: 12%;

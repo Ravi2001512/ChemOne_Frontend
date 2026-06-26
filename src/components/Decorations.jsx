@@ -17,6 +17,11 @@ const Decorations = ({ children }) => {
 
   return (
     <div className="vesak-theme-wrapper">
+      {/* Poson Background Layer */}
+      <div className="poson-scene">
+        <img src="/poson.png" alt="Poson Festival Background" className="poson-image" />
+      </div>
+
       {/* Deep, peaceful ambient night background */}
       <div className="vesak-ambient" />
 
@@ -55,8 +60,6 @@ const Decorations = ({ children }) => {
             </div>
           ))}
         </div>
-
-
 
       </div>
 
