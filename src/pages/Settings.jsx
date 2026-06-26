@@ -66,14 +66,14 @@ function Settings() {
   const isStudent = user?.role === "student";
 
   return (
-    <div className="min-h-screen bg-blue-50 dark:bg-black font-sans pb-12 transition-colors duration-300">
+    <div className="min-h-screen bg-black font-sans pb-12">
       {isStudent ? <StudentNavbar /> : <AdminNavbar />}
 
-      <main className="max-w-4xl mx-auto px-6 pt-24 text-slate-900 dark:text-slate-100">
+      <main className="max-w-4xl mx-auto px-6 pt-24 text-slate-100">
         <header className="mb-10 flex flex-col md:flex-row md:justify-between md:items-end gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-slate-800 dark:text-white mb-2">Account Settings</h1>
-            <p className="text-slate-500 dark:text-slate-400">Manage your profile and registration details</p>
+            <h1 className="text-3xl font-bold text-white mb-2">Account Settings</h1>
+            <p className="text-slate-400">Manage your profile and registration details</p>
           </div>
           <div className="flex items-center gap-4">
             {!isEditing && (
@@ -108,17 +108,17 @@ function Settings() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* Profile Card */}
           <div className="md:col-span-1">
-            <div className="bg-sky-100 dark:bg-slate-900 backdrop-blur-md border border-slate-200 dark:border-slate-800 rounded-3xl p-8 text-center relative overflow-hidden group shadow-sm transition-colors duration-300">
+            <div className="bg-slate-900 backdrop-blur-md border border-slate-800 rounded-3xl p-8 text-center relative overflow-hidden group shadow-sm">
               <div className="absolute inset-0 bg-gradient-to-b from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
 
               <div className="w-24 h-24 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full mx-auto mb-6 flex items-center justify-center text-3xl font-bold text-white shadow-xl shadow-blue-500/20">
                 {user?.name?.charAt(0) || "U"}
               </div>
 
-              <h3 className="text-xl font-bold text-slate-800 dark:text-white mb-1 truncate">{user?.name}</h3>
-              <p className="text-slate-500 dark:text-slate-400 text-sm mb-4 truncate">{user?.email}</p>
+              <h3 className="text-xl font-bold text-white mb-1 truncate">{user?.name}</h3>
+              <p className="text-slate-400 text-sm mb-4 truncate">{user?.email}</p>
 
-              <div className="inline-block px-3 py-1 rounded-full bg-slate-200 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-xs font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wider">
+              <div className="inline-block px-3 py-1 rounded-full bg-slate-800 border border-slate-700 text-xs font-semibold text-blue-400 uppercase tracking-wider">
                 {user?.role}
               </div>
             </div>
@@ -126,8 +126,8 @@ function Settings() {
 
           {/* Details Card */}
           <div className="md:col-span-2 space-y-6">
-            <div className="bg-white dark:bg-slate-900 backdrop-blur-md border border-slate-200 dark:border-slate-800 rounded-3xl p-8 shadow-sm transition-colors duration-300">
-              <h3 className="text-lg font-bold text-slate-700 dark:text-slate-300 mb-6 flex items-center gap-2">
+            <div className="bg-slate-900 backdrop-blur-md border border-slate-800 rounded-3xl p-8 shadow-sm">
+              <h3 className="text-lg font-bold text-slate-300 mb-6 flex items-center gap-2">
                 <span className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-500 dark:text-blue-400">
                   📋
                 </span>
@@ -238,14 +238,14 @@ function Settings() {
 
         {/* Developer Details Section */}
         <div className="mt-12 pt-8 border-t border-slate-200 dark:border-slate-800">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-8 flex flex-col md:flex-row justify-between items-center gap-6 shadow-sm transition-colors duration-300">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-8 flex flex-col md:flex-row justify-between items-center gap-6 shadow-sm">
             <div className="flex items-center gap-4">
-              <div className="w-14 h-14 bg-slate-100 dark:bg-slate-800 rounded-2xl flex items-center justify-center text-2xl shadow-sm">
+              <div className="w-14 h-14 bg-slate-800 rounded-2xl flex items-center justify-center text-2xl shadow-sm">
                 🚀
               </div>
               <div>
                 <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-1">Developed By</p>
-                <h4 className="text-xl font-bold text-slate-900 dark:text-white">CR Sollution</h4>
+                <h4 className="text-xl font-bold text-white">CR Sollution</h4>
               </div>
             </div>
 

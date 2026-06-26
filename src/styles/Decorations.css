@@ -534,8 +534,8 @@
   }
 }
 
-/* 4. Soft Falling Lotus Petals */
-.petals {
+/* 4. Soft Falling Bo Leaves */
+.bo-leaves {
   position: absolute;
   top: 0;
   left: 0;
@@ -544,13 +544,10 @@
   overflow: hidden;
 }
 
-.petal {
+.bo-leaf {
   position: absolute;
   top: -20px;
-  background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 99%, #fecfef 100%);
-  border-radius: 0 100% 40% 100%;
-  transform: rotate(45deg);
-  filter: drop-shadow(0 0 5px rgba(254, 207, 239, 0.6));
+  /* Visual styling is now handled by inline SVG */
   animation: fall linear infinite;
 }
 
@@ -723,8 +720,56 @@
   }
 }
 
-/* 6. Responsive Styles */
+/* 6. Poson Background Scene */
+.poson-scene {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 9997;
+  /* High z-index to stay above content with solid backgrounds */
+  overflow: hidden;
+}
+
+.poson-picture {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.poson-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  opacity: 0.15;
+  /* Reduced opacity to prevent washing out the foreground text */
+  animation: posonBreathe 15s ease-in-out infinite alternate;
+  mix-blend-mode: screen;
+  /* Helps blend with dark backgrounds smoothly */
+}
+
+@keyframes posonBreathe {
+  0% {
+    transform: scale(1);
+  }
+
+  100% {
+    transform: scale(1.05);
+  }
+}
+
+/* 7. Responsive Styles */
 @media (max-width: 768px) {
+  .poson-image {
+    object-position: 20% 10%;
+    /* Ensures the left side of the background is displayed on mobile */
+    opacity: 0.12;
+    /* Slightly reduced on mobile to prevent clutter with text */
+  }
+
   .vesak-lantern-cluster {
     top: 20px;
     right: 12%;
