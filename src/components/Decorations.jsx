@@ -19,7 +19,10 @@ const Decorations = ({ children }) => {
     <div className="vesak-theme-wrapper">
       {/* Poson Background Layer */}
       <div className="poson-scene">
-        <img src="/poson.png" alt="Poson Festival Background" className="poson-image" />
+        <picture className="poson-picture">
+          <source media="(max-width: 768px)" srcSet="/poson%20dec.jpeg" />
+          <img src="/poson.png" alt="Poson Festival Background" className="poson-image" />
+        </picture>
       </div>
 
       {/* Deep, peaceful ambient night background */}

@@ -728,8 +728,15 @@
   width: 100vw;
   height: 100vh;
   pointer-events: none;
-  z-index: 9997; /* High z-index to stay above content with solid backgrounds */
+  z-index: 9997;
+  /* High z-index to stay above content with solid backgrounds */
   overflow: hidden;
+}
+
+.poson-picture {
+  width: 100%;
+  height: 100%;
+  display: block;
 }
 
 .poson-image {
@@ -737,21 +744,30 @@
   height: 100%;
   object-fit: cover;
   object-position: center;
-  opacity: 0.15; /* Reduced opacity to prevent washing out the foreground text */
+  opacity: 0.15;
+  /* Reduced opacity to prevent washing out the foreground text */
   animation: posonBreathe 15s ease-in-out infinite alternate;
-  mix-blend-mode: screen; /* Helps blend with dark backgrounds smoothly */
+  mix-blend-mode: screen;
+  /* Helps blend with dark backgrounds smoothly */
 }
 
 @keyframes posonBreathe {
-  0% { transform: scale(1); }
-  100% { transform: scale(1.05); }
+  0% {
+    transform: scale(1);
+  }
+
+  100% {
+    transform: scale(1.05);
+  }
 }
 
 /* 7. Responsive Styles */
 @media (max-width: 768px) {
   .poson-image {
-    object-position: bottom center; /* Keeps the main subject visible on portrait screens */
-    opacity: 0.12; /* Slightly reduced on mobile to prevent clutter with text */
+    object-position: 20% 10%;
+    /* Ensures the left side of the background is displayed on mobile */
+    opacity: 0.12;
+    /* Slightly reduced on mobile to prevent clutter with text */
   }
 
   .vesak-lantern-cluster {
