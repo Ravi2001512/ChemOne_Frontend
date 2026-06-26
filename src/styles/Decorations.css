@@ -534,8 +534,8 @@
   }
 }
 
-/* 4. Soft Falling Lotus Petals */
-.petals {
+/* 4. Soft Falling Bo Leaves */
+.bo-leaves {
   position: absolute;
   top: 0;
   left: 0;
@@ -544,13 +544,10 @@
   overflow: hidden;
 }
 
-.petal {
+.bo-leaf {
   position: absolute;
   top: -20px;
-  background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 99%, #fecfef 100%);
-  border-radius: 0 100% 40% 100%;
-  transform: rotate(45deg);
-  filter: drop-shadow(0 0 5px rgba(254, 207, 239, 0.6));
+  /* Visual styling is now handled by inline SVG */
   animation: fall linear infinite;
 }
 
