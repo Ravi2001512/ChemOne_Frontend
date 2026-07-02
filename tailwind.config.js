@@ -11,8 +11,8 @@ export default {
           glow: 'rgba(200,242,48,0.35)',
         },
 
-        // 🟡 Vesak Theme Colors (NEW)
-        vesak: {
+        // 🟡 Festival Theme Colors (NEW)
+        festival: {
           light: '#fff7cc',
           DEFAULT: '#ffe680',
           deep: '#ffd54d',
@@ -47,10 +47,10 @@ export default {
         'ticker': 'ticker 22s linear infinite',
         'float-orb': 'floatOrb 18s ease-in-out infinite',
 
-        // 🏮 Vesak Animations (NEW)
+        // 🏮 Festival Animations (NEW)
         'float-up': 'floatUp 12s linear infinite',
         'lantern-sway': 'lanternSway 3s ease-in-out infinite',
-        'vesak-glow': 'vesakGlow 2.5s ease-in-out infinite',
+        'festival-glow': 'festivalGlow 2.5s ease-in-out infinite',
         'bubble': 'bubble 6s ease-in infinite',
       },
 
@@ -125,7 +125,7 @@ export default {
         },
 
         // ✨ Glow pulse
-        vesakGlow: {
+        festivalGlow: {
           '0%, 100%': {
             filter: 'drop-shadow(0 0 4px rgba(255,223,100,0.3))',
           },
