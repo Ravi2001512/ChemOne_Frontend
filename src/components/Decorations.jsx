@@ -16,6 +16,9 @@ const Decorations = ({ children }) => {
           loop
           muted
           playsInline
+          preload="auto"
+          poster="/bg_poster.png"
+          onCanPlay={() => setVideoLoaded(true)}
         >
           <source src="/bg.mp4" type="video/mp4" />
         </video>
@@ -27,6 +30,9 @@ const Decorations = ({ children }) => {
           loop
           muted
           playsInline
+          preload="auto"
+          poster="/bg_poster2.png"
+          onCanPlay={() => setVideoLoaded(true)}
         >
           <source src="/bg2.mp4" type="video/mp4" />
         </video>
