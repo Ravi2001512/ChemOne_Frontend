@@ -11,7 +11,7 @@ import {
   ExternalLink,
 } from 'lucide-react';
 import StudentNavbar from '../../components/StudentNavbar';
-import Countdown from '../../components/Countdown';
+//import Countdown from '../../components/Countdown';
 
 const StudentDashboard = () => {
   const navigate = useNavigate();
@@ -135,7 +135,7 @@ const StudentDashboard = () => {
             </div>
 
             <div className="lg:col-span-5 w-full">
-              <Countdown />
+              {/* <Countdown /> */}
             </div>
           </div>
         </div>
