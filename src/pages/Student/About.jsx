@@ -8,61 +8,37 @@ const About = () => {
     // Placeholder data for schedules - User can easily modify this
     const classSchedules = [
         {
-            batch: '2026 Revision',
+            batch: '2027 Revision',
             location: 'Sarasawi - Walasmulla',
             day: 'Thursday',
-            time: '8.30 am - 5:00 PM',
+            time: '8:30 AM- 4:30 PM',
             status: 'Ongoing',
-            color: 'from-blue-500 to-indigo-600'
-        },
-        {
-            batch: '2026 Paper Class & Speed Revision',
-            location: ' Sarasawi - Walasmulla',
-            day: 'Friday',
-            time: '8:30 AM - 5:00 PM',
-            status: 'Ongoing',
-            color: 'from-emerald-500 to-teal-600'
-        },
-        {
-            batch: ' 2027 Theory',
-            location: 'New Samadhi - Middeniya ',
-            day: 'Friday',
-            time: '6:00 PM - 10:30 PM',
-            status: 'Ongoing',
-            color: 'from-purple-500 to-pink-600'
+            color: 'from-amber-500 to-orange-600'
         },
         {
             batch: '2027 Theory',
-            location: 'Sarasawi - Walasmulla',
-            day: 'Sunday',
-            time: '1:30 PM - 9:00 PM',
+            location: ' Jayamaga - Tangalle',
+            day: 'friday',
+            time: '8:30 AM - 4.00 PM',
             status: 'Ongoing',
-            color: 'from-amber-500 to-orange-600'
+            color: 'from-green-500 to-orange-600'
         },
         {
             batch: '2028 Theory',
             location: 'Sarasawi - Walasmulla',
             day: 'Sunday',
-            time: '8:30 AM - 11:30 PM',
+            time: '8:30 AM - 11:30 AM',
             status: 'Ongoing',
             color: 'from-sky-500 to-orange-600'
         },
         {
             batch: '2028 Theory',
             location: 'New Samadhi - Middeniya',
-            day: 'Friday',
-            time: '2:30 PM - 5:30 PM',
+            day: 'Thursday',
+            time: '6:30 PM - 9:30 PM',
             status: 'Ongoing',
             color: 'from-lime-500 to-orange-600'
         },
-        {
-            batch: '2027 Theory',
-            location: ' Nex Gen - Tangalle',
-            day: 'Saturday',
-            time: '7:30 AM - 10:00 AM',
-            status: 'Ongoing',
-            color: 'from-green-500 to-orange-600'
-        }
     ];
 
     return (
