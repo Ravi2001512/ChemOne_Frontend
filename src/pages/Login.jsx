@@ -81,7 +81,7 @@ export default function Login() {
       <div className="fixed inset-0 pointer-events-none z-0 opacity-[0.025] bg-[url('data:image/svg+xml,%3Csvg_viewBox=%270_0_256_256%27_xmlns=%27http://www.w3.org/2000/svg%27%3E%3Cfilter_id=%27n%27%3E%3CfeTurbulence_type=%27fractalNoise%27_baseFrequency=%270.9%27_numOctaves=%274%27_stitchTiles=%27stitch%27/%3E%3C/filter%3E%3Crect_width=%27100%25%27_height=%27100%25%27_filter=%27url(%23n)%27/%3E%3C/svg%3E')] bg-[length:256px_256px]" />
 
       {/* Card */}
-      <div className="animate-fade-slide relative z-10 w-full max-w-[920px] h-full max-h-[calc(100vh-32px)] rounded-2xl border border-white/10 overflow-hidden flex shadow-[0_40px_120px_rgba(0,0,0,0.7),inset_0_1px_0_rgba(255,255,255,0.05)]">
+      <div className="animate-fade-slide relative z-10 w-full max-w-[920px] rounded-2xl border border-white/10 overflow-hidden flex shadow-[0_40px_120px_rgba(0,0,0,0.7),inset_0_1px_0_rgba(255,255,255,0.05)]">
 
         {/* LEFT PANEL */}
         <div className="hidden md:flex w-[44%] flex-col bg-[#0d0d0d] border-r border-white/10 relative overflow-hidden">
@@ -92,7 +92,7 @@ export default function Login() {
           <div className="absolute bottom-5 left-5 w-5 h-5 border-b-[1.5px] border-l-[1.5px] border-acid" />
           <div className="absolute bottom-5 right-5 w-5 h-5 border-b-[1.5px] border-r-[1.5px] border-acid" />
 
-          <div className="flex-1 flex flex-col justify-between p-9 relative z-10">
+          <div className="flex flex-col justify-between p-9 relative z-10 h-full">
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 rounded-full bg-acid shadow-[0_0_10px_rgba(200,242,48,0.35)] animate-pulse-acid" />
               <span className="font-mono text-[11px] text-sub tracking-widest">CHEMONE // v2.0</span>
@@ -106,7 +106,7 @@ export default function Login() {
 
               <div className="relative mb-7">
                 <div className="absolute -inset-[3px] rounded-[10px] bg-gradient-to-br from-acid via-transparent to-acid opacity-50" />
-                <img src="/ashan.jpeg" alt="Ashan Umayanga" className="relative z-10 w-full rounded-lg object-cover max-h-[220px] contrast-[1.05] brightness-95" />
+                <img src="/ashan.png" alt="Ashan Umayanga" className="relative z-10 w-full rounded-lg object-contain contrast-[1.05] brightness-95" />
                 <div className="absolute inset-0 z-20 rounded-lg pointer-events-none bg-[repeating-linear-gradient(0deg,transparent,transparent_2px,rgba(0,0,0,0.08)_2px,rgba(0,0,0,0.08)_4px)]" />
               </div>
 
@@ -126,7 +126,7 @@ export default function Login() {
         </div>
 
         {/* RIGHT PANEL */}
-        <div className="flex-1 flex flex-col justify-center p-6 sm:p-10 bg-ink/85 backdrop-blur-[20px] h-full overflow-y-auto">
+        <div className="flex-1 flex flex-col justify-center p-6 sm:p-10 bg-ink/85 backdrop-blur-[20px] overflow-y-auto">
 
 
           <div className="mb-7">
