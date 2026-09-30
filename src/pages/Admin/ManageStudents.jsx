@@ -115,6 +115,9 @@ const ManageStudents = () => {
     const blockedStudents = students.filter((s) => s.isBlocked).length;
     const activeStudents = totalStudents - blockedStudents;
 
+    // Current Month for payments
+    const currentMonth = new Date().toLocaleString('default', { month: 'long' });
+
     return (
         <div className="min-h-screen bg-blue-50 dark:bg-black">
             <AdminNavbar />
@@ -246,6 +249,7 @@ const ManageStudents = () => {
                                         <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Batch</th>
                                         <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Email</th>
                                         <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Status</th>
+                                        <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Payments ({currentMonth})</th>
                                         <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Registered On</th>
                                         <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Actions</th>
                                     </tr>
@@ -287,6 +291,36 @@ const ManageStudents = () => {
                                                             Active
                                                         </span>
                                                     )}
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    {(() => {
+                                                        const paidClasses = ["Theory", "Revision", "Paper"].filter(cls => 
+                                                            student.paidMonths?.includes(`${currentMonth}-${cls}`)
+                                                        );
+                                                        if (paidClasses.length > 0) {
+                                                            return (
+                                                                <div className="flex flex-col gap-1.5">
+                                                                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900 w-fit">
+                                                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                                                        Paid
+                                                                    </span>
+                                                                    <div className="flex flex-wrap gap-1 mt-0.5">
+                                                                        {paidClasses.map(cls => (
+                                                                            <span key={cls} className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 uppercase">
+                                                                                {cls}
+                                                                            </span>
+                                                                        ))}
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        }
+                                                        return (
+                                                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold bg-rose-100 dark:bg-rose-950/50 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-900 w-fit">
+                                                                <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+                                                                Unpaid
+                                                            </span>
+                                                        );
+                                                    })()}
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
                                                     {new Date(student.createdAt).toLocaleDateString()}

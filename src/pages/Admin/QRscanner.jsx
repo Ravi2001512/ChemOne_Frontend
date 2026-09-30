@@ -16,7 +16,8 @@ import {
     CreditCard,
     UserCheck,
     Award,
-    History
+    History,
+    BookOpen
 } from "lucide-react";
 
 import AdminNavbar from "../../components/AdminNavbar";
@@ -57,7 +58,14 @@ const QRscanner = () => {
     const [student, setStudent] = useState(null);
     const [history, setHistory] = useState([]);
     const [loading, setLoading] = useState(false);
-    const [togglingMonth, setTogglingMonth] = useState(null);
+    
+    // Payment Modal State
+    const [paymentModal, setPaymentModal] = useState({
+        isOpen: false,
+        month: null,
+        tempSelectedClasses: []
+    });
+    const [savingPayment, setSavingPayment] = useState(false);
 
     const scannerRef = useRef(null);
     const isProcessingRef = useRef(false); // Prevent duplicate scans
@@ -81,6 +89,8 @@ const QRscanner = () => {
             console.error("Failed to save searchIndex to localStorage", e);
         }
     }, [searchIndex]);
+
+    // Removed selectedClass effect
 
     // CLEANUP SCANNER (safe)
     const cleanupScanner = useCallback(async () => {
@@ -296,34 +306,56 @@ const QRscanner = () => {
         fetchStudentDetails(searchIndex);
     };
 
-    // TOGGLE PAYMENT
-    const togglePayment = async (monthName) => {
+    // OPEN PAYMENT MODAL
+    const openPaymentModal = (month) => {
         if (!student) return;
+        const currentlyPaid = ["Theory", "Revision", "Paper"].filter(cls => 
+            student.paidMonths?.includes(`${month}-${cls}`)
+        );
+        setPaymentModal({
+            isOpen: true,
+            month,
+            tempSelectedClasses: currentlyPaid
+        });
+    };
 
-        const isPaid = student.paidMonths?.includes(monthName);
-        setTogglingMonth(monthName);
-
+    // SAVE PAYMENT SELECTION
+    const savePaymentSelection = async () => {
+        setSavingPayment(true);
+        const { month, tempSelectedClasses } = paymentModal;
+        const allClasses = ["Theory", "Revision", "Paper"];
+        
         try {
-            const res = await API.post(`/auth/students/${student._id}/payment`, {
-                month: monthName,
-                isPaid: !isPaid
-            });
+            let currentPaidMonths = [...(student.paidMonths || [])];
 
-            setStudent((prev) => ({
-                ...prev,
-                paidMonths: res.data.paidMonths
-            }));
-
-            toast.success(!isPaid ? `${monthName} marked paid` : `${monthName} marked unpaid`);
+            for (const cls of allClasses) {
+                const paymentString = `${month}-${cls}`;
+                const shouldBePaid = tempSelectedClasses.includes(cls);
+                const isCurrentlyPaid = currentPaidMonths.includes(paymentString);
+                
+                if (shouldBePaid !== isCurrentlyPaid) {
+                    const res = await API.post(`/auth/students/${student._id}/payment`, {
+                        month: paymentString,
+                        isPaid: shouldBePaid
+                    });
+                    currentPaidMonths = res.data.paidMonths;
+                }
+            }
+            
+            setStudent(prev => ({ ...prev, paidMonths: currentPaidMonths }));
+            toast.success(`Payments updated for ${month}`);
+            setPaymentModal({ isOpen: false, month: null, tempSelectedClasses: [] });
         } catch (err) {
             console.error(err);
-            toast.error(err.response?.data?.message || "Failed updating payment");
+            toast.error("Failed to update payments");
         } finally {
-            setTogglingMonth(null);
+            setSavingPayment(false);
         }
     };
 
-    const totalPaidMonths = student?.paidMonths?.length || 0;
+    const totalPaidMonths = MONTHS.filter(m => 
+        student?.paidMonths?.some(paid => paid.startsWith(`${m}-`))
+    ).length;
     const paymentRatio = ((totalPaidMonths / 12) * 100).toFixed(0);
 
     return (
@@ -392,6 +424,8 @@ const QRscanner = () => {
                                 Scan student QR codes instantly.
                             </p>
                         </div>
+
+                        {/* CLASS SELECTOR TABS REMOVED - USING POPUP NOW */}
 
                         {/* TABS */}
                         <div className="flex p-1 bg-slate-100 dark:bg-slate-800 rounded-2xl self-start">
@@ -611,13 +645,15 @@ const QRscanner = () => {
                                 {/* MONTH GRID */}
                                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                                     {MONTHS.map((month) => {
-                                        const isPaid = student.paidMonths?.includes(month);
-                                        const isToggling = togglingMonth === month;
+                                        const paidClasses = ["Theory", "Revision", "Paper"].filter(cls => 
+                                            student.paidMonths?.includes(`${month}-${cls}`)
+                                        );
+                                        const isPaid = paidClasses.length > 0;
 
                                         return (
                                             <div
                                                 key={month}
-                                                onClick={() => !isToggling && togglePayment(month)}
+                                                onClick={() => openPaymentModal(month)}
                                                 className={`rounded-2xl p-5 border cursor-pointer transition-all active:scale-[0.97] select-none ${isPaid
                                                     ? "bg-emerald-50 dark:bg-emerald-950/30 border-emerald-300 dark:border-emerald-800"
                                                     : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700"
@@ -627,10 +663,7 @@ const QRscanner = () => {
                                                     <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
                                                         Month
                                                     </span>
-
-                                                    {isToggling ? (
-                                                        <RefreshCw size={14} className="animate-spin text-slate-400" />
-                                                    ) : isPaid ? (
+                                                    {isPaid ? (
                                                         <CheckCircle size={18} className="text-emerald-600" />
                                                     ) : (
                                                         <XCircle size={18} className="text-slate-300" />
@@ -641,9 +674,17 @@ const QRscanner = () => {
                                                     <h4 className={`text-lg font-black ${isPaid ? "text-emerald-700 dark:text-emerald-400" : "text-slate-900 dark:text-white"}`}>
                                                         {month}
                                                     </h4>
-                                                    <p className="text-xs text-slate-500 mt-1">
-                                                        {isPaid ? "Paid ✓" : "Click to pay"}
-                                                    </p>
+                                                    <div className="flex flex-wrap gap-1 mt-2">
+                                                        {paidClasses.length > 0 ? (
+                                                            paidClasses.map(cls => (
+                                                                <span key={cls} className="text-[9px] font-bold px-2 py-0.5 rounded-md bg-emerald-200 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-300 uppercase">
+                                                                    {cls}
+                                                                </span>
+                                                            ))
+                                                        ) : (
+                                                            <p className="text-xs text-slate-500">Click to pay</p>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </div>
                                         );
@@ -682,6 +723,61 @@ const QRscanner = () => {
                     </div>
                 </div>
             </main>
+
+            {/* PAYMENT MODAL */}
+            {paymentModal.isOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm p-4">
+                    <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 w-full max-w-sm shadow-2xl border border-slate-100 dark:border-slate-800">
+                        <h3 className="text-xl font-black mb-1 text-slate-900 dark:text-white">Select Classes</h3>
+                        <p className="text-sm text-slate-500 mb-6">Payment for {paymentModal.month}</p>
+                        
+                        <div className="space-y-3 mb-6">
+                            {["Theory", "Revision", "Paper"].map(cls => {
+                                const isSelected = paymentModal.tempSelectedClasses.includes(cls);
+                                return (
+                                    <div 
+                                        key={cls}
+                                        onClick={() => {
+                                            setPaymentModal(prev => ({
+                                                ...prev,
+                                                tempSelectedClasses: isSelected 
+                                                    ? prev.tempSelectedClasses.filter(c => c !== cls)
+                                                    : [...prev.tempSelectedClasses, cls]
+                                            }))
+                                        }}
+                                        className={`p-4 rounded-xl border flex items-center justify-between cursor-pointer transition-all ${
+                                            isSelected 
+                                            ? "bg-indigo-50 border-indigo-200 dark:bg-indigo-900/30 dark:border-indigo-800" 
+                                            : "bg-slate-50 border-slate-200 dark:bg-slate-800 dark:border-slate-700"
+                                        }`}
+                                    >
+                                        <span className={`font-bold ${isSelected ? "text-indigo-700 dark:text-indigo-400" : "text-slate-700 dark:text-slate-300"}`}>
+                                            {cls}
+                                        </span>
+                                        {isSelected && <CheckCircle size={20} className="text-indigo-600 dark:text-indigo-400" />}
+                                    </div>
+                                );
+                            })}
+                        </div>
+
+                        <div className="flex gap-3">
+                            <button 
+                                onClick={() => setPaymentModal({ isOpen: false, month: null, tempSelectedClasses: [] })}
+                                className="flex-1 py-3 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold hover:bg-slate-200 dark:hover:bg-slate-700 transition-all"
+                            >
+                                Cancel
+                            </button>
+                            <button 
+                                onClick={savePaymentSelection}
+                                disabled={savingPayment}
+                                className="flex-1 py-3 rounded-xl bg-indigo-600 text-white font-bold hover:bg-indigo-500 transition-all flex items-center justify-center gap-2"
+                            >
+                                {savingPayment ? <RefreshCw size={16} className="animate-spin" /> : "Save"}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
