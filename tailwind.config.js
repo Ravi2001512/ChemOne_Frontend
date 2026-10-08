@@ -6,9 +6,9 @@ export default {
     extend: {
       colors: {
         acid: {
-          DEFAULT: '#c8f230',
-          dim: 'rgba(200,242,48,0.12)',
-          glow: 'rgba(200,242,48,0.35)',
+          DEFAULT: '#00f0ff',
+          dim: 'rgba(0,240,255,0.12)',
+          glow: 'rgba(0,240,255,0.35)',
         },
 
         // 🟡 Festival Theme Colors (NEW)
@@ -84,8 +84,8 @@ export default {
         },
 
         pulseAcid: {
-          '0%, 100%': { boxShadow: '0 0 0 0 rgba(200,242,48,0.35)' },
-          '50%': { boxShadow: '0 0 0 8px rgba(200,242,48,0)' },
+          '0%, 100%': { boxShadow: '0 0 0 0 rgba(0,240,255,0.35)' },
+          '50%': { boxShadow: '0 0 0 8px rgba(0,240,255,0)' },
         },
 
         spinCW: {
