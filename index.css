@@ -6,9 +6,9 @@
 
 @layer base {
   :root {
-    --acid: #c8f230;
-    --acid-dim: rgba(200,242,48,0.12);
-    --acid-glow: rgba(200,242,48,0.35);
+    --acid: #ffb800;
+    --acid-dim: rgba(255,184,0,0.12);
+    --acid-glow: rgba(255,184,0,0.35);
     --ink: #0a0a0a;
     --ink2: #111111;
     --surface: rgba(255,255,255,0.03);
@@ -34,7 +34,7 @@
   }
 
   .btn-acid {
-    @apply relative w-full p-4 border-none rounded-lg bg-acid text-ink font-bebas text-lg tracking-widest cursor-pointer overflow-hidden transition-all active:translate-y-0 hover:-translate-y-0.5 hover:shadow-[0_8px_32px_rgba(200,242,48,0.35),0_0_60px_rgba(200,242,48,0.15)] disabled:opacity-55 disabled:cursor-not-allowed disabled:transform-none;
+    @apply relative w-full p-4 border-none rounded-lg bg-acid text-ink font-bebas text-lg tracking-widest cursor-pointer overflow-hidden transition-all active:translate-y-0 hover:-translate-y-0.5 hover:shadow-[0_8px_32px_rgba(255,184,0,0.35),0_0_60px_rgba(255,184,0,0.15)] disabled:opacity-55 disabled:cursor-not-allowed disabled:transform-none;
   }
   .btn-acid::before {
     content: '';

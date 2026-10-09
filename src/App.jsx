@@ -27,6 +27,7 @@ import { useEffect } from 'react';
 import AutoLogout from "./components/AutoLogout";
 import Qr from "./pages/Student/Qr";
 import QRscanner from "./pages/Admin/QRscanner";
+import Welcome from "./pages/welcome";
 
 const AdminRoute = ({ children }) => {
   const user = JSON.parse(sessionStorage.getItem('user') || '{}');
@@ -74,7 +75,7 @@ function App() {
         <AutoLogout />
         <Toaster position="top-center" reverseOrder={false} />
         <Routes>
-          <Route path="/" element={<Navigate to="/login" replace />} />
+          <Route path="/" element={<Welcome />} />
           <Route path="/login" element={<Login />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
 

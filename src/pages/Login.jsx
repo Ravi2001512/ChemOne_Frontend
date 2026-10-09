@@ -92,33 +92,33 @@ export default function Login() {
           <div className="absolute bottom-5 left-5 w-5 h-5 border-b-[1.5px] border-l-[1.5px] border-acid" />
           <div className="absolute bottom-5 right-5 w-5 h-5 border-b-[1.5px] border-r-[1.5px] border-acid" />
 
-          <div className="flex flex-col justify-between p-9 relative z-10 h-full">
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-acid shadow-[0_0_10px_rgba(200,242,48,0.35)] animate-pulse-acid" />
-              <span className="font-mono text-[11px] text-sub tracking-widest">CHEMONE // v2.0</span>
+          <div className="flex flex-col justify-between p-7 lg:p-9 relative z-10 h-full">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-2 h-2 rounded-full bg-acid shadow-[0_0_10px_rgba(0,240,255,0.35)] animate-pulse-acid" />
+              <span className="font-mono text-[10px] text-sub tracking-widest">ChemBridge</span>
             </div>
 
-            <div>
-              <div className="font-bebas text-[5.5rem] leading-[0.88] text-white tracking-wider mb-6">
+            <div className="flex-1 flex flex-col justify-center">
+              <div className="font-bebas text-[3.5rem] lg:text-[4.5rem] leading-[0.88] text-white tracking-wider mb-4 lg:mb-6">
                 <div>WELCOME</div>
-                <div className="text-acid [text-shadow:0_0_40px_rgba(200,242,48,0.35)]">BACK</div>
+                <div className="text-acid [text-shadow:0_0_40px_rgba(0,240,255,0.35)]">BACK</div>
               </div>
 
-              <div className="relative mb-7">
+              <div className="relative mb-5 lg:mb-7 mx-auto w-[85%] lg:w-[70%]">
                 <div className="absolute -inset-[3px] rounded-[10px] bg-gradient-to-br from-acid via-transparent to-acid opacity-50" />
-                <img src="/ashan.png" alt="Ashan Umayanga" className="relative z-10 w-full rounded-lg object-contain contrast-[1.05] brightness-95" />
+                <img src="/ashan.png" alt="Ashan Umayanga" className="relative z-10 w-full h-auto rounded-lg object-contain contrast-[1.05] brightness-95" />
                 <div className="absolute inset-0 z-20 rounded-lg pointer-events-none bg-[repeating-linear-gradient(0deg,transparent,transparent_2px,rgba(0,0,0,0.08)_2px,rgba(0,0,0,0.08)_4px)]" />
               </div>
 
-              <div className="font-bebas text-[1.45rem] tracking-[0.12em] text-acid">ASHAN UMAYANGA</div>
-              <div className="font-mono text-[11px] text-sub mt-1">// chemistry educator</div>
+              <div className="font-bebas text-[1.2rem] lg:text-[1.45rem] tracking-[0.12em] text-acid">ASHAN UMAYANGA</div>
+              <div className="font-mono text-[10px] lg:text-[11px] text-sub mt-1">// chemistry educator</div>
             </div>
 
-            <div className="flex gap-5 border-t border-white/10 pt-6">
+            <div className="flex gap-4 lg:gap-5 border-t border-white/10 pt-4 lg:pt-6 mt-4 lg:mt-0">
               {[["A/L", "CHEMISTRY"], ["🏆", "TOP RESULTS"]].map(([v, l], i) => (
                 <div key={i} className="flex-1">
-                  <div className="font-bebas text-[1.4rem] text-acid tracking-wider">{v}</div>
-                  <div className="font-mono text-[9px] text-sub tracking-widest">{l}</div>
+                  <div className="font-bebas text-[1.2rem] lg:text-[1.4rem] text-acid tracking-wider">{v}</div>
+                  <div className="font-mono text-[8px] lg:text-[9px] text-sub tracking-widest">{l}</div>
                 </div>
               ))}
             </div>
@@ -132,7 +132,6 @@ export default function Login() {
           <div className="mb-7">
             <div className="flex items-baseline gap-3 mb-1.5">
               <span className="font-bebas text-[3rem] text-white tracking-wider leading-none">SIGN IN</span>
-              <span className="font-mono text-[10px] text-acid tracking-widest pb-1">_02</span>
             </div>
             <p className="text-sub text-[13px]">Continue your chemistry journey</p>
           </div>
