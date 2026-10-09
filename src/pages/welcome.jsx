@@ -76,14 +76,19 @@ const Welcome = () => {
   return (
     <div className="bg-slate-900 text-white font-sans overflow-x-hidden">
       {/* Header / Login Button */}
-      <div className="absolute top-4 right-4 md:top-8 md:right-8 z-50">
+      <div className="absolute top-4 right-4 md:top-8 md:right-8 z-50 group">
+        <div className="absolute -inset-0.5 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-full blur opacity-60 group-hover:opacity-100 transition duration-500 group-hover:duration-200 animate-pulse"></div>
         <button 
           onClick={() => navigate('/login')}
-          className="flex items-center justify-center gap-2 p-3 md:px-8 md:py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-sm md:text-base font-bold rounded-full transition-all shadow-[0_0_20px_rgba(79,70,229,0.4)] hover:shadow-[0_0_30px_rgba(79,70,229,0.6)] border border-indigo-400 hover:-translate-y-0.5"
+          className="relative flex items-center justify-center gap-2 p-3 md:px-8 md:py-2.5 bg-slate-900 text-white text-sm md:text-base font-bold rounded-full transition-all border border-white/10 hover:scale-105"
           title="Login"
         >
           <LogIn className="w-5 h-5 md:hidden" />
-          <span className="hidden md:block">Login</span>
+          <span className="hidden md:block bg-gradient-to-r from-indigo-200 via-purple-200 to-pink-200 bg-clip-text text-transparent font-extrabold tracking-wide">
+            Sign In
+          </span>
+          <div className="hidden md:block absolute right-3 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></div>
+          <div className="hidden md:block absolute right-3 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-emerald-400"></div>
         </button>
       </div>
 
