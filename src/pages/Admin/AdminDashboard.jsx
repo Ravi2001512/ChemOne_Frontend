@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ClipboardList, Users, BarChart3, Settings, FileText, Bell, BookOpen, ArrowRight, QrCode } from 'lucide-react';
+import { ClipboardList, Users, BarChart3, Settings, FileText, Bell, BookOpen, ArrowRight, QrCode,Video } from 'lucide-react';
 import AdminNavbar from '../../components/AdminNavbar';
 
 /* ─── Main Component ──────────────────────────────────────────── */
@@ -13,6 +13,14 @@ const AdminDashboard = () => {
   }, []);
 
   const dashboardCards = [
+    {
+      title: 'Live Classes',
+      description: 'Manage Live Classes',
+      icon: Video,
+      onClick: () => navigate('/admin/live-classes'),
+      color: 'yellow',
+      tag: 'Live',
+    },
     {
       title: 'Manage Spot Tests',
       description: 'Create, edit, and manage spot tests for students',
@@ -77,6 +85,7 @@ const AdminDashboard = () => {
       color: 'yellow',
       tag: 'QR',
     },
+    
   ];
 
   return (
