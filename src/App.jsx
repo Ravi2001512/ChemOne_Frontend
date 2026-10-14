@@ -27,6 +27,8 @@ import { useEffect } from 'react';
 import AutoLogout from "./components/AutoLogout";
 import Qr from "./pages/Student/Qr";
 import QRscanner from "./pages/Admin/QRscanner";
+import LiveClass from "./pages/Admin/LiveClass";
+import StudentLiveClass from "./pages/Student/LiveClass";
 import Welcome from "./pages/welcome";
 
 const AdminRoute = ({ children }) => {
@@ -93,8 +95,11 @@ function App() {
           <Route path="/admin/students" element={<AdminRoute><ManageStudents /></AdminRoute>} />
           <Route path="/admin/manage-results" element={<AdminRoute><ManageResults /></AdminRoute>} />
           <Route path="/admin/qr-scanner" element={<AdminRoute><QRscanner /></AdminRoute>} />
+          <Route path="/admin/live-classes" element={<AdminRoute><LiveClass /></AdminRoute>} />
+          <Route path="/admin/live-class" element={<AdminRoute><LiveClass /></AdminRoute>} />
 
           <Route path="/student" element={<StudentDashboard />} />
+          <Route path="/student/live-classes" element={<StudentLiveClass />} />
           <Route path="/student/spot-test" element={<ViewSpotTest />} />
           <Route path="/student/spot-test/:id" element={<TakeSpotTest />} />
           <Route path="/student/daily-worksheet" element={<Dailyworksheet />} />
