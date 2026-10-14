@@ -9,6 +9,7 @@ import {
   Gamepad2,
   ArrowRight,
   ExternalLink,
+  Video,
 } from 'lucide-react';
 import StudentNavbar from '../../components/StudentNavbar';
 //import Countdown from '../../components/Countdown';
@@ -32,6 +33,14 @@ const StudentDashboard = () => {
   }, []);
 
   const dashboardCards = [
+    {
+      title: 'Live Classes',
+      description: 'Watch live chemistry streams and lecture replays',
+      icon: Video,
+      onClick: () => navigate('/student/live-classes'),
+      color: 'yellow',
+      tag: 'Live',
+    },
     {
       title: 'Spot Tests',
       description: 'Access your assigned spot tests and timed assessments',
@@ -80,6 +89,7 @@ const StudentDashboard = () => {
       color: 'violet',
       tag: 'About',
     },
+    
   ];
 
   const filteredCards = dashboardCards.filter((card) => {
