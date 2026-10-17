@@ -171,6 +171,8 @@ const StudentLiveClass = () => {
     });
   }, [classes, searchQuery, categoryTab]);
 
+
+
   return (
     <div className="min-h-screen bg-ink text-slate-100 pb-20">
       <StudentNavbar />
@@ -196,11 +198,10 @@ const StudentLiveClass = () => {
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setCategoryTab('live')}
-                className={`px-3 py-1.5 rounded-xl border text-xs font-mono transition-all flex items-center gap-1.5 ${
-                  categoryTab === 'live'
+                className={`px-3 py-1.5 rounded-xl border text-xs font-mono transition-all flex items-center gap-1.5 ${categoryTab === 'live'
                     ? 'bg-red-500/20 border-red-500/40 text-red-300'
                     : 'bg-white/5 border-white/10 text-slate-400 hover:text-white'
-                }`}
+                  }`}
               >
                 <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
                 <span>Live: {liveCount}</span>
@@ -208,11 +209,10 @@ const StudentLiveClass = () => {
 
               <button
                 onClick={() => setCategoryTab('recordings')}
-                className={`px-3 py-1.5 rounded-xl border text-xs font-mono transition-all flex items-center gap-1.5 ${
-                  categoryTab === 'recordings'
+                className={`px-3 py-1.5 rounded-xl border text-xs font-mono transition-all flex items-center gap-1.5 ${categoryTab === 'recordings'
                     ? 'bg-purple-500/20 border-purple-500/40 text-purple-300'
                     : 'bg-white/5 border-white/10 text-slate-400 hover:text-white'
-                }`}
+                  }`}
               >
                 <Film className="w-3.5 h-3.5 text-purple-400" />
                 <span>Recordings: {recordingCount}</span>
@@ -234,18 +234,21 @@ const StudentLiveClass = () => {
         </div>
 
         {/* ── THEATER VIEW ────────────────────────────────────────── */}
-        <div className="mb-10">
+        <div className="mb-10 p-4 sm:p-6 rounded-3xl bg-ink/40 border border-white/5 backdrop-blur-xs">
           {/* Main Video & Details */}
           <div>
-            {/* Player Container */}
-            <div className="aspect-video w-full rounded-2xl overflow-hidden bg-black border border-white/10 shadow-2xl relative">
+            {/* Player Container - Pure Black & Isolated Above Background Video (zIndex: 9999) */}
+            <div
+              className="aspect-video w-full rounded-2xl overflow-hidden bg-black border-2 border-acid/40 shadow-[0_0_30px_rgba(163,255,60,0.25),0_0_60px_rgba(163,255,60,0.12)] relative"
+              style={{ zIndex: 9999 }}
+            >
               {loading && !selectedClass ? (
-                <div className="flex flex-col items-center justify-center h-full text-center p-8 bg-slate-950">
+                <div className="flex flex-col items-center justify-center h-full text-center p-8 bg-black">
                   <div className="w-10 h-10 border-2 border-acid border-t-transparent rounded-full animate-spin mb-3" />
                   <p className="text-xs font-mono text-slate-400">Loading stream theater...</p>
                 </div>
               ) : selectedClass && !selectedHasAccess ? (
-                <div className="flex flex-col items-center justify-center h-full text-center p-8 bg-gradient-to-br from-slate-950 via-slate-900 to-ink border border-amber-500/20">
+                <div className="flex flex-col items-center justify-center h-full text-center p-8 bg-black border border-amber-500/20">
                   <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 mb-4 shadow-xl shadow-amber-500/10">
                     <Lock className="w-8 h-8" />
                   </div>
@@ -272,14 +275,15 @@ const StudentLiveClass = () => {
                 </div>
               ) : activeVideoId ? (
                 <iframe
-                  className="w-full h-full"
+                  className="w-full h-full bg-black"
+                  style={{ background: '#000' }}
                   src={`https://www.youtube.com/embed/${activeVideoId}?autoplay=1&rel=0`}
                   title={selectedClass?.title || 'Chemistry Live Class'}
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   allowFullScreen
                 />
               ) : (
-                <div className="flex flex-col items-center justify-center h-full text-center p-8 bg-slate-950">
+                <div className="flex flex-col items-center justify-center h-full text-center p-8 bg-black">
                   <Tv className="w-16 h-16 text-slate-600 mb-3" />
                   <p className="text-lg font-bold text-white mb-1">No Broadcast Selected</p>
                   <p className="text-xs font-mono text-slate-400">
@@ -405,32 +409,29 @@ const StudentLiveClass = () => {
               <div className="flex items-center gap-1.5 p-1 rounded-xl bg-ink border border-white/10 text-xs font-mono">
                 <button
                   onClick={() => setCategoryTab('all')}
-                  className={`px-3 py-1.5 rounded-lg transition-all ${
-                    categoryTab === 'all'
+                  className={`px-3 py-1.5 rounded-lg transition-all ${categoryTab === 'all'
                       ? 'bg-acid text-black font-bold'
                       : 'text-slate-400 hover:text-white'
-                  }`}
+                    }`}
                 >
                   All ({classes.length})
                 </button>
                 <button
                   onClick={() => setCategoryTab('live')}
-                  className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1 ${
-                    categoryTab === 'live'
+                  className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1 ${categoryTab === 'live'
                       ? 'bg-red-600 text-white font-bold'
                       : 'text-slate-400 hover:text-white'
-                  }`}
+                    }`}
                 >
                   <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-ping" />
                   Live ({liveCount + upcomingCount})
                 </button>
                 <button
                   onClick={() => setCategoryTab('recordings')}
-                  className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1 ${
-                    categoryTab === 'recordings'
+                  className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1 ${categoryTab === 'recordings'
                       ? 'bg-purple-600 text-white font-bold'
                       : 'text-slate-400 hover:text-white'
-                  }`}
+                    }`}
                 >
                   <Film className="w-3 h-3" />
                   Recordings ({recordingCount})
@@ -474,17 +475,16 @@ const StudentLiveClass = () => {
                       setSelectedClass(cls);
                       window.scrollTo({ top: 60, behavior: 'smooth' });
                     }}
-                    className={`rounded-2xl border transition-all duration-300 overflow-hidden cursor-pointer group flex flex-col justify-between ${
-                      isSelected
+                    className={`rounded-2xl border transition-all duration-300 overflow-hidden cursor-pointer group flex flex-col justify-between ${isSelected
                         ? isRecording
                           ? 'border-purple-500 shadow-lg shadow-purple-500/20 bg-slate-900/80 ring-1 ring-purple-500'
                           : 'border-acid shadow-lg shadow-acid/10 bg-slate-900/80 ring-1 ring-acid'
                         : isLive
-                        ? 'border-red-500/50 bg-ink hover:border-red-500'
-                        : isRecording
-                        ? 'border-white/10 bg-ink hover:border-purple-500/30 hover:shadow-xl'
-                        : 'border-white/10 bg-ink hover:border-white/20 hover:shadow-xl'
-                    }`}
+                          ? 'border-red-500/50 bg-ink hover:border-red-500'
+                          : isRecording
+                            ? 'border-white/10 bg-ink hover:border-purple-500/30 hover:shadow-xl'
+                            : 'border-white/10 bg-ink hover:border-white/20 hover:shadow-xl'
+                      }`}
                   >
                     <div>
                       {/* Thumbnail */}
@@ -493,9 +493,8 @@ const StudentLiveClass = () => {
                           <img
                             src={`https://img.youtube.com/vi/${vid}/hqdefault.jpg`}
                             alt={cls.title}
-                            className={`w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 ${
-                              !hasCardAccess ? 'opacity-40 grayscale' : ''
-                            }`}
+                            className={`w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 ${!hasCardAccess ? 'opacity-40 grayscale' : ''
+                              }`}
                           />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center text-slate-600 bg-slate-900">
@@ -554,11 +553,10 @@ const StudentLiveClass = () => {
                       {/* Details */}
                       <div className="p-4">
                         <div className="flex flex-wrap items-center gap-2 mb-2">
-                          <span className={`text-[11px] font-mono px-2 py-0.5 rounded border ${
-                            isRecording
+                          <span className={`text-[11px] font-mono px-2 py-0.5 rounded border ${isRecording
                               ? 'bg-purple-500/10 text-purple-300 border-purple-500/20'
                               : 'bg-white/5 text-slate-400 border-white/10'
-                          }`}>
+                            }`}>
                             Batch: {cls.batch}
                           </span>
 
@@ -579,9 +577,8 @@ const StudentLiveClass = () => {
                           )}
                         </div>
 
-                        <h3 className={`font-bold text-white font-grotesk text-sm line-clamp-2 mb-2 transition-colors ${
-                          isRecording ? 'group-hover:text-purple-300' : 'group-hover:text-acid'
-                        }`}>
+                        <h3 className={`font-bold text-white font-grotesk text-sm line-clamp-2 mb-2 transition-colors ${isRecording ? 'group-hover:text-purple-300' : 'group-hover:text-acid'
+                          }`}>
                           {cls.title}
                         </h3>
 
@@ -594,9 +591,8 @@ const StudentLiveClass = () => {
                     </div>
 
                     <div className="p-3 bg-white/[0.02] border-t border-white/5 flex items-center justify-between text-xs font-mono text-slate-400">
-                      <span className={`flex items-center gap-1 font-semibold ${
-                        !hasCardAccess ? 'text-amber-400' : isRecording ? 'text-purple-400' : 'text-acid'
-                      }`}>
+                      <span className={`flex items-center gap-1 font-semibold ${!hasCardAccess ? 'text-amber-400' : isRecording ? 'text-purple-400' : 'text-acid'
+                        }`}>
                         {hasCardAccess ? (
                           <>
                             <Play className="w-3 h-3" /> {isRecording ? 'Watch Recording' : 'Watch Now'}
