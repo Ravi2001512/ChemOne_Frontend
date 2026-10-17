@@ -8,7 +8,6 @@ import {
   Radio,
   Play,
   Clock,
-  ExternalLink,
   FileText,
   Share2,
   Tv,
@@ -18,7 +17,8 @@ import {
   Film,
   Lock,
   ShieldCheck,
-  Users
+  Users,
+  Eye
 } from 'lucide-react';
 
 const extractYoutubeId = (url) => {
@@ -150,6 +150,90 @@ const StudentLiveClass = () => {
     return checkHasAccess(selectedClass);
   }, [selectedClass, studentIndexNumber, isAdmin]);
 
+  // Helper to get views used by the current student for a given class
+  const getViewsUsed = (cls) => {
+    if (!cls || !studentIndexNumber) return 0;
+    const views = Array.isArray(cls.studentViews) ? cls.studentViews : [];
+    const lower = String(studentIndexNumber).toLowerCase().trim();
+    const entry = views.find(
+      (v) => v.indexNumber && String(v.indexNumber).toLowerCase().trim() === lower
+    );
+    return entry ? Number(entry.count || 0) : 0;
+  };
+
+  const maxViewsPerVideo = selectedClass?.maxViewsPerStudent ?? 3;
+  const currentViewsUsed = useMemo(() => {
+    if (isAdmin) return 0;
+    return getViewsUsed(selectedClass);
+  }, [selectedClass, studentIndexNumber, isAdmin]);
+
+  const viewsRemaining = useMemo(() => {
+    if (isAdmin) return maxViewsPerVideo;
+    return Math.max(0, maxViewsPerVideo - currentViewsUsed);
+  }, [maxViewsPerVideo, currentViewsUsed, isAdmin]);
+
+  const isViewLimitReached = useMemo(() => {
+    if (isAdmin) return false;
+    return currentViewsUsed >= maxViewsPerVideo;
+  }, [isAdmin, currentViewsUsed, maxViewsPerVideo]);
+
+  // Record a view for the student when opening an authorized class
+  useEffect(() => {
+    if (!selectedClass || !selectedClass._id || isAdmin || !studentIndexNumber) return;
+    if (!selectedHasAccess) return;
+    if (currentViewsUsed >= maxViewsPerVideo) return;
+
+    // Use sessionStorage to prevent multiple view counts within the same browser session
+    const sessionKey = `chemone_view_session_${selectedClass._id}_${studentIndexNumber}`;
+    const alreadyRecorded = sessionStorage.getItem(sessionKey);
+
+    if (!alreadyRecorded) {
+      sessionStorage.setItem(sessionKey, 'true');
+      API.post(`/live-classes/${selectedClass._id}/view`, {
+        action: 'record',
+        indexNumber: studentIndexNumber,
+      })
+        .then((res) => {
+          if (res.data && res.data.viewsUsed !== undefined) {
+            const newCount = res.data.viewsUsed;
+            setClasses((prevClasses) =>
+              prevClasses.map((c) => {
+                if (c._id !== selectedClass._id) return c;
+                const existing = Array.isArray(c.studentViews) ? [...c.studentViews] : [];
+                const lower = String(studentIndexNumber).toLowerCase().trim();
+                const idx = existing.findIndex(
+                  (v) => v.indexNumber && String(v.indexNumber).toLowerCase().trim() === lower
+                );
+                if (idx >= 0) {
+                  existing[idx] = { ...existing[idx], count: newCount };
+                } else {
+                  existing.push({ indexNumber: studentIndexNumber, count: newCount });
+                }
+                return { ...c, studentViews: existing };
+              })
+            );
+            setSelectedClass((prev) => {
+              if (!prev || prev._id !== selectedClass._id) return prev;
+              const existing = Array.isArray(prev.studentViews) ? [...prev.studentViews] : [];
+              const lower = String(studentIndexNumber).toLowerCase().trim();
+              const idx = existing.findIndex(
+                (v) => v.indexNumber && String(v.indexNumber).toLowerCase().trim() === lower
+              );
+              if (idx >= 0) {
+                existing[idx] = { ...existing[idx], count: newCount };
+              } else {
+                existing.push({ indexNumber: studentIndexNumber, count: newCount });
+              }
+              return { ...prev, studentViews: existing };
+            });
+          }
+        })
+        .catch((err) => {
+          console.error('Error recording video view:', err);
+        });
+    }
+  }, [selectedClass?._id, selectedHasAccess, studentIndexNumber, isAdmin]);
+
   const liveCount = useMemo(() => classes.filter((c) => c.status === 'live').length, [classes]);
   const upcomingCount = useMemo(() => classes.filter((c) => c.status === 'scheduled').length, [classes]);
   const recordingCount = useMemo(() => classes.filter((c) => c.status === 'ended').length, [classes]);
@@ -273,11 +357,32 @@ const StudentLiveClass = () => {
                     Only selected student index numbers can view this video. Please contact the administrator to request access.
                   </div>
                 </div>
+              ) : isViewLimitReached && activeVideoId ? (
+                <div className="flex flex-col items-center justify-center h-full text-center p-8 bg-black border border-red-500/20">
+                  <div className="w-16 h-16 rounded-2xl bg-red-500/10 border border-red-500/30 flex items-center justify-center text-red-400 mb-4 shadow-xl shadow-red-500/10">
+                    <Eye className="w-8 h-8" />
+                  </div>
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-bold tracking-wider uppercase bg-red-500/20 text-red-300 border border-red-500/30 mb-2">
+                    <Eye className="w-3 h-3" /> View Limit Reached
+                  </span>
+                  <h3 className="text-xl sm:text-2xl font-bold font-grotesk text-white mb-2 max-w-md">
+                    Maximum Views Exhausted
+                  </h3>
+                  <p className="text-xs sm:text-sm text-slate-400 font-grotesk max-w-md mb-4 leading-relaxed">
+                    You have used all <span className="font-mono text-red-300 font-bold bg-red-500/10 px-2 py-0.5 rounded border border-red-500/20">{maxViewsPerVideo}</span> allowed views for this video lecture.
+                    {studentIndexNumber && (
+                      <> Student: <span className="font-mono text-slate-300 font-bold">{studentIndexNumber}</span></>
+                    )}
+                  </p>
+                  <div className="p-3 rounded-xl bg-white/5 border border-white/5 text-xs font-mono text-slate-400 max-w-sm">
+                    Each student is limited to {maxViewsPerVideo} views per video. Please contact your instructor if you need additional access.
+                  </div>
+                </div>
               ) : activeVideoId ? (
                 <iframe
                   className="w-full h-full bg-black"
                   style={{ background: '#000' }}
-                  src={`https://www.youtube.com/embed/${activeVideoId}?autoplay=1&rel=0`}
+                  src={`https://www.youtube.com/embed/${activeVideoId}?autoplay=1&rel=0&modestbranding=1`}
                   title={selectedClass?.title || 'Chemistry Live Class'}
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   allowFullScreen
@@ -337,6 +442,20 @@ const StudentLiveClass = () => {
                         All Registered Students
                       </span>
                     )}
+
+                    {/* View Count Badge */}
+                    {!isAdmin && studentIndexNumber && selectedHasAccess && (
+                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-mono font-semibold tracking-wider uppercase border ${
+                        isViewLimitReached
+                          ? 'bg-red-500/20 text-red-300 border-red-500/30'
+                          : viewsRemaining === 1
+                          ? 'bg-amber-500/20 text-amber-300 border-amber-500/30'
+                          : 'bg-sky-500/20 text-sky-300 border-sky-500/30'
+                      }`}>
+                        <Eye className="w-3.5 h-3.5 mr-1" />
+                        Views: {currentViewsUsed}/{maxViewsPerVideo}
+                      </span>
+                    )}
                   </div>
 
                   {selectedHasAccess && selectedClass.materialsUrl && (
@@ -369,23 +488,6 @@ const StudentLiveClass = () => {
                       {selectedClass.status === 'ended' ? 'On-Demand Lecture Recording' : 'Interactive Broadcast'}
                     </span>
                   </div>
-
-                  {selectedHasAccess ? (
-                    <a
-                      href={selectedClass.youtubeUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-1.5 text-slate-300 hover:text-white transition-colors bg-white/5 px-3 py-1.5 rounded-lg border border-white/10"
-                    >
-                      <span>Watch directly on YouTube</span>
-                      <ExternalLink className="w-3.5 h-3.5" />
-                    </a>
-                  ) : (
-                    <div className="flex items-center gap-1.5 text-amber-400/90 font-mono text-xs bg-amber-500/10 px-3 py-1.5 rounded-lg border border-amber-500/20">
-                      <Lock className="w-3.5 h-3.5" />
-                      <span>Direct video stream locked</span>
-                    </div>
-                  )}
                 </div>
               </div>
             )}
