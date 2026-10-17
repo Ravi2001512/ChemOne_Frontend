@@ -20,14 +20,18 @@ import {
   Eye,
   FileText,
   Layers,
-  MessageSquare,
   RefreshCw,
   Tv,
   Check,
   ChevronRight,
   Info,
   Film,
-  Upload
+  Upload,
+  Lock,
+  Unlock,
+  ShieldCheck,
+  Users,
+  X
 } from 'lucide-react';
 
 // Utility to parse YouTube link and extract 11-char video ID
@@ -45,44 +49,7 @@ const extractYoutubeId = (url) => {
     return cleanUrl;
   }
   return '';
-};
-
-// Initial default live classes for fallback/demo
-const DEFAULT_CLASSES = [
-  {
-    _id: 'demo-1',
-    title: 'Advanced Organic Chemistry - Reaction Mechanisms Masterclass',
-    youtubeUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-    videoId: 'dQw4w9WgXcQ',
-    description: 'In-depth breakdown of nucleophilic substitution (SN1/SN2) with past paper discussion.',
-    batch: '2025 A/L Theory',
-    status: 'live',
-    materialsUrl: 'https://example.com/handout.pdf',
-    allowChat: true,
-  },
-  {
-    _id: 'demo-2',
-    title: 'Chemical Equilibrium & Le Chatelier Principle Revision',
-    youtubeUrl: 'https://www.youtube.com/watch?v=kJQP7kiw5Fk',
-    videoId: 'kJQP7kiw5Fk',
-    description: 'Special numerical problem solving and high-yield question series for A/L candidates.',
-    batch: '2026 A/L Revision',
-    status: 'scheduled',
-    materialsUrl: '',
-    allowChat: true,
-  },
-  {
-    _id: 'rec-demo-1',
-    title: 'Thermochemistry & Hess Law Problem Solving - Class Recording',
-    youtubeUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-    videoId: 'dQw4w9WgXcQ',
-    description: 'Full lecture recording covering enthalpy changes, Born-Haber cycles, and exam numericals.',
-    batch: '2025 A/L Theory',
-    status: 'ended',
-    materialsUrl: 'https://example.com/handout.pdf',
-    allowChat: false,
-  }
-];
+}
 
 const LiveClass = () => {
   // Data state
@@ -111,6 +78,27 @@ const LiveClass = () => {
   const [recBatch, setRecBatch] = useState('All');
   const [recMaterialsUrl, setRecMaterialsUrl] = useState('');
   const [isSubmittingRec, setIsSubmittingRec] = useState(false);
+
+  // Access control state for Live Form
+  const [liveIsRestricted, setLiveIsRestricted] = useState(false);
+  const [liveAllowedStudents, setLiveAllowedStudents] = useState([]);
+
+  // Access control state for Recording Form
+  const [recIsRestricted, setRecIsRestricted] = useState(false);
+  const [recAllowedStudents, setRecAllowedStudents] = useState([]);
+
+  // Students list for Access Control Limit
+  const [students, setStudents] = useState([]);
+  const [loadingStudents, setLoadingStudents] = useState(false);
+
+  // Manage Access Modal state
+  const [accessModalClass, setAccessModalClass] = useState(null);
+  const [modalIsRestricted, setModalIsRestricted] = useState(false);
+  const [modalSelectedStudents, setModalSelectedStudents] = useState([]);
+  const [studentSearch, setStudentSearch] = useState('');
+  const [studentBatchFilter, setStudentBatchFilter] = useState('all');
+  const [manualIndexInput, setManualIndexInput] = useState('');
+  const [savingAccess, setSavingAccess] = useState(false);
 
   // Live Classes Filter & Search
   const [searchQuery, setSearchQuery] = useState('');
@@ -176,6 +164,8 @@ const LiveClass = () => {
     setStatus('scheduled');
     setMaterialsUrl('');
     setAllowChat(true);
+    setLiveIsRestricted(false);
+    setLiveAllowedStudents([]);
   };
 
   // Populate form for editing
@@ -188,6 +178,8 @@ const LiveClass = () => {
     setStatus(cls.status || 'scheduled');
     setMaterialsUrl(cls.materialsUrl || '');
     setAllowChat(cls.allowChat !== undefined ? cls.allowChat : true);
+    setLiveIsRestricted(cls.isRestricted === true);
+    setLiveAllowedStudents(Array.isArray(cls.allowedStudents) ? cls.allowedStudents : []);
 
     // Scroll smoothly to form
     window.scrollTo({ top: 120, behavior: 'smooth' });
@@ -224,6 +216,8 @@ const LiveClass = () => {
       status,
       materialsUrl: materialsUrl.trim(),
       allowChat,
+      isRestricted: liveIsRestricted,
+      allowedStudents: liveAllowedStudents,
     };
 
     try {
@@ -346,6 +340,8 @@ const LiveClass = () => {
     setRecDescription('');
     setRecBatch('All');
     setRecMaterialsUrl('');
+    setRecIsRestricted(false);
+    setRecAllowedStudents([]);
   };
 
   const handleEditRecording = (cls) => {
@@ -355,6 +351,8 @@ const LiveClass = () => {
     setRecDescription(cls.description || '');
     setRecBatch(cls.batch || 'All');
     setRecMaterialsUrl(cls.materialsUrl || '');
+    setRecIsRestricted(cls.isRestricted === true);
+    setRecAllowedStudents(Array.isArray(cls.allowedStudents) ? cls.allowedStudents : []);
 
     // Switch tab if not visible and scroll into view
     setActiveTab((prev) => (prev === 'live' ? 'recordings' : prev));
@@ -393,6 +391,8 @@ const LiveClass = () => {
       status: 'ended', // Treated as recorded replay for student access
       materialsUrl: recMaterialsUrl.trim(),
       allowChat: false,
+      isRestricted: recIsRestricted,
+      allowedStudents: recAllowedStudents,
     };
 
     try {
@@ -480,6 +480,217 @@ const LiveClass = () => {
     });
   }, [recordingClasses, recSearchQuery, recBatchFilter]);
 
+  // Fetch registered students for access control
+  const fetchStudents = async () => {
+    setLoadingStudents(true);
+    try {
+      const res = await API.get('/auth/students');
+      if (res.data && Array.isArray(res.data) && res.data.length > 0) {
+        setStudents(res.data);
+        localStorage.setItem('chemone_cached_students', JSON.stringify(res.data));
+        return;
+      }
+    } catch (err) {
+      console.warn('Failed to load students list from backend:', err);
+    } finally {
+      setLoadingStudents(false);
+    }
+
+    const cached = localStorage.getItem('chemone_cached_students');
+    if (cached) {
+      try {
+        setStudents(JSON.parse(cached));
+      } catch (e) {}
+    }
+  };
+
+  useEffect(() => {
+    fetchStudents();
+  }, []);
+
+  const handleOpenAccessModal = (targetClass) => {
+    if (!targetClass) return;
+    setAccessModalClass(targetClass);
+    setModalIsRestricted(targetClass.isRestricted === true);
+    setModalSelectedStudents(
+      Array.isArray(targetClass.allowedStudents)
+        ? targetClass.allowedStudents.map((s) => String(s).trim()).filter(Boolean)
+        : []
+    );
+    setStudentSearch('');
+    setStudentBatchFilter('all');
+    setManualIndexInput('');
+    if (students.length === 0) {
+      fetchStudents();
+    }
+  };
+
+  const toggleStudentSelection = (indexNumber) => {
+    if (!indexNumber) return;
+    const clean = String(indexNumber).trim();
+    setModalSelectedStudents((prev) => {
+      const exists = prev.some((idx) => idx.toLowerCase() === clean.toLowerCase());
+      if (exists) {
+        return prev.filter((idx) => idx.toLowerCase() !== clean.toLowerCase());
+      } else {
+        return [...prev, clean];
+      }
+    });
+  };
+
+  const handleSelectAllFiltered = (filteredList) => {
+    if (!Array.isArray(filteredList)) return;
+    const newIndices = filteredList
+      .map((s) => (s.indexNumber ? String(s.indexNumber).trim() : null))
+      .filter(Boolean);
+    setModalSelectedStudents((prev) => {
+      const combined = [...prev];
+      newIndices.forEach((idx) => {
+        if (!combined.some((item) => item.toLowerCase() === idx.toLowerCase())) {
+          combined.push(idx);
+        }
+      });
+      return combined;
+    });
+  };
+
+  const handleDeselectAll = () => {
+    setModalSelectedStudents([]);
+  };
+
+  const handleAddManualIndex = () => {
+    if (!manualIndexInput.trim()) return;
+    const clean = manualIndexInput.trim().toUpperCase();
+    setModalSelectedStudents((prev) => {
+      if (!prev.some((idx) => idx.toLowerCase() === clean.toLowerCase())) {
+        toast.success(`Added index number ${clean}`);
+        return [...prev, clean];
+      } else {
+        toast.error(`Index ${clean} is already selected`);
+        return prev;
+      }
+    });
+    setManualIndexInput('');
+  };
+
+  const handleSaveAccess = async () => {
+    if (!accessModalClass) return;
+    setSavingAccess(true);
+
+    const cleanAllowed = Array.from(
+      new Set(modalSelectedStudents.map((s) => String(s).trim()).filter(Boolean))
+    );
+
+    // Case 1: Draft Live class before saving
+    if (accessModalClass.isDraftLive) {
+      setLiveIsRestricted(modalIsRestricted);
+      setLiveAllowedStudents(cleanAllowed);
+      toast.success(
+        modalIsRestricted
+          ? `Access restricted to ${cleanAllowed.length} selected students.`
+          : 'Access opened to all registered students.'
+      );
+      setAccessModalClass(null);
+      setSavingAccess(false);
+      return;
+    }
+
+    // Case 2: Draft Recording before saving
+    if (accessModalClass.isDraftRec) {
+      setRecIsRestricted(modalIsRestricted);
+      setRecAllowedStudents(cleanAllowed);
+      toast.success(
+        modalIsRestricted
+          ? `Access restricted to ${cleanAllowed.length} selected students.`
+          : 'Access opened to all registered students.'
+      );
+      setAccessModalClass(null);
+      setSavingAccess(false);
+      return;
+    }
+
+    // Case 3: Saved class in database / state
+    const targetId = accessModalClass._id;
+    try {
+      const res = await API.patch(`/live-classes/${targetId}/access`, {
+        isRestricted: modalIsRestricted,
+        allowedStudents: cleanAllowed,
+      });
+
+      const updated = res.data || {
+        ...accessModalClass,
+        isRestricted: modalIsRestricted,
+        allowedStudents: cleanAllowed,
+      };
+
+      const nextClasses = classes.map((c) => (c._id === targetId ? { ...c, ...updated } : c));
+      setClasses(nextClasses);
+      saveLocalBackup(nextClasses);
+
+      if (editingId === targetId) {
+        setLiveIsRestricted(modalIsRestricted);
+        setLiveAllowedStudents(cleanAllowed);
+      }
+      if (editingRecordingId === targetId) {
+        setRecIsRestricted(modalIsRestricted);
+        setRecAllowedStudents(cleanAllowed);
+      }
+      if (previewClass && previewClass._id === targetId) {
+        setPreviewClass((prev) => ({ ...prev, isRestricted: modalIsRestricted, allowedStudents: cleanAllowed }));
+      }
+
+      toast.success(
+        modalIsRestricted
+          ? `Access restricted to ${cleanAllowed.length} student index numbers.`
+          : 'Access opened to all registered students.'
+      );
+      setAccessModalClass(null);
+    } catch (err) {
+      console.warn('API update failed, updating local state:', err);
+      const nextClasses = classes.map((c) =>
+        c._id === targetId ? { ...c, isRestricted: modalIsRestricted, allowedStudents: cleanAllowed } : c
+      );
+      setClasses(nextClasses);
+      saveLocalBackup(nextClasses);
+
+      if (editingId === targetId) {
+        setLiveIsRestricted(modalIsRestricted);
+        setLiveAllowedStudents(cleanAllowed);
+      }
+      if (editingRecordingId === targetId) {
+        setRecIsRestricted(modalIsRestricted);
+        setRecAllowedStudents(cleanAllowed);
+      }
+      if (previewClass && previewClass._id === targetId) {
+        setPreviewClass((prev) => ({ ...prev, isRestricted: modalIsRestricted, allowedStudents: cleanAllowed }));
+      }
+
+      toast.success('Access limits saved locally.');
+      setAccessModalClass(null);
+    } finally {
+      setSavingAccess(false);
+    }
+  };
+
+  const filteredStudents = useMemo(() => {
+    return students.filter((stu) => {
+      const idx = (stu.indexNumber || '').toLowerCase();
+      const name = (stu.name || '').toLowerCase();
+      const q = studentSearch.toLowerCase().trim();
+      const matchesSearch = !q || idx.includes(q) || name.includes(q);
+      const matchesBatch = studentBatchFilter === 'all' || stu.batch === studentBatchFilter;
+      return matchesSearch && matchesBatch;
+    });
+  }, [students, studentSearch, studentBatchFilter]);
+
+  const uniqueStudentBatches = useMemo(() => {
+    const bSet = new Set();
+    students.forEach((s) => {
+      if (s.batch) bSet.add(s.batch);
+    });
+    return Array.from(bSet);
+  }, [students]);
+
   return (
     <div className="min-h-screen bg-ink text-slate-100 pb-20 transition-colors duration-300">
       <AdminNavbar />
@@ -505,7 +716,7 @@ const LiveClass = () => {
                 Live Classes & <span className="text-acid">YouTube Broadcast</span>
               </h1>
               <p className="text-sm sm:text-base text-slate-400 max-w-2xl font-grotesk mt-1">
-                Configure live streams, paste YouTube links, set target student batches, and broadcast interactive chemistry lessons seamlessly.
+                Configure live streams, paste YouTube links, and broadcast interactive chemistry lessons seamlessly.
               </p>
             </div>
 
@@ -675,6 +886,14 @@ const LiveClass = () => {
                     Copy Student Link
                   </button>
 
+                  <button
+                    onClick={() => handleOpenAccessModal(activeLiveClass)}
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-500/20 text-amber-300 font-mono text-xs hover:bg-amber-500/30 transition-all border border-amber-500/30"
+                  >
+                    <ShieldCheck className="w-4 h-4" />
+                    Manage Access ({activeLiveClass.isRestricted ? `${activeLiveClass.allowedStudents?.length || 0} Allowed` : 'All'})
+                  </button>
+
                   <a
                     href={activeLiveClass.youtubeUrl}
                     target="_blank"
@@ -797,71 +1016,50 @@ const LiveClass = () => {
                 />
               </div>
 
-              {/* 3. Batch & Broadcast Status */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-mono font-semibold uppercase tracking-wider text-slate-300 mb-2 flex items-center gap-1.5">
-                    <Layers className="w-3.5 h-3.5 text-acid" />
-                    Target Batch
-                  </label>
-                  <select
-                    value={batch}
-                    onChange={(e) => setBatch(e.target.value)}
-                    className="w-full bg-ink/70 border border-white/10 rounded-xl px-4 py-3 text-sm text-white font-mono focus:outline-none focus:border-acid transition-all"
+              {/* 3. Broadcast Status */}
+              <div>
+                <label className="block text-xs font-mono font-semibold uppercase tracking-wider text-slate-300 mb-2">
+                  Broadcast Status
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setStatus('live')}
+                    className={`px-3 py-2.5 rounded-xl text-xs font-mono font-bold tracking-wider uppercase border transition-all flex items-center justify-center gap-1.5 ${
+                      status === 'live'
+                        ? 'bg-red-500/20 text-red-400 border-red-500 shadow-lg shadow-red-500/20'
+                        : 'bg-ink/50 text-slate-400 border-white/10 hover:border-white/20'
+                    }`}
                   >
-                    <option value="All">All Students / Public</option>
-                    <option value="2025 A/L Theory">2025 A/L Theory</option>
-                    <option value="2025 A/L Revision">2025 A/L Revision</option>
-                    <option value="2026 A/L Theory">2026 A/L Theory</option>
-                    <option value="2026 A/L Revision">2026 A/L Revision</option>
-                    <option value="Special Paper Class">Special Paper Class</option>
-                  </select>
-                </div>
+                    <span className={`w-2 h-2 rounded-full ${status === 'live' ? 'bg-red-500 animate-ping' : 'bg-slate-500'}`} />
+                    Live Now
+                  </button>
 
-                <div>
-                  <label className="block text-xs font-mono font-semibold uppercase tracking-wider text-slate-300 mb-2">
-                    Broadcast Status
-                  </label>
-                  <div className="grid grid-cols-3 gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setStatus('live')}
-                      className={`px-3 py-2.5 rounded-xl text-xs font-mono font-bold tracking-wider uppercase border transition-all flex items-center justify-center gap-1.5 ${
-                        status === 'live'
-                          ? 'bg-red-500/20 text-red-400 border-red-500 shadow-lg shadow-red-500/20'
-                          : 'bg-ink/50 text-slate-400 border-white/10 hover:border-white/20'
-                      }`}
-                    >
-                      <span className={`w-2 h-2 rounded-full ${status === 'live' ? 'bg-red-500 animate-ping' : 'bg-slate-500'}`} />
-                      Live Now
-                    </button>
+                  <button
+                    type="button"
+                    onClick={() => setStatus('scheduled')}
+                    className={`px-3 py-2.5 rounded-xl text-xs font-mono font-bold tracking-wider uppercase border transition-all flex items-center justify-center gap-1.5 ${
+                      status === 'scheduled'
+                        ? 'bg-amber-500/20 text-amber-300 border-amber-500 shadow-lg shadow-amber-500/20'
+                        : 'bg-ink/50 text-slate-400 border-white/10 hover:border-white/20'
+                    }`}
+                  >
+                    <Clock className="w-3.5 h-3.5" />
+                    Upcoming
+                  </button>
 
-                    <button
-                      type="button"
-                      onClick={() => setStatus('scheduled')}
-                      className={`px-3 py-2.5 rounded-xl text-xs font-mono font-bold tracking-wider uppercase border transition-all flex items-center justify-center gap-1.5 ${
-                        status === 'scheduled'
-                          ? 'bg-amber-500/20 text-amber-300 border-amber-500 shadow-lg shadow-amber-500/20'
-                          : 'bg-ink/50 text-slate-400 border-white/10 hover:border-white/20'
-                      }`}
-                    >
-                      <Clock className="w-3.5 h-3.5" />
-                      Upcoming
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setStatus('ended')}
-                      className={`px-3 py-2.5 rounded-xl text-xs font-mono font-bold tracking-wider uppercase border transition-all flex items-center justify-center gap-1.5 ${
-                        status === 'ended'
-                          ? 'bg-slate-500/20 text-slate-200 border-slate-400'
-                          : 'bg-ink/50 text-slate-400 border-white/10 hover:border-white/20'
-                      }`}
-                    >
-                      <Check className="w-3.5 h-3.5" />
-                      Ended
-                    </button>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setStatus('ended')}
+                    className={`px-3 py-2.5 rounded-xl text-xs font-mono font-bold tracking-wider uppercase border transition-all flex items-center justify-center gap-1.5 ${
+                      status === 'ended'
+                        ? 'bg-slate-500/20 text-slate-200 border-slate-400'
+                        : 'bg-ink/50 text-slate-400 border-white/10 hover:border-white/20'
+                    }`}
+                  >
+                    <Check className="w-3.5 h-3.5" />
+                    Ended
+                  </button>
                 </div>
               </div>
 
@@ -879,40 +1077,55 @@ const LiveClass = () => {
                 />
               </div>
 
-              {/* 6. Handout PDF / Material Link & Chat Toggle */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
-                <div>
-                  <label className="block text-xs font-mono font-semibold uppercase tracking-wider text-slate-300 mb-2 flex items-center gap-1.5">
-                    <FileText className="w-3.5 h-3.5 text-acid" />
-                    Handout / Study Material URL (Optional)
-                  </label>
-                  <input
-                    type="url"
-                    value={materialsUrl}
-                    onChange={(e) => setMaterialsUrl(e.target.value)}
-                    placeholder="https://drive.google.com/... or PDF link"
-                    className="w-full bg-ink/70 border border-white/10 rounded-xl px-4 py-2.5 text-sm font-mono text-white placeholder-slate-500 focus:outline-none focus:border-acid transition-all"
-                  />
-                </div>
+              {/* 5. Handout PDF / Material Link */}
+              <div className="pt-1">
+                <label className="block text-xs font-mono font-semibold uppercase tracking-wider text-slate-300 mb-2 flex items-center gap-1.5">
+                  <FileText className="w-3.5 h-3.5 text-acid" />
+                  Handout / Study Material URL (Optional)
+                </label>
+                <input
+                  type="url"
+                  value={materialsUrl}
+                  onChange={(e) => setMaterialsUrl(e.target.value)}
+                  placeholder="https://drive.google.com/... or PDF link"
+                  className="w-full bg-ink/70 border border-white/10 rounded-xl px-4 py-2.5 text-sm font-mono text-white placeholder-slate-500 focus:outline-none focus:border-acid transition-all"
+                />
+              </div>
 
-                <div className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/10 self-end">
-                  <div className="flex items-center gap-2">
-                    <MessageSquare className="w-4 h-4 text-acid" />
-                    <div>
-                      <div className="text-xs font-mono font-semibold text-white">Live Student Chat</div>
-                      <div className="text-[11px] text-slate-400">Allow Q&A during class</div>
+              {/* 6. Access Limit Status & Configuration */}
+              <div className="p-3.5 rounded-xl bg-white/5 border border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5">
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                    liveIsRestricted ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' : 'bg-acid/15 text-acid border border-acid/30'
+                  }`}>
+                    {liveIsRestricted ? <Lock className="w-4 h-4" /> : <Users className="w-4 h-4" />}
+                  </div>
+                  <div>
+                    <div className="text-xs font-mono font-bold text-white">
+                      {liveIsRestricted ? 'Restricted Access (Selected Index Numbers)' : 'Open to All Registered Students'}
+                    </div>
+                    <div className="text-[11px] text-slate-400">
+                      {liveIsRestricted
+                        ? `${liveAllowedStudents.length} student index numbers permitted to view`
+                        : 'No student index restrictions applied'}
                     </div>
                   </div>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={allowChat}
-                      onChange={(e) => setAllowChat(e.target.checked)}
-                      className="sr-only peer"
-                    />
-                    <div className="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-acid"></div>
-                  </label>
                 </div>
+
+                <button
+                  type="button"
+                  onClick={() => handleOpenAccessModal({
+                    _id: editingId || 'draft-live',
+                    title: title || 'Live Broadcast',
+                    isRestricted: liveIsRestricted,
+                    allowedStudents: liveAllowedStudents,
+                    isDraftLive: !editingId
+                  })}
+                  className="px-3.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/15 text-white font-mono text-xs border border-white/15 flex items-center justify-center gap-1.5"
+                >
+                  <ShieldCheck className="w-3.5 h-3.5 text-acid" />
+                  Manage Access Limit
+                </button>
               </div>
 
               {/* 7. Action Buttons */}
@@ -999,6 +1212,42 @@ const LiveClass = () => {
                     </p>
                   </div>
                 )}
+              </div>
+
+              {/* Manage Access Limit quick bar on video preview */}
+              <div className="mt-3 p-3.5 rounded-xl bg-white/5 border border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                    liveIsRestricted ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                  }`}>
+                    {liveIsRestricted ? <Lock className="w-4 h-4" /> : <Users className="w-4 h-4" />}
+                  </div>
+                  <div>
+                    <div className="text-xs font-mono font-bold text-white">
+                      {liveIsRestricted ? 'Restricted Access Active' : 'Access Limit: All Students'}
+                    </div>
+                    <div className="text-[11px] text-slate-400 font-grotesk">
+                      {liveIsRestricted
+                        ? `${liveAllowedStudents.length} student index numbers granted access`
+                        : 'Every registered student can watch this stream'}
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => handleOpenAccessModal({
+                    _id: editingId || 'draft-live',
+                    title: title || 'Live Broadcast',
+                    isRestricted: liveIsRestricted,
+                    allowedStudents: liveAllowedStudents,
+                    isDraftLive: !editingId
+                  })}
+                  className="px-3.5 py-2 rounded-xl bg-acid text-black font-mono font-bold text-xs hover:bg-acid/90 transition-all shadow-md shadow-acid/20 flex items-center justify-center gap-1.5"
+                >
+                  <ShieldCheck className="w-4 h-4" />
+                  Manage Access
+                </button>
               </div>
 
               {/* Video metadata snippet */}
@@ -1189,10 +1438,20 @@ const LiveClass = () => {
 
                       {/* Content details */}
                       <div className="p-5">
-                        <div className="flex items-center gap-2 mb-2">
+                        <div className="flex flex-wrap items-center gap-2 mb-2">
                           <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-white/5 text-slate-400">
                             Batch: {cls.batch}
                           </span>
+
+                          {cls.isRestricted ? (
+                            <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30 flex items-center gap-1 font-semibold">
+                              <Lock className="w-2.5 h-2.5" /> {cls.allowedStudents?.length || 0} Allowed
+                            </span>
+                          ) : (
+                            <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-white/5 text-slate-400 border border-white/10 flex items-center gap-1">
+                              <Users className="w-2.5 h-2.5" /> All Students
+                            </span>
+                          )}
                         </div>
 
                         <h3 className="font-bold text-white font-grotesk text-base line-clamp-2 mb-2 group-hover:text-acid transition-colors">
@@ -1248,6 +1507,15 @@ const LiveClass = () => {
                         >
                           <ExternalLink className="w-4 h-4" />
                         </a>
+                        {/* Manage Access Limit Button */}
+                        <button
+                          onClick={() => handleOpenAccessModal(cls)}
+                          title="Manage Student Access Limits"
+                          className="px-2 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/20 text-xs font-mono flex items-center gap-1 transition-colors"
+                        >
+                          <ShieldCheck className="w-3.5 h-3.5" />
+                          <span className="hidden sm:inline">Access</span>
+                        </button>
                       </div>
 
                       <div className="flex items-center gap-1">
@@ -1411,40 +1679,19 @@ const LiveClass = () => {
                 />
               </div>
 
-              {/* Target Batch & Handout PDF Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-mono font-semibold uppercase tracking-wider text-slate-300 mb-2 flex items-center gap-1.5">
-                    <Layers className="w-3.5 h-3.5 text-purple-400" />
-                    Target Batch
-                  </label>
-                  <select
-                    value={recBatch}
-                    onChange={(e) => setRecBatch(e.target.value)}
-                    className="w-full bg-ink/70 border border-white/10 rounded-xl px-4 py-3 text-sm text-white font-mono focus:outline-none focus:border-purple-400 transition-all"
-                  >
-                    <option value="All">All Students / Public</option>
-                    <option value="2025 A/L Theory">2025 A/L Theory</option>
-                    <option value="2025 A/L Revision">2025 A/L Revision</option>
-                    <option value="2026 A/L Theory">2026 A/L Theory</option>
-                    <option value="2026 A/L Revision">2026 A/L Revision</option>
-                    <option value="Special Paper Class">Special Paper Class</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-mono font-semibold uppercase tracking-wider text-slate-300 mb-2 flex items-center gap-1.5">
-                    <FileText className="w-3.5 h-3.5 text-purple-400" />
-                    Handout / Notes PDF (Optional)
-                  </label>
-                  <input
-                    type="url"
-                    value={recMaterialsUrl}
-                    onChange={(e) => setRecMaterialsUrl(e.target.value)}
-                    placeholder="https://drive.google.com/... or PDF link"
-                    className="w-full bg-ink/70 border border-white/10 rounded-xl px-4 py-2.5 text-sm font-mono text-white placeholder-slate-500 focus:outline-none focus:border-purple-400 transition-all"
-                  />
-                </div>
+              {/* Handout PDF */}
+              <div>
+                <label className="block text-xs font-mono font-semibold uppercase tracking-wider text-slate-300 mb-2 flex items-center gap-1.5">
+                  <FileText className="w-3.5 h-3.5 text-purple-400" />
+                  Handout / Notes PDF (Optional)
+                </label>
+                <input
+                  type="url"
+                  value={recMaterialsUrl}
+                  onChange={(e) => setRecMaterialsUrl(e.target.value)}
+                  placeholder="https://drive.google.com/... or PDF link"
+                  className="w-full bg-ink/70 border border-white/10 rounded-xl px-4 py-2.5 text-sm font-mono text-white placeholder-slate-500 focus:outline-none focus:border-purple-400 transition-all"
+                />
               </div>
 
               {/* Recording Description */}
@@ -1459,6 +1706,42 @@ const LiveClass = () => {
                   placeholder="Outline topics covered in this recording, recommended textbook references, or problem set questions..."
                   className="w-full bg-ink/70 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-purple-400 font-grotesk transition-all"
                 />
+              </div>
+
+              {/* Access Limit Status & Configuration */}
+              <div className="p-4 rounded-xl bg-white/5 border border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5">
+                  <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${
+                    recIsRestricted ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' : 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
+                  }`}>
+                    {recIsRestricted ? <Lock className="w-4 h-4" /> : <Users className="w-4 h-4" />}
+                  </div>
+                  <div>
+                    <div className="text-xs font-mono font-bold text-white">
+                      {recIsRestricted ? 'Restricted Access Active' : 'Public to All Registered Students'}
+                    </div>
+                    <div className="text-[11px] text-slate-400 font-grotesk">
+                      {recIsRestricted
+                        ? `${recAllowedStudents.length} student index numbers granted access`
+                        : 'Every registered student can replay this recording'}
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => handleOpenAccessModal({
+                    _id: editingRecordingId || 'draft-rec',
+                    title: recTitle || 'Recording Lecture',
+                    isRestricted: recIsRestricted,
+                    allowedStudents: recAllowedStudents,
+                    isDraftRec: !editingRecordingId
+                  })}
+                  className="px-3.5 py-2 rounded-xl bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 border border-purple-500/40 text-xs font-mono font-semibold transition-all flex items-center justify-center gap-1.5"
+                >
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                  Manage Access Limit
+                </button>
               </div>
 
               {/* Submit Actions */}
@@ -1568,10 +1851,7 @@ const LiveClass = () => {
                   <span className="text-purple-400 font-mono font-bold">•</span>
                   <span>Published recordings immediately appear under <strong>Recorded Replays</strong> in the student theater portal.</span>
                 </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-purple-400 font-mono font-bold">•</span>
-                  <span>Target batches ensure only enrolled students or public viewers see designated class lectures.</span>
-                </li>
+
                 <li className="flex items-start gap-2">
                   <span className="text-purple-400 font-mono font-bold">•</span>
                   <span>Attach accompanying revision PDF handouts so students can follow along while rewatching.</span>
@@ -1687,6 +1967,15 @@ const LiveClass = () => {
                           <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-purple-500/10 text-purple-300 border border-purple-500/20">
                             Batch: {cls.batch}
                           </span>
+                          {cls.isRestricted ? (
+                            <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30 flex items-center gap-1 font-semibold">
+                              <Lock className="w-2.5 h-2.5" /> {cls.allowedStudents?.length || 0} Allowed
+                            </span>
+                          ) : (
+                            <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-white/5 text-slate-400 border border-white/10 flex items-center gap-1">
+                              <Users className="w-2.5 h-2.5" /> All Students
+                            </span>
+                          )}
                           {cls.materialsUrl && (
                             <a
                               href={cls.materialsUrl}
@@ -1734,6 +2023,16 @@ const LiveClass = () => {
                         >
                           <ExternalLink className="w-4 h-4" />
                         </a>
+
+                        {/* Manage Access Limit Button */}
+                        <button
+                          onClick={() => handleOpenAccessModal(cls)}
+                          title="Manage Student Access Limits"
+                          className="px-2 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/20 text-xs font-mono flex items-center gap-1 transition-colors"
+                        >
+                          <ShieldCheck className="w-3.5 h-3.5" />
+                          <span className="hidden sm:inline">Access</span>
+                        </button>
                       </div>
 
                       <div className="flex items-center gap-1">
@@ -1800,6 +2099,14 @@ const LiveClass = () => {
                 </div>
                 <div className="flex items-center gap-3">
                   <button
+                    onClick={() => handleOpenAccessModal(previewClass)}
+                    className="px-4 py-2 rounded-xl bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 border border-amber-500/30 font-semibold text-xs font-mono flex items-center gap-1.5 transition-colors"
+                  >
+                    <ShieldCheck className="w-3.5 h-3.5" />
+                    Manage Access
+                  </button>
+
+                  <button
                     onClick={() => handleCopyLink(previewClass)}
                     className="px-4 py-2 rounded-xl bg-acid text-black font-semibold text-xs font-mono flex items-center gap-1.5"
                   >
@@ -1807,6 +2114,317 @@ const LiveClass = () => {
                     Copy Student Link
                   </button>
                 </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── MANAGE ACCESS MODAL ────────────────────────────────────── */}
+        {accessModalClass && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
+            <div className="bg-ink border border-white/15 rounded-2xl max-w-2xl w-full flex flex-col max-h-[90vh] overflow-hidden shadow-2xl">
+              {/* Header */}
+              <div className="flex items-center justify-between p-5 border-b border-white/10 bg-white/[0.02]">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-acid/10 border border-acid/30 flex items-center justify-center text-acid">
+                    <ShieldCheck className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-white text-lg font-grotesk flex items-center gap-2">
+                      Manage Access Limit
+                      <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full uppercase ${
+                        accessModalClass.status === 'ended'
+                          ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
+                          : 'bg-red-500/20 text-red-400 border border-red-500/30'
+                      }`}>
+                        {accessModalClass.status === 'ended' ? 'Recording' : 'Live Stream'}
+                      </span>
+                    </h3>
+                    <p className="text-xs text-slate-400 font-mono truncate max-w-md">
+                      {accessModalClass.title}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setAccessModalClass(null)}
+                  className="text-slate-400 hover:text-white p-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Modal Body */}
+              <div className="p-6 overflow-y-auto space-y-6 flex-1">
+                {/* Access Mode Selector */}
+                <div>
+                  <label className="block text-xs font-mono font-semibold uppercase tracking-wider text-slate-300 mb-3">
+                    Access Level Setting
+                  </label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setModalIsRestricted(false)}
+                      className={`p-4 rounded-xl border text-left transition-all flex flex-col justify-between gap-2 ${
+                        !modalIsRestricted
+                          ? 'bg-acid/10 border-acid shadow-lg shadow-acid/10 ring-1 ring-acid'
+                          : 'bg-white/5 border-white/10 hover:border-white/20'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="font-grotesk font-bold text-white text-sm flex items-center gap-2">
+                          <Users className="w-4 h-4 text-acid" />
+                          All Registered Students
+                        </span>
+                        {!modalIsRestricted && (
+                          <span className="w-2.5 h-2.5 rounded-full bg-acid shadow-sm shadow-acid" />
+                        )}
+                      </div>
+                      <p className="text-xs text-slate-400 font-grotesk">
+                        Public to all students. Any registered student account can watch this lecture.
+                      </p>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setModalIsRestricted(true)}
+                      className={`p-4 rounded-xl border text-left transition-all flex flex-col justify-between gap-2 ${
+                        modalIsRestricted
+                          ? 'bg-amber-500/10 border-amber-500 shadow-lg shadow-amber-500/10 ring-1 ring-amber-500'
+                          : 'bg-white/5 border-white/10 hover:border-white/20'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="font-grotesk font-bold text-white text-sm flex items-center gap-2">
+                          <Lock className="w-4 h-4 text-amber-400" />
+                          Restricted Access
+                        </span>
+                        {modalIsRestricted && (
+                          <span className="w-2.5 h-2.5 rounded-full bg-amber-500 shadow-sm shadow-amber-500" />
+                        )}
+                      </div>
+                      <p className="text-xs text-slate-400 font-grotesk">
+                        Only students with explicitly selected index numbers below will have access.
+                      </p>
+                    </button>
+                  </div>
+                </div>
+
+                {/* When Restricted Access is Active: Show Student Index Numbers Selector */}
+                {modalIsRestricted && (
+                  <div className="space-y-4 pt-2 border-t border-white/10">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div>
+                        <h4 className="text-sm font-bold font-grotesk text-white flex items-center gap-2">
+                          Select Permitted Student Index Numbers
+                        </h4>
+                        <p className="text-xs text-slate-400 font-mono">
+                          Check each index number that should be allowed to watch
+                        </p>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <span className="px-3 py-1 rounded-full text-xs font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                          {modalSelectedStudents.length} Selected
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleSelectAllFiltered(filteredStudents)}
+                          className="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 text-xs font-mono border border-white/10"
+                        >
+                          Select All
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleDeselectAll}
+                          className="px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 text-slate-400 text-xs font-mono border border-white/10"
+                        >
+                          Clear
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Search & Batch Filters */}
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <div className="relative flex-1">
+                        <Search className="w-4 h-4 absolute left-3 top-2.5 text-slate-500" />
+                        <input
+                          type="text"
+                          placeholder="Search by student index (e.g. STU-2025-) or name..."
+                          value={studentSearch}
+                          onChange={(e) => setStudentSearch(e.target.value)}
+                          className="w-full bg-ink border border-white/10 rounded-xl pl-9 pr-4 py-2 text-xs font-mono text-white placeholder-slate-500 focus:outline-none focus:border-amber-400"
+                        />
+                      </div>
+
+                      {uniqueStudentBatches.length > 0 && (
+                        <select
+                          value={studentBatchFilter}
+                          onChange={(e) => setStudentBatchFilter(e.target.value)}
+                          className="bg-ink border border-white/10 rounded-xl px-3 py-2 text-xs font-mono text-slate-300 focus:outline-none focus:border-amber-400"
+                        >
+                          <option value="all">All Batches</option>
+                          {uniqueStudentBatches.map((b) => (
+                            <option key={b} value={b}>{b}</option>
+                          ))}
+                        </select>
+                      )}
+                    </div>
+
+                    {/* Manual Index Input (for added flexibility) */}
+                    <div className="flex items-center gap-2 p-2 rounded-xl bg-white/[0.02] border border-white/5">
+                      <input
+                        type="text"
+                        placeholder="Or enter custom index number (e.g. STU-2025-0015)..."
+                        value={manualIndexInput}
+                        onChange={(e) => setManualIndexInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleAddManualIndex();
+                          }
+                        }}
+                        className="flex-1 bg-transparent px-3 py-1.5 text-xs font-mono text-white placeholder-slate-500 focus:outline-none"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleAddManualIndex}
+                        className="px-3 py-1.5 rounded-lg bg-amber-500 text-black font-mono font-bold text-xs hover:bg-amber-400 transition-all"
+                      >
+                        Add Index
+                      </button>
+                    </div>
+
+                    {/* Student list */}
+                    <div className="border border-white/10 rounded-xl bg-black/40 overflow-hidden">
+                      <div className="max-h-60 overflow-y-auto divide-y divide-white/5">
+                        {loadingStudents ? (
+                          <div className="p-8 text-center text-slate-400 font-mono text-xs flex flex-col items-center justify-center gap-2">
+                            <RefreshCw className="w-5 h-5 animate-spin text-amber-400" />
+                            Loading registered students...
+                          </div>
+                        ) : filteredStudents.length === 0 ? (
+                          <div className="p-8 text-center text-slate-400 font-mono text-xs">
+                            {students.length === 0
+                              ? 'No registered students found. You can add index numbers manually above.'
+                              : 'No students match the search filter.'}
+                          </div>
+                        ) : (
+                          filteredStudents.map((stu) => {
+                            const idxNum = String(stu.indexNumber || (stu._id ? 'STU-' + stu._id.slice(-4).toUpperCase() : '')).trim();
+                            const isChecked = modalSelectedStudents.some(
+                              (i) => String(i).toLowerCase().trim() === idxNum.toLowerCase()
+                            );
+
+                            return (
+                              <div
+                                key={stu._id || idxNum}
+                                onClick={() => toggleStudentSelection(idxNum)}
+                                className={`p-3 flex items-center justify-between cursor-pointer transition-colors select-none ${
+                                  isChecked
+                                    ? 'bg-amber-500/15 hover:bg-amber-500/20 border-l-2 border-amber-400'
+                                    : 'hover:bg-white/5'
+                                }`}
+                              >
+                                <div className="flex items-center gap-3">
+                                  <input
+                                    type="checkbox"
+                                    checked={isChecked}
+                                    readOnly
+                                    className="w-4 h-4 rounded text-amber-500 bg-ink border-white/20 focus:ring-amber-400 pointer-events-none"
+                                  />
+                                  <div>
+                                    <div className="flex items-center gap-2">
+                                      <span className="font-mono text-xs font-bold text-white bg-white/10 px-2 py-0.5 rounded border border-white/10">
+                                        {idxNum || 'NO-INDEX'}
+                                      </span>
+                                      <span className="font-grotesk font-semibold text-xs text-slate-200">
+                                        {stu.name}
+                                      </span>
+                                    </div>
+                                    <div className="text-[11px] font-mono text-slate-400 mt-0.5">
+                                      {stu.batch || 'Batch Not Assigned'} • {stu.email}
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <div>
+                                  {isChecked ? (
+                                    <span className="inline-flex items-center gap-1 text-[11px] font-mono text-amber-300 font-semibold bg-amber-500/20 px-2 py-0.5 rounded">
+                                      <Check className="w-3 h-3" /> Allowed
+                                    </span>
+                                  ) : (
+                                    <span className="text-[11px] font-mono text-slate-500">
+                                      No Access
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Selected Index Numbers Tags preview */}
+                    {modalSelectedStudents.length > 0 && (
+                      <div>
+                        <label className="block text-[11px] font-mono uppercase text-slate-400 mb-1.5">
+                          Selected Index Numbers ({modalSelectedStudents.length}):
+                        </label>
+                        <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto p-2 rounded-xl bg-white/[0.02] border border-white/5">
+                          {modalSelectedStudents.map((idx) => (
+                            <span
+                              key={idx}
+                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[11px] font-mono"
+                            >
+                              {idx}
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleStudentSelection(idx);
+                                }}
+                                className="hover:text-white"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Footer */}
+              <div className="p-4 border-t border-white/10 flex items-center justify-between bg-white/[0.02]">
+                <button
+                  type="button"
+                  onClick={() => setAccessModalClass(null)}
+                  className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 font-mono text-xs transition-colors"
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleSaveAccess}
+                  disabled={savingAccess}
+                  className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-black font-mono font-bold text-xs uppercase tracking-wider transition-all shadow-lg shadow-amber-500/20 flex items-center gap-2"
+                >
+                  {savingAccess ? (
+                    <>
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                      Saving Access Limit...
+                    </>
+                  ) : (
+                    <>
+                      <ShieldCheck className="w-3.5 h-3.5" />
+                      Apply Access Limits
+                    </>
+                  )}
+                </button>
               </div>
             </div>
           </div>

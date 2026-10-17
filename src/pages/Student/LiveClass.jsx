@@ -8,17 +8,17 @@ import {
   Radio,
   Play,
   Clock,
-  ExternalLink,
   FileText,
-  MessageSquare,
-  Sparkles,
   Share2,
   Tv,
   Check,
   Search,
   BookOpen,
   Film,
-  Layers
+  Lock,
+  ShieldCheck,
+  Users,
+  Eye
 } from 'lucide-react';
 
 const extractYoutubeId = (url) => {
@@ -69,7 +69,6 @@ const StudentLiveClass = () => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [copied, setCopied] = useState(false);
-  const [showChat, setShowChat] = useState(true);
   const [categoryTab, setCategoryTab] = useState('all'); // 'all', 'live', 'recordings'
 
   // Fetch classes
@@ -124,6 +123,117 @@ const StudentLiveClass = () => {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const currentUser = useMemo(() => {
+    try {
+      return JSON.parse(sessionStorage.getItem('user')) || null;
+    } catch {
+      return null;
+    }
+  }, []);
+
+  const studentIndexNumber = currentUser?.indexNumber;
+  const isAdmin = currentUser?.role === 'admin' || currentUser?.role === 'instructor';
+
+  // Helper to verify if the student has access to a given class
+  const checkHasAccess = (cls) => {
+    if (!cls) return false;
+    if (isAdmin) return true;
+    if (!cls.isRestricted) return true;
+    if (!studentIndexNumber) return false;
+    const allowed = Array.isArray(cls.allowedStudents) ? cls.allowedStudents : [];
+    return allowed.some(
+      (idx) => String(idx).toLowerCase().trim() === String(studentIndexNumber).toLowerCase().trim()
+    );
+  };
+
+  const selectedHasAccess = useMemo(() => {
+    return checkHasAccess(selectedClass);
+  }, [selectedClass, studentIndexNumber, isAdmin]);
+
+  // Helper to get views used by the current student for a given class
+  const getViewsUsed = (cls) => {
+    if (!cls || !studentIndexNumber) return 0;
+    const views = Array.isArray(cls.studentViews) ? cls.studentViews : [];
+    const lower = String(studentIndexNumber).toLowerCase().trim();
+    const entry = views.find(
+      (v) => v.indexNumber && String(v.indexNumber).toLowerCase().trim() === lower
+    );
+    return entry ? Number(entry.count || 0) : 0;
+  };
+
+  const maxViewsPerVideo = selectedClass?.maxViewsPerStudent ?? 3;
+  const currentViewsUsed = useMemo(() => {
+    if (isAdmin) return 0;
+    return getViewsUsed(selectedClass);
+  }, [selectedClass, studentIndexNumber, isAdmin]);
+
+  const viewsRemaining = useMemo(() => {
+    if (isAdmin) return maxViewsPerVideo;
+    return Math.max(0, maxViewsPerVideo - currentViewsUsed);
+  }, [maxViewsPerVideo, currentViewsUsed, isAdmin]);
+
+  const isViewLimitReached = useMemo(() => {
+    if (isAdmin) return false;
+    return currentViewsUsed >= maxViewsPerVideo;
+  }, [isAdmin, currentViewsUsed, maxViewsPerVideo]);
+
+  // Record a view for the student when opening an authorized class
+  useEffect(() => {
+    if (!selectedClass || !selectedClass._id || isAdmin || !studentIndexNumber) return;
+    if (!selectedHasAccess) return;
+    if (currentViewsUsed >= maxViewsPerVideo) return;
+
+    // Use sessionStorage to prevent multiple view counts within the same browser session
+    const sessionKey = `chemone_view_session_${selectedClass._id}_${studentIndexNumber}`;
+    const alreadyRecorded = sessionStorage.getItem(sessionKey);
+
+    if (!alreadyRecorded) {
+      sessionStorage.setItem(sessionKey, 'true');
+      API.post(`/live-classes/${selectedClass._id}/view`, {
+        action: 'record',
+        indexNumber: studentIndexNumber,
+      })
+        .then((res) => {
+          if (res.data && res.data.viewsUsed !== undefined) {
+            const newCount = res.data.viewsUsed;
+            setClasses((prevClasses) =>
+              prevClasses.map((c) => {
+                if (c._id !== selectedClass._id) return c;
+                const existing = Array.isArray(c.studentViews) ? [...c.studentViews] : [];
+                const lower = String(studentIndexNumber).toLowerCase().trim();
+                const idx = existing.findIndex(
+                  (v) => v.indexNumber && String(v.indexNumber).toLowerCase().trim() === lower
+                );
+                if (idx >= 0) {
+                  existing[idx] = { ...existing[idx], count: newCount };
+                } else {
+                  existing.push({ indexNumber: studentIndexNumber, count: newCount });
+                }
+                return { ...c, studentViews: existing };
+              })
+            );
+            setSelectedClass((prev) => {
+              if (!prev || prev._id !== selectedClass._id) return prev;
+              const existing = Array.isArray(prev.studentViews) ? [...prev.studentViews] : [];
+              const lower = String(studentIndexNumber).toLowerCase().trim();
+              const idx = existing.findIndex(
+                (v) => v.indexNumber && String(v.indexNumber).toLowerCase().trim() === lower
+              );
+              if (idx >= 0) {
+                existing[idx] = { ...existing[idx], count: newCount };
+              } else {
+                existing.push({ indexNumber: studentIndexNumber, count: newCount });
+              }
+              return { ...prev, studentViews: existing };
+            });
+          }
+        })
+        .catch((err) => {
+          console.error('Error recording video view:', err);
+        });
+    }
+  }, [selectedClass?._id, selectedHasAccess, studentIndexNumber, isAdmin]);
+
   const liveCount = useMemo(() => classes.filter((c) => c.status === 'live').length, [classes]);
   const upcomingCount = useMemo(() => classes.filter((c) => c.status === 'scheduled').length, [classes]);
   const recordingCount = useMemo(() => classes.filter((c) => c.status === 'ended').length, [classes]);
@@ -144,6 +254,8 @@ const StudentLiveClass = () => {
       return matchesSearch;
     });
   }, [classes, searchQuery, categoryTab]);
+
+
 
   return (
     <div className="min-h-screen bg-ink text-slate-100 pb-20">
@@ -170,11 +282,10 @@ const StudentLiveClass = () => {
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setCategoryTab('live')}
-                className={`px-3 py-1.5 rounded-xl border text-xs font-mono transition-all flex items-center gap-1.5 ${
-                  categoryTab === 'live'
+                className={`px-3 py-1.5 rounded-xl border text-xs font-mono transition-all flex items-center gap-1.5 ${categoryTab === 'live'
                     ? 'bg-red-500/20 border-red-500/40 text-red-300'
                     : 'bg-white/5 border-white/10 text-slate-400 hover:text-white'
-                }`}
+                  }`}
               >
                 <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
                 <span>Live: {liveCount}</span>
@@ -182,11 +293,10 @@ const StudentLiveClass = () => {
 
               <button
                 onClick={() => setCategoryTab('recordings')}
-                className={`px-3 py-1.5 rounded-xl border text-xs font-mono transition-all flex items-center gap-1.5 ${
-                  categoryTab === 'recordings'
+                className={`px-3 py-1.5 rounded-xl border text-xs font-mono transition-all flex items-center gap-1.5 ${categoryTab === 'recordings'
                     ? 'bg-purple-500/20 border-purple-500/40 text-purple-300'
                     : 'bg-white/5 border-white/10 text-slate-400 hover:text-white'
-                }`}
+                  }`}
               >
                 <Film className="w-3.5 h-3.5 text-purple-400" />
                 <span>Recordings: {recordingCount}</span>
@@ -202,44 +312,83 @@ const StudentLiveClass = () => {
                   {copied ? <Check className="w-3.5 h-3.5 text-acid" /> : <Share2 className="w-3.5 h-3.5" />}
                   Share
                 </button>
-
-                <button
-                  onClick={() => setShowChat(!showChat)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-mono border transition-colors ${
-                    showChat
-                      ? 'bg-acid/10 border-acid/30 text-acid'
-                      : 'bg-white/5 border-white/10 text-slate-400 hover:text-white'
-                  }`}
-                >
-                  <MessageSquare className="w-3.5 h-3.5" />
-                  {showChat ? 'Hide Chat' : 'Show Chat'}
-                </button>
               </div>
             )}
           </div>
         </div>
 
         {/* ── THEATER VIEW ────────────────────────────────────────── */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-10">
-          {/* Main Video & Details (8 or 12 Cols) */}
-          <div className={showChat ? 'lg:col-span-8' : 'lg:col-span-12'}>
-            {/* Player Container */}
-            <div className="aspect-video w-full rounded-2xl overflow-hidden bg-black border border-white/10 shadow-2xl relative">
+        <div className="mb-10 p-4 sm:p-6 rounded-3xl bg-ink/40 border border-white/5 backdrop-blur-xs">
+          {/* Main Video & Details */}
+          <div>
+            {/* Player Container - Pure Black & Isolated Above Background Video (zIndex: 9999) */}
+            <div
+              className="aspect-video w-full rounded-2xl overflow-hidden bg-black border-2 border-acid/40 shadow-[0_0_30px_rgba(163,255,60,0.25),0_0_60px_rgba(163,255,60,0.12)] relative"
+              style={{ zIndex: 9999 }}
+            >
               {loading && !selectedClass ? (
-                <div className="flex flex-col items-center justify-center h-full text-center p-8 bg-slate-950">
+                <div className="flex flex-col items-center justify-center h-full text-center p-8 bg-black">
                   <div className="w-10 h-10 border-2 border-acid border-t-transparent rounded-full animate-spin mb-3" />
                   <p className="text-xs font-mono text-slate-400">Loading stream theater...</p>
                 </div>
+              ) : selectedClass && !selectedHasAccess ? (
+                <div className="flex flex-col items-center justify-center h-full text-center p-8 bg-black border border-amber-500/20">
+                  <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 mb-4 shadow-xl shadow-amber-500/10">
+                    <Lock className="w-8 h-8" />
+                  </div>
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-bold tracking-wider uppercase bg-amber-500/20 text-amber-300 border border-amber-500/30 mb-2">
+                    <Lock className="w-3 h-3" /> Access Limit Active
+                  </span>
+                  <h3 className="text-xl sm:text-2xl font-bold font-grotesk text-white mb-2 max-w-md">
+                    Restricted Access Lecture
+                  </h3>
+                  <p className="text-xs sm:text-sm text-slate-400 font-grotesk max-w-md mb-4 leading-relaxed">
+                    {studentIndexNumber ? (
+                      <>
+                        Your student index number <span className="font-mono text-amber-300 font-bold bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">{studentIndexNumber}</span> has not been authorized to stream this session.
+                      </>
+                    ) : (
+                      <>
+                        This class is restricted to specific enrolled students. Please log in with your student index number to verify access.
+                      </>
+                    )}
+                  </p>
+                  <div className="p-3 rounded-xl bg-white/5 border border-white/5 text-xs font-mono text-slate-400 max-w-sm">
+                    Only selected student index numbers can view this video. Please contact the administrator to request access.
+                  </div>
+                </div>
+              ) : isViewLimitReached && activeVideoId ? (
+                <div className="flex flex-col items-center justify-center h-full text-center p-8 bg-black border border-red-500/20">
+                  <div className="w-16 h-16 rounded-2xl bg-red-500/10 border border-red-500/30 flex items-center justify-center text-red-400 mb-4 shadow-xl shadow-red-500/10">
+                    <Eye className="w-8 h-8" />
+                  </div>
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-bold tracking-wider uppercase bg-red-500/20 text-red-300 border border-red-500/30 mb-2">
+                    <Eye className="w-3 h-3" /> View Limit Reached
+                  </span>
+                  <h3 className="text-xl sm:text-2xl font-bold font-grotesk text-white mb-2 max-w-md">
+                    Maximum Views Exhausted
+                  </h3>
+                  <p className="text-xs sm:text-sm text-slate-400 font-grotesk max-w-md mb-4 leading-relaxed">
+                    You have used all <span className="font-mono text-red-300 font-bold bg-red-500/10 px-2 py-0.5 rounded border border-red-500/20">{maxViewsPerVideo}</span> allowed views for this video lecture.
+                    {studentIndexNumber && (
+                      <> Student: <span className="font-mono text-slate-300 font-bold">{studentIndexNumber}</span></>
+                    )}
+                  </p>
+                  <div className="p-3 rounded-xl bg-white/5 border border-white/5 text-xs font-mono text-slate-400 max-w-sm">
+                    Each student is limited to {maxViewsPerVideo} views per video. Please contact your instructor if you need additional access.
+                  </div>
+                </div>
               ) : activeVideoId ? (
                 <iframe
-                  className="w-full h-full"
-                  src={`https://www.youtube.com/embed/${activeVideoId}?autoplay=1&rel=0`}
+                  className="w-full h-full bg-black"
+                  style={{ background: '#000' }}
+                  src={`https://www.youtube.com/embed/${activeVideoId}?autoplay=1&rel=0&modestbranding=1`}
                   title={selectedClass?.title || 'Chemistry Live Class'}
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   allowFullScreen
                 />
               ) : (
-                <div className="flex flex-col items-center justify-center h-full text-center p-8 bg-slate-950">
+                <div className="flex flex-col items-center justify-center h-full text-center p-8 bg-black">
                   <Tv className="w-16 h-16 text-slate-600 mb-3" />
                   <p className="text-lg font-bold text-white mb-1">No Broadcast Selected</p>
                   <p className="text-xs font-mono text-slate-400">
@@ -274,9 +423,42 @@ const StudentLiveClass = () => {
                     <span className="px-3 py-1 rounded-full text-xs font-mono bg-white/5 text-slate-300 border border-white/10">
                       Batch: {selectedClass.batch}
                     </span>
+
+                    {selectedClass.isRestricted ? (
+                      selectedHasAccess ? (
+                        <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-mono font-semibold tracking-wider uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                          <ShieldCheck className="w-3.5 h-3.5 mr-1 text-emerald-400" />
+                          Access Granted {studentIndexNumber ? `(${studentIndexNumber})` : ''}
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-mono font-semibold tracking-wider uppercase bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                          <Lock className="w-3.5 h-3.5 mr-1" />
+                          Restricted Access
+                        </span>
+                      )
+                    ) : (
+                      <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-mono text-slate-300 bg-white/5 border border-white/10">
+                        <Users className="w-3.5 h-3.5 mr-1 text-slate-400" />
+                        All Registered Students
+                      </span>
+                    )}
+
+                    {/* View Count Badge */}
+                    {!isAdmin && studentIndexNumber && selectedHasAccess && (
+                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-mono font-semibold tracking-wider uppercase border ${
+                        isViewLimitReached
+                          ? 'bg-red-500/20 text-red-300 border-red-500/30'
+                          : viewsRemaining === 1
+                          ? 'bg-amber-500/20 text-amber-300 border-amber-500/30'
+                          : 'bg-sky-500/20 text-sky-300 border-sky-500/30'
+                      }`}>
+                        <Eye className="w-3.5 h-3.5 mr-1" />
+                        Views: {currentViewsUsed}/{maxViewsPerVideo}
+                      </span>
+                    )}
                   </div>
 
-                  {selectedClass.materialsUrl && (
+                  {selectedHasAccess && selectedClass.materialsUrl && (
                     <a
                       href={selectedClass.materialsUrl}
                       target="_blank"
@@ -306,88 +488,10 @@ const StudentLiveClass = () => {
                       {selectedClass.status === 'ended' ? 'On-Demand Lecture Recording' : 'Interactive Broadcast'}
                     </span>
                   </div>
-
-                  <a
-                    href={selectedClass.youtubeUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-1.5 text-slate-300 hover:text-white transition-colors bg-white/5 px-3 py-1.5 rounded-lg border border-white/10"
-                  >
-                    <span>Watch directly on YouTube</span>
-                    <ExternalLink className="w-3.5 h-3.5" />
-                  </a>
                 </div>
               </div>
             )}
           </div>
-
-          {/* Right: Live Chat / Discussion Sidebar (4 Cols) */}
-          {showChat && (
-            <div className="lg:col-span-4 flex flex-col h-[520px] rounded-2xl bg-ink-lighter border border-white/10 shadow-2xl overflow-hidden">
-              <div className="p-4 border-b border-white/10 flex items-center justify-between bg-white/[0.02]">
-                <div className="flex items-center gap-2">
-                  <MessageSquare className="w-4 h-4 text-acid" />
-                  <span className="font-mono text-xs font-bold uppercase tracking-wider text-white">
-                    {selectedClass?.status === 'ended' ? 'Lecture Information' : 'Class Live Discussion'}
-                  </span>
-                </div>
-                <span className="text-[11px] font-mono text-slate-500">
-                  {selectedClass?.status === 'ended' ? 'Replay' : 'Live Q&A'}
-                </span>
-              </div>
-
-              {/* Chat iframe or Discussion Guidance */}
-              <div className="flex-1 flex flex-col justify-between p-4 bg-black/40">
-                <div className="space-y-3">
-                  {selectedClass?.status === 'ended' ? (
-                    <>
-                      <div className="p-3 rounded-xl bg-purple-500/10 border border-purple-500/20 text-xs text-slate-300 font-grotesk">
-                        <div className="font-mono font-bold text-purple-400 text-[11px] mb-1 flex items-center gap-1.5">
-                          <Film className="w-3.5 h-3.5" /> Class Recording Replay
-                        </div>
-                        You are watching an archived lecture recording. Take notes at your own pace and revisit key reactions anytime.
-                      </div>
-
-                      {selectedClass.materialsUrl && (
-                        <div className="p-3 rounded-xl bg-white/5 border border-white/5 text-xs text-slate-300 font-grotesk">
-                          <span className="text-acid font-mono font-semibold">Lecture Handout:</span> Download the attached study handout PDF above for practice problems.
-                        </div>
-                      )}
-                    </>
-                  ) : (
-                    <>
-                      <div className="p-3 rounded-xl bg-white/5 border border-white/5 text-xs text-slate-300 font-grotesk">
-                        <div className="font-mono font-bold text-acid text-[11px] mb-1 flex items-center gap-1">
-                          <Sparkles className="w-3 h-3" /> ChemBridge Live Assistant
-                        </div>
-                        Welcome to today's live class! Keep your questions focused on the chemical principles and reaction mechanisms being discussed.
-                      </div>
-
-                      <div className="p-3 rounded-xl bg-white/5 border border-white/5 text-xs text-slate-400 font-grotesk">
-                        <span className="text-white font-mono font-semibold">Teacher's Note:</span> Download the accompanying lecture worksheet before solving practice problems.
-                      </div>
-                    </>
-                  )}
-                </div>
-
-                <div className="pt-4 border-t border-white/10">
-                  <a
-                    href={selectedClass?.youtubeUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={`w-full py-2.5 px-4 rounded-xl text-white font-mono text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-all shadow-lg ${
-                      selectedClass?.status === 'ended'
-                        ? 'bg-purple-600 hover:bg-purple-500 shadow-purple-600/20'
-                        : 'bg-red-600 hover:bg-red-500 shadow-red-600/20'
-                    }`}
-                  >
-                    <ExternalLink className="w-3.5 h-3.5" />
-                    {selectedClass?.status === 'ended' ? 'Open Recording on YouTube' : 'Open YouTube Live Chat'}
-                  </a>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
 
         {/* ── ALL SESSIONS & REPLAYS ──────────────────────────────── */}
@@ -407,32 +511,29 @@ const StudentLiveClass = () => {
               <div className="flex items-center gap-1.5 p-1 rounded-xl bg-ink border border-white/10 text-xs font-mono">
                 <button
                   onClick={() => setCategoryTab('all')}
-                  className={`px-3 py-1.5 rounded-lg transition-all ${
-                    categoryTab === 'all'
+                  className={`px-3 py-1.5 rounded-lg transition-all ${categoryTab === 'all'
                       ? 'bg-acid text-black font-bold'
                       : 'text-slate-400 hover:text-white'
-                  }`}
+                    }`}
                 >
                   All ({classes.length})
                 </button>
                 <button
                   onClick={() => setCategoryTab('live')}
-                  className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1 ${
-                    categoryTab === 'live'
+                  className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1 ${categoryTab === 'live'
                       ? 'bg-red-600 text-white font-bold'
                       : 'text-slate-400 hover:text-white'
-                  }`}
+                    }`}
                 >
                   <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-ping" />
                   Live ({liveCount + upcomingCount})
                 </button>
                 <button
                   onClick={() => setCategoryTab('recordings')}
-                  className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1 ${
-                    categoryTab === 'recordings'
+                  className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1 ${categoryTab === 'recordings'
                       ? 'bg-purple-600 text-white font-bold'
                       : 'text-slate-400 hover:text-white'
-                  }`}
+                    }`}
                 >
                   <Film className="w-3 h-3" />
                   Recordings ({recordingCount})
@@ -467,6 +568,7 @@ const StudentLiveClass = () => {
                 const isSelected = selectedClass?._id === cls._id;
                 const isLive = cls.status === 'live';
                 const isRecording = cls.status === 'ended';
+                const hasCardAccess = checkHasAccess(cls);
 
                 return (
                   <div
@@ -475,17 +577,16 @@ const StudentLiveClass = () => {
                       setSelectedClass(cls);
                       window.scrollTo({ top: 60, behavior: 'smooth' });
                     }}
-                    className={`rounded-2xl border transition-all duration-300 overflow-hidden cursor-pointer group flex flex-col justify-between ${
-                      isSelected
+                    className={`rounded-2xl border transition-all duration-300 overflow-hidden cursor-pointer group flex flex-col justify-between ${isSelected
                         ? isRecording
                           ? 'border-purple-500 shadow-lg shadow-purple-500/20 bg-slate-900/80 ring-1 ring-purple-500'
                           : 'border-acid shadow-lg shadow-acid/10 bg-slate-900/80 ring-1 ring-acid'
                         : isLive
-                        ? 'border-red-500/50 bg-ink hover:border-red-500'
-                        : isRecording
-                        ? 'border-white/10 bg-ink hover:border-purple-500/30 hover:shadow-xl'
-                        : 'border-white/10 bg-ink hover:border-white/20 hover:shadow-xl'
-                    }`}
+                          ? 'border-red-500/50 bg-ink hover:border-red-500'
+                          : isRecording
+                            ? 'border-white/10 bg-ink hover:border-purple-500/30 hover:shadow-xl'
+                            : 'border-white/10 bg-ink hover:border-white/20 hover:shadow-xl'
+                      }`}
                   >
                     <div>
                       {/* Thumbnail */}
@@ -494,7 +595,8 @@ const StudentLiveClass = () => {
                           <img
                             src={`https://img.youtube.com/vi/${vid}/hqdefault.jpg`}
                             alt={cls.title}
-                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                            className={`w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 ${!hasCardAccess ? 'opacity-40 grayscale' : ''
+                              }`}
                           />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center text-slate-600 bg-slate-900">
@@ -502,7 +604,7 @@ const StudentLiveClass = () => {
                           </div>
                         )}
 
-                        <div className="absolute top-3 left-3">
+                        <div className="absolute top-3 left-3 flex items-center gap-1.5">
                           {isLive ? (
                             <span className="px-2.5 py-1 rounded-full text-[11px] font-mono font-bold tracking-wider uppercase bg-red-600 text-white shadow-lg flex items-center gap-1.5">
                               <span className="w-2 h-2 rounded-full bg-white animate-ping" />
@@ -520,27 +622,65 @@ const StudentLiveClass = () => {
                           )}
                         </div>
 
+                        {/* Top-Right Access Indicator */}
+                        <div className="absolute top-3 right-3">
+                          {cls.isRestricted ? (
+                            hasCardAccess ? (
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-600/90 text-white shadow-lg flex items-center gap-1 backdrop-blur-xs">
+                                <ShieldCheck className="w-3 h-3" /> ACCESS
+                              </span>
+                            ) : (
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-amber-600/90 text-white shadow-lg flex items-center gap-1 backdrop-blur-xs">
+                                <Lock className="w-3 h-3" /> LOCKED
+                              </span>
+                            )
+                          ) : null}
+                        </div>
+
                         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white gap-2 font-mono text-xs font-semibold backdrop-blur-xs">
-                          <Play className="w-6 h-6 fill-white" />
-                          {isRecording ? 'Play Recording' : 'Play Stream'}
+                          {hasCardAccess ? (
+                            <>
+                              <Play className="w-6 h-6 fill-white" />
+                              {isRecording ? 'Play Recording' : 'Play Stream'}
+                            </>
+                          ) : (
+                            <>
+                              <Lock className="w-5 h-5 text-amber-400" />
+                              <span className="text-amber-300">Restricted Access</span>
+                            </>
+                          )}
                         </div>
                       </div>
 
                       {/* Details */}
                       <div className="p-4">
-                        <div className="flex items-center gap-2 mb-2">
-                          <span className={`text-[11px] font-mono px-2 py-0.5 rounded border ${
-                            isRecording
+                        <div className="flex flex-wrap items-center gap-2 mb-2">
+                          <span className={`text-[11px] font-mono px-2 py-0.5 rounded border ${isRecording
                               ? 'bg-purple-500/10 text-purple-300 border-purple-500/20'
                               : 'bg-white/5 text-slate-400 border-white/10'
-                          }`}>
+                            }`}>
                             Batch: {cls.batch}
                           </span>
+
+                          {cls.isRestricted ? (
+                            hasCardAccess ? (
+                              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 flex items-center gap-1">
+                                <ShieldCheck className="w-2.5 h-2.5" /> Access Granted
+                              </span>
+                            ) : (
+                              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/10 text-amber-300 border border-amber-500/20 flex items-center gap-1 font-semibold">
+                                <Lock className="w-2.5 h-2.5" /> Restricted Access
+                              </span>
+                            )
+                          ) : (
+                            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-white/5 text-slate-400 border border-white/10 flex items-center gap-1">
+                              <Users className="w-2.5 h-2.5" /> All Students
+                            </span>
+                          )}
                         </div>
 
-                        <h3 className={`font-bold text-white font-grotesk text-sm line-clamp-2 mb-2 transition-colors ${
-                          isRecording ? 'group-hover:text-purple-300' : 'group-hover:text-acid'
-                        }`}>
+                        <h3 className={`font-bold text-white font-grotesk text-sm line-clamp-2 mb-2 transition-colors ${isRecording ? 'group-hover:text-purple-300' : 'group-hover:text-acid'
+                          }`}>
                           {cls.title}
                         </h3>
 
@@ -553,12 +693,19 @@ const StudentLiveClass = () => {
                     </div>
 
                     <div className="p-3 bg-white/[0.02] border-t border-white/5 flex items-center justify-between text-xs font-mono text-slate-400">
-                      <span className={`flex items-center gap-1 font-semibold ${
-                        isRecording ? 'text-purple-400' : 'text-acid'
-                      }`}>
-                        <Play className="w-3 h-3" /> {isRecording ? 'Watch Recording' : 'Watch Now'}
+                      <span className={`flex items-center gap-1 font-semibold ${!hasCardAccess ? 'text-amber-400' : isRecording ? 'text-purple-400' : 'text-acid'
+                        }`}>
+                        {hasCardAccess ? (
+                          <>
+                            <Play className="w-3 h-3" /> {isRecording ? 'Watch Recording' : 'Watch Now'}
+                          </>
+                        ) : (
+                          <>
+                            <Lock className="w-3 h-3 text-amber-400" /> Access Locked
+                          </>
+                        )}
                       </span>
-                      {cls.materialsUrl && (
+                      {hasCardAccess && cls.materialsUrl && (
                         <span className="flex items-center gap-1 text-slate-400">
                           <BookOpen className="w-3 h-3" /> Handout
                         </span>
