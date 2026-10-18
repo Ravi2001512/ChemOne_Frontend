@@ -1,17 +1,14 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate, useLocation } from 'react-router-dom';
 import StudentNavbar from '../../components/StudentNavbar';
 import API from '../../services/api';
-import toast from 'react-hot-toast';
 import {
   Video,
   Radio,
   Play,
   Clock,
   FileText,
-  Share2,
   Tv,
-  Check,
   Search,
   BookOpen,
   Film,
@@ -61,18 +58,51 @@ const DEFAULT_CLASSES = [
 ];
 
 const StudentLiveClass = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams] = useSearchParams();
   const requestedId = searchParams.get('id');
+
+  const token = sessionStorage.getItem('token');
+  const currentUser = useMemo(() => {
+    try {
+      return JSON.parse(sessionStorage.getItem('user')) || null;
+    } catch {
+      return null;
+    }
+  }, []);
+
+  // Security Verification: Only genuine website-registered students (or instructors) can view videos
+  const isRegisteredStudent = Boolean(
+    token &&
+    token !== 'guest-token' &&
+    currentUser &&
+    (currentUser.role === 'student' || currentUser.role === 'instructor' || currentUser.role === 'admin')
+  );
+
+  // Automatically redirect unauthorized users / guests with direct link to login UI
+  useEffect(() => {
+    if (!isRegisteredStudent) {
+      navigate('/login', {
+        replace: true,
+        state: {
+          from: location.pathname + location.search,
+          message: 'Please log in with your registered student account to view class videos.',
+        },
+      });
+    }
+  }, [isRegisteredStudent, navigate, location]);
 
   const [classes, setClasses] = useState([]);
   const [selectedClass, setSelectedClass] = useState(null);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [copied, setCopied] = useState(false);
   const [categoryTab, setCategoryTab] = useState('all'); // 'all', 'live', 'recordings'
 
   // Fetch classes
   useEffect(() => {
+    if (!isRegisteredStudent) return;
+
     const loadClasses = async () => {
       setLoading(true);
       try {
@@ -82,8 +112,17 @@ const StudentLiveClass = () => {
           selectInitial(res.data);
           return;
         }
-      } catch {
-        // Fallback to local storage
+      } catch (err) {
+        if (err.response?.status === 401) {
+          navigate('/login', {
+            replace: true,
+            state: {
+              from: location.pathname + location.search,
+              message: 'Session expired or unauthorized. Please log in with your registered student account.',
+            },
+          });
+          return;
+        }
       } finally {
         setLoading(false);
       }
@@ -109,34 +148,19 @@ const StudentLiveClass = () => {
     };
 
     loadClasses();
-  }, [requestedId]);
+  }, [requestedId, isRegisteredStudent, navigate, location]);
 
   const activeVideoId = useMemo(() => {
-    if (!selectedClass) return '';
+    if (!isRegisteredStudent || !selectedClass) return '';
     return selectedClass.videoId || extractYoutubeId(selectedClass.youtubeUrl);
-  }, [selectedClass]);
-
-  const handleShare = () => {
-    navigator.clipboard.writeText(window.location.href);
-    setCopied(true);
-    toast.success('Link copied to clipboard!');
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  const currentUser = useMemo(() => {
-    try {
-      return JSON.parse(sessionStorage.getItem('user')) || null;
-    } catch {
-      return null;
-    }
-  }, []);
+  }, [selectedClass, isRegisteredStudent]);
 
   const studentIndexNumber = currentUser?.indexNumber;
   const isAdmin = currentUser?.role === 'admin' || currentUser?.role === 'instructor';
 
   // Helper to verify if the student has access to a given class
   const checkHasAccess = (cls) => {
-    if (!cls) return false;
+    if (!cls || !isRegisteredStudent) return false;
     if (isAdmin) return true;
     if (!cls.isRestricted) return true;
     if (!studentIndexNumber) return false;
@@ -148,7 +172,7 @@ const StudentLiveClass = () => {
 
   const selectedHasAccess = useMemo(() => {
     return checkHasAccess(selectedClass);
-  }, [selectedClass, studentIndexNumber, isAdmin]);
+  }, [selectedClass, studentIndexNumber, isAdmin, isRegisteredStudent]);
 
   // Helper to get views used by the current student for a given class
   const getViewsUsed = (cls) => {
@@ -255,7 +279,15 @@ const StudentLiveClass = () => {
     });
   }, [classes, searchQuery, categoryTab]);
 
-
+  if (!isRegisteredStudent) {
+    return (
+      <div className="min-h-screen bg-ink flex flex-col items-center justify-center p-6 text-center">
+        <div className="w-12 h-12 border-2 border-acid border-t-transparent rounded-full animate-spin mb-4" />
+        <p className="font-mono text-sm text-slate-300">Redirecting to login...</p>
+        <p className="font-mono text-xs text-slate-500 mt-1">Website registered student access required.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-ink text-slate-100 pb-20">
@@ -302,18 +334,6 @@ const StudentLiveClass = () => {
                 <span>Recordings: {recordingCount}</span>
               </button>
             </div>
-
-            {selectedClass && (
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={handleShare}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 text-xs font-mono text-slate-300 transition-colors"
-                >
-                  {copied ? <Check className="w-3.5 h-3.5 text-acid" /> : <Share2 className="w-3.5 h-3.5" />}
-                  Share
-                </button>
-              </div>
-            )}
           </div>
         </div>
 
