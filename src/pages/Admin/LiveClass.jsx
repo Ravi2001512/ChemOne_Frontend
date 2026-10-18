@@ -79,13 +79,15 @@ const LiveClass = () => {
   const [recMaterialsUrl, setRecMaterialsUrl] = useState('');
   const [isSubmittingRec, setIsSubmittingRec] = useState(false);
 
-  // Access control state for Live Form
+  // Access & View Limit control state for Live Form
   const [liveIsRestricted, setLiveIsRestricted] = useState(false);
   const [liveAllowedStudents, setLiveAllowedStudents] = useState([]);
+  const [liveMaxViews, setLiveMaxViews] = useState(3);
 
-  // Access control state for Recording Form
+  // Access & View Limit control state for Recording Form
   const [recIsRestricted, setRecIsRestricted] = useState(false);
   const [recAllowedStudents, setRecAllowedStudents] = useState([]);
+  const [recMaxViews, setRecMaxViews] = useState(3);
 
   // Students list for Access Control Limit
   const [students, setStudents] = useState([]);
@@ -95,10 +97,12 @@ const LiveClass = () => {
   const [accessModalClass, setAccessModalClass] = useState(null);
   const [modalIsRestricted, setModalIsRestricted] = useState(false);
   const [modalSelectedStudents, setModalSelectedStudents] = useState([]);
+  const [modalMaxViews, setModalMaxViews] = useState(3);
   const [studentSearch, setStudentSearch] = useState('');
   const [studentBatchFilter, setStudentBatchFilter] = useState('all');
   const [manualIndexInput, setManualIndexInput] = useState('');
   const [savingAccess, setSavingAccess] = useState(false);
+  const [resettingViews, setResettingViews] = useState(false);
 
   // Live Classes Filter & Search
   const [searchQuery, setSearchQuery] = useState('');
@@ -166,6 +170,7 @@ const LiveClass = () => {
     setAllowChat(true);
     setLiveIsRestricted(false);
     setLiveAllowedStudents([]);
+    setLiveMaxViews(3);
   };
 
   // Populate form for editing
@@ -180,6 +185,7 @@ const LiveClass = () => {
     setAllowChat(cls.allowChat !== undefined ? cls.allowChat : true);
     setLiveIsRestricted(cls.isRestricted === true);
     setLiveAllowedStudents(Array.isArray(cls.allowedStudents) ? cls.allowedStudents : []);
+    setLiveMaxViews(cls.maxViewsPerStudent !== undefined ? Number(cls.maxViewsPerStudent) : 3);
 
     // Scroll smoothly to form
     window.scrollTo({ top: 120, behavior: 'smooth' });
@@ -218,6 +224,7 @@ const LiveClass = () => {
       allowChat,
       isRestricted: liveIsRestricted,
       allowedStudents: liveAllowedStudents,
+      maxViewsPerStudent: Math.max(1, Number(liveMaxViews) || 3),
     };
 
     try {
@@ -342,6 +349,7 @@ const LiveClass = () => {
     setRecMaterialsUrl('');
     setRecIsRestricted(false);
     setRecAllowedStudents([]);
+    setRecMaxViews(3);
   };
 
   const handleEditRecording = (cls) => {
@@ -353,6 +361,7 @@ const LiveClass = () => {
     setRecMaterialsUrl(cls.materialsUrl || '');
     setRecIsRestricted(cls.isRestricted === true);
     setRecAllowedStudents(Array.isArray(cls.allowedStudents) ? cls.allowedStudents : []);
+    setRecMaxViews(cls.maxViewsPerStudent !== undefined ? Number(cls.maxViewsPerStudent) : 3);
 
     // Switch tab if not visible and scroll into view
     setActiveTab((prev) => (prev === 'live' ? 'recordings' : prev));
@@ -393,6 +402,7 @@ const LiveClass = () => {
       allowChat: false,
       isRestricted: recIsRestricted,
       allowedStudents: recAllowedStudents,
+      maxViewsPerStudent: Math.max(1, Number(recMaxViews) || 3),
     };
 
     try {
@@ -517,6 +527,9 @@ const LiveClass = () => {
         ? targetClass.allowedStudents.map((s) => String(s).trim()).filter(Boolean)
         : []
     );
+    setModalMaxViews(
+      targetClass.maxViewsPerStudent !== undefined ? Number(targetClass.maxViewsPerStudent) : 3
+    );
     setStudentSearch('');
     setStudentBatchFilter('all');
     setManualIndexInput('');
@@ -580,15 +593,15 @@ const LiveClass = () => {
     const cleanAllowed = Array.from(
       new Set(modalSelectedStudents.map((s) => String(s).trim()).filter(Boolean))
     );
+    const validatedLimit = Math.max(1, Number(modalMaxViews) || 3);
 
     // Case 1: Draft Live class before saving
     if (accessModalClass.isDraftLive) {
       setLiveIsRestricted(modalIsRestricted);
       setLiveAllowedStudents(cleanAllowed);
+      setLiveMaxViews(validatedLimit);
       toast.success(
-        modalIsRestricted
-          ? `Access restricted to ${cleanAllowed.length} selected students.`
-          : 'Access opened to all registered students.'
+        `Settings updated. View limit set to ${validatedLimit} views per student.`
       );
       setAccessModalClass(null);
       setSavingAccess(false);
@@ -599,10 +612,9 @@ const LiveClass = () => {
     if (accessModalClass.isDraftRec) {
       setRecIsRestricted(modalIsRestricted);
       setRecAllowedStudents(cleanAllowed);
+      setRecMaxViews(validatedLimit);
       toast.success(
-        modalIsRestricted
-          ? `Access restricted to ${cleanAllowed.length} selected students.`
-          : 'Access opened to all registered students.'
+        `Settings updated. View limit set to ${validatedLimit} views per student.`
       );
       setAccessModalClass(null);
       setSavingAccess(false);
@@ -615,12 +627,14 @@ const LiveClass = () => {
       const res = await API.patch(`/live-classes/${targetId}/access`, {
         isRestricted: modalIsRestricted,
         allowedStudents: cleanAllowed,
+        maxViewsPerStudent: validatedLimit,
       });
 
       const updated = res.data || {
         ...accessModalClass,
         isRestricted: modalIsRestricted,
         allowedStudents: cleanAllowed,
+        maxViewsPerStudent: validatedLimit,
       };
 
       const nextClasses = classes.map((c) => (c._id === targetId ? { ...c, ...updated } : c));
@@ -630,25 +644,37 @@ const LiveClass = () => {
       if (editingId === targetId) {
         setLiveIsRestricted(modalIsRestricted);
         setLiveAllowedStudents(cleanAllowed);
+        setLiveMaxViews(validatedLimit);
       }
       if (editingRecordingId === targetId) {
         setRecIsRestricted(modalIsRestricted);
         setRecAllowedStudents(cleanAllowed);
+        setRecMaxViews(validatedLimit);
       }
       if (previewClass && previewClass._id === targetId) {
-        setPreviewClass((prev) => ({ ...prev, isRestricted: modalIsRestricted, allowedStudents: cleanAllowed }));
+        setPreviewClass((prev) => ({
+          ...prev,
+          isRestricted: modalIsRestricted,
+          allowedStudents: cleanAllowed,
+          maxViewsPerStudent: validatedLimit,
+        }));
       }
 
       toast.success(
-        modalIsRestricted
-          ? `Access restricted to ${cleanAllowed.length} student index numbers.`
-          : 'Access opened to all registered students.'
+        `Access & View Limit updated (${validatedLimit} views per student)`
       );
       setAccessModalClass(null);
     } catch (err) {
       console.warn('API update failed, updating local state:', err);
       const nextClasses = classes.map((c) =>
-        c._id === targetId ? { ...c, isRestricted: modalIsRestricted, allowedStudents: cleanAllowed } : c
+        c._id === targetId
+          ? {
+              ...c,
+              isRestricted: modalIsRestricted,
+              allowedStudents: cleanAllowed,
+              maxViewsPerStudent: validatedLimit,
+            }
+          : c
       );
       setClasses(nextClasses);
       saveLocalBackup(nextClasses);
@@ -656,19 +682,73 @@ const LiveClass = () => {
       if (editingId === targetId) {
         setLiveIsRestricted(modalIsRestricted);
         setLiveAllowedStudents(cleanAllowed);
+        setLiveMaxViews(validatedLimit);
       }
       if (editingRecordingId === targetId) {
         setRecIsRestricted(modalIsRestricted);
         setRecAllowedStudents(cleanAllowed);
+        setRecMaxViews(validatedLimit);
       }
       if (previewClass && previewClass._id === targetId) {
-        setPreviewClass((prev) => ({ ...prev, isRestricted: modalIsRestricted, allowedStudents: cleanAllowed }));
+        setPreviewClass((prev) => ({
+          ...prev,
+          isRestricted: modalIsRestricted,
+          allowedStudents: cleanAllowed,
+          maxViewsPerStudent: validatedLimit,
+        }));
       }
 
       toast.success('Access limits saved locally.');
       setAccessModalClass(null);
     } finally {
       setSavingAccess(false);
+    }
+  };
+
+  const handleResetViews = async (classId, indexNumber = null) => {
+    if (!classId) return;
+    const confirmMsg = indexNumber
+      ? `Reset views for student ${indexNumber}? They will get their views back.`
+      : `Reset all student views for this lecture? All students will start with 0 views used.`;
+    if (!window.confirm(confirmMsg)) return;
+
+    setResettingViews(true);
+    try {
+      await API.post(`/live-classes/${classId}/reset-views`, { indexNumber });
+      setClasses((prev) =>
+        prev.map((c) => {
+          if (c._id !== classId) return c;
+          let newViews = Array.isArray(c.studentViews) ? [...c.studentViews] : [];
+          if (indexNumber) {
+            newViews = newViews.filter(
+              (v) => String(v.indexNumber || '').toLowerCase().trim() !== String(indexNumber).toLowerCase().trim()
+            );
+          } else {
+            newViews = [];
+          }
+          return { ...c, studentViews: newViews };
+        })
+      );
+      if (accessModalClass && accessModalClass._id === classId) {
+        setAccessModalClass((prev) => {
+          if (!prev) return null;
+          let newViews = Array.isArray(prev.studentViews) ? [...prev.studentViews] : [];
+          if (indexNumber) {
+            newViews = newViews.filter(
+              (v) => String(v.indexNumber || '').toLowerCase().trim() !== String(indexNumber).toLowerCase().trim()
+            );
+          } else {
+            newViews = [];
+          }
+          return { ...prev, studentViews: newViews };
+        });
+      }
+      toast.success(indexNumber ? `Views reset for ${indexNumber}` : 'All student views reset successfully!');
+    } catch (err) {
+      console.warn('API reset failed:', err);
+      toast.error('Failed to reset views');
+    } finally {
+      setResettingViews(false);
     }
   };
 
@@ -891,7 +971,7 @@ const LiveClass = () => {
                     className="flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-500/20 text-amber-300 font-mono text-xs hover:bg-amber-500/30 transition-all border border-amber-500/30"
                   >
                     <ShieldCheck className="w-4 h-4" />
-                    Manage Access ({activeLiveClass.isRestricted ? `${activeLiveClass.allowedStudents?.length || 0} Allowed` : 'All'})
+                    Manage Access & Views ({activeLiveClass.isRestricted ? `${activeLiveClass.allowedStudents?.length || 0} Allowed` : 'All'})
                   </button>
 
                   <a
@@ -1092,7 +1172,7 @@ const LiveClass = () => {
                 />
               </div>
 
-              {/* 6. Access Limit Status & Configuration */}
+              {/* 6. Access & View Limit Status & Configuration */}
               <div className="p-3.5 rounded-xl bg-white/5 border border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="flex items-center gap-2.5">
                   <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
@@ -1101,8 +1181,12 @@ const LiveClass = () => {
                     {liveIsRestricted ? <Lock className="w-4 h-4" /> : <Users className="w-4 h-4" />}
                   </div>
                   <div>
-                    <div className="text-xs font-mono font-bold text-white">
-                      {liveIsRestricted ? 'Restricted Access (Selected Index Numbers)' : 'Open to All Registered Students'}
+                    <div className="text-xs font-mono font-bold text-white flex flex-wrap items-center gap-2">
+                      <span>{liveIsRestricted ? 'Restricted Access' : 'Open to All Registered Students'}</span>
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 font-semibold flex items-center gap-1">
+                        <Eye className="w-3 h-3 text-cyan-400" />
+                        Limit: {liveMaxViews >= 999 ? 'Unlimited' : `${liveMaxViews} Views/Student`}
+                      </span>
                     </div>
                     <div className="text-[11px] text-slate-400">
                       {liveIsRestricted
@@ -1119,12 +1203,13 @@ const LiveClass = () => {
                     title: title || 'Live Broadcast',
                     isRestricted: liveIsRestricted,
                     allowedStudents: liveAllowedStudents,
+                    maxViewsPerStudent: liveMaxViews,
                     isDraftLive: !editingId
                   })}
                   className="px-3.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/15 text-white font-mono text-xs border border-white/15 flex items-center justify-center gap-1.5"
                 >
                   <ShieldCheck className="w-3.5 h-3.5 text-acid" />
-                  Manage Access Limit
+                  Manage Access & View Limit
                 </button>
               </div>
 
@@ -1214,7 +1299,7 @@ const LiveClass = () => {
                 )}
               </div>
 
-              {/* Manage Access Limit quick bar on video preview */}
+              {/* Manage Access & View Limit quick bar on video preview */}
               <div className="mt-3 p-3.5 rounded-xl bg-white/5 border border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
                   <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
@@ -1223,8 +1308,12 @@ const LiveClass = () => {
                     {liveIsRestricted ? <Lock className="w-4 h-4" /> : <Users className="w-4 h-4" />}
                   </div>
                   <div>
-                    <div className="text-xs font-mono font-bold text-white">
-                      {liveIsRestricted ? 'Restricted Access Active' : 'Access Limit: All Students'}
+                    <div className="text-xs font-mono font-bold text-white flex flex-wrap items-center gap-2">
+                      <span>{liveIsRestricted ? 'Restricted Access Active' : 'Access Limit: All Students'}</span>
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 font-semibold flex items-center gap-1">
+                        <Eye className="w-3 h-3 text-cyan-400" />
+                        Limit: {liveMaxViews >= 999 ? 'Unlimited' : `${liveMaxViews} Views`}
+                      </span>
                     </div>
                     <div className="text-[11px] text-slate-400 font-grotesk">
                       {liveIsRestricted
@@ -1241,12 +1330,13 @@ const LiveClass = () => {
                     title: title || 'Live Broadcast',
                     isRestricted: liveIsRestricted,
                     allowedStudents: liveAllowedStudents,
+                    maxViewsPerStudent: liveMaxViews,
                     isDraftLive: !editingId
                   })}
                   className="px-3.5 py-2 rounded-xl bg-acid text-black font-mono font-bold text-xs hover:bg-acid/90 transition-all shadow-md shadow-acid/20 flex items-center justify-center gap-1.5"
                 >
                   <ShieldCheck className="w-4 h-4" />
-                  Manage Access
+                  Manage Access & Views
                 </button>
               </div>
 
@@ -1452,6 +1542,10 @@ const LiveClass = () => {
                               <Users className="w-2.5 h-2.5" /> All Students
                             </span>
                           )}
+
+                          <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 flex items-center gap-1 font-semibold">
+                            <Eye className="w-2.5 h-2.5 text-cyan-400" /> Limit: {cls.maxViewsPerStudent !== undefined ? (cls.maxViewsPerStudent >= 999 ? 'Unlimited' : `${cls.maxViewsPerStudent} Views`) : '3 Views'}
+                          </span>
                         </div>
 
                         <h3 className="font-bold text-white font-grotesk text-base line-clamp-2 mb-2 group-hover:text-acid transition-colors">
@@ -1507,14 +1601,14 @@ const LiveClass = () => {
                         >
                           <ExternalLink className="w-4 h-4" />
                         </a>
-                        {/* Manage Access Limit Button */}
+                        {/* Manage Access & View Limit Button */}
                         <button
                           onClick={() => handleOpenAccessModal(cls)}
-                          title="Manage Student Access Limits"
+                          title="Manage Student Access & View Limits"
                           className="px-2 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/20 text-xs font-mono flex items-center gap-1 transition-colors"
                         >
                           <ShieldCheck className="w-3.5 h-3.5" />
-                          <span className="hidden sm:inline">Access</span>
+                          <span className="hidden sm:inline">Access & Views</span>
                         </button>
                       </div>
 
@@ -1708,7 +1802,7 @@ const LiveClass = () => {
                 />
               </div>
 
-              {/* Access Limit Status & Configuration */}
+              {/* Access & View Limit Status & Configuration */}
               <div className="p-4 rounded-xl bg-white/5 border border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="flex items-center gap-2.5">
                   <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${
@@ -1717,8 +1811,12 @@ const LiveClass = () => {
                     {recIsRestricted ? <Lock className="w-4 h-4" /> : <Users className="w-4 h-4" />}
                   </div>
                   <div>
-                    <div className="text-xs font-mono font-bold text-white">
-                      {recIsRestricted ? 'Restricted Access Active' : 'Public to All Registered Students'}
+                    <div className="text-xs font-mono font-bold text-white flex flex-wrap items-center gap-2">
+                      <span>{recIsRestricted ? 'Restricted Access Active' : 'Public to All Registered Students'}</span>
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 font-semibold flex items-center gap-1">
+                        <Eye className="w-3 h-3 text-cyan-400" />
+                        Limit: {recMaxViews >= 999 ? 'Unlimited' : `${recMaxViews} Views/Student`}
+                      </span>
                     </div>
                     <div className="text-[11px] text-slate-400 font-grotesk">
                       {recIsRestricted
@@ -1735,12 +1833,13 @@ const LiveClass = () => {
                     title: recTitle || 'Recording Lecture',
                     isRestricted: recIsRestricted,
                     allowedStudents: recAllowedStudents,
+                    maxViewsPerStudent: recMaxViews,
                     isDraftRec: !editingRecordingId
                   })}
                   className="px-3.5 py-2 rounded-xl bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 border border-purple-500/40 text-xs font-mono font-semibold transition-all flex items-center justify-center gap-1.5"
                 >
                   <ShieldCheck className="w-3.5 h-3.5" />
-                  Manage Access Limit
+                  Manage Access & View Limit
                 </button>
               </div>
 
@@ -1963,7 +2062,7 @@ const LiveClass = () => {
 
                       {/* Content */}
                       <div className="p-5">
-                        <div className="flex items-center gap-2 mb-2">
+                        <div className="flex flex-wrap items-center gap-2 mb-2">
                           <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-purple-500/10 text-purple-300 border border-purple-500/20">
                             Batch: {cls.batch}
                           </span>
@@ -1976,6 +2075,9 @@ const LiveClass = () => {
                               <Users className="w-2.5 h-2.5" /> All Students
                             </span>
                           )}
+                          <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 flex items-center gap-1 font-semibold">
+                            <Eye className="w-2.5 h-2.5 text-cyan-400" /> Limit: {cls.maxViewsPerStudent !== undefined ? (cls.maxViewsPerStudent >= 999 ? 'Unlimited' : `${cls.maxViewsPerStudent} Views`) : '3 Views'}
+                          </span>
                           {cls.materialsUrl && (
                             <a
                               href={cls.materialsUrl}
@@ -2024,14 +2126,14 @@ const LiveClass = () => {
                           <ExternalLink className="w-4 h-4" />
                         </a>
 
-                        {/* Manage Access Limit Button */}
+                        {/* Manage Access & View Limit Button */}
                         <button
                           onClick={() => handleOpenAccessModal(cls)}
-                          title="Manage Student Access Limits"
+                          title="Manage Student Access & View Limits"
                           className="px-2 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/20 text-xs font-mono flex items-center gap-1 transition-colors"
                         >
                           <ShieldCheck className="w-3.5 h-3.5" />
-                          <span className="hidden sm:inline">Access</span>
+                          <span className="hidden sm:inline">Access & Views</span>
                         </button>
                       </div>
 
@@ -2103,7 +2205,7 @@ const LiveClass = () => {
                     className="px-4 py-2 rounded-xl bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 border border-amber-500/30 font-semibold text-xs font-mono flex items-center gap-1.5 transition-colors"
                   >
                     <ShieldCheck className="w-3.5 h-3.5" />
-                    Manage Access
+                    Manage Access & Views
                   </button>
 
                   <button
@@ -2131,7 +2233,7 @@ const LiveClass = () => {
                   </div>
                   <div>
                     <h3 className="font-bold text-white text-lg font-grotesk flex items-center gap-2">
-                      Manage Access Limit
+                      Manage Access & View Limits
                       <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full uppercase ${
                         accessModalClass.status === 'ended'
                           ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
@@ -2155,6 +2257,117 @@ const LiveClass = () => {
 
               {/* Modal Body */}
               <div className="p-6 overflow-y-auto space-y-6 flex-1">
+                {/* ── Student View Limit Setting (Default: 3, Admin can increase) ── */}
+                <div className="p-4 rounded-xl bg-cyan-950/20 border border-cyan-500/30 space-y-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div>
+                      <label className="text-xs font-mono font-bold uppercase tracking-wider text-white flex items-center gap-2">
+                        <Eye className="w-4 h-4 text-cyan-400" />
+                        Student View Limit Per Video
+                      </label>
+                      <p className="text-xs text-slate-400 font-grotesk mt-0.5">
+                        Students are restricted to 3 views by default. You can increase or remove this limit for this class.
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 self-start sm:self-auto">
+                      <span className="text-xs font-mono px-2.5 py-1 rounded-lg bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 font-bold">
+                        Limit: {modalMaxViews >= 999 ? 'Unlimited' : `${modalMaxViews} Views`}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Preset quick buttons & custom number input */}
+                  <div className="flex flex-wrap items-center gap-2 pt-1">
+                    {[
+                      { val: 3, label: '3 (Standard Default)' },
+                      { val: 5, label: '5 Views' },
+                      { val: 10, label: '10 Views' },
+                      { val: 20, label: '20 Views' },
+                      { val: 999, label: 'Unlimited' },
+                    ].map((item) => (
+                      <button
+                        key={item.val}
+                        type="button"
+                        onClick={() => setModalMaxViews(item.val)}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-mono transition-all font-semibold ${
+                          modalMaxViews === item.val
+                            ? 'bg-cyan-500 text-black shadow-md shadow-cyan-500/20 font-bold'
+                            : 'bg-white/5 text-slate-300 hover:bg-white/10 border border-white/10'
+                        }`}
+                      >
+                        {item.label}
+                      </button>
+                    ))}
+
+                    {/* Custom view limit input */}
+                    <div className="flex items-center gap-2 ml-auto">
+                      <span className="text-xs font-mono text-slate-400">Custom Limit:</span>
+                      <input
+                        type="number"
+                        min="1"
+                        max="999"
+                        value={modalMaxViews}
+                        onChange={(e) => setModalMaxViews(Math.max(1, parseInt(e.target.value) || 1))}
+                        className="w-20 bg-ink border border-white/20 rounded-lg px-2.5 py-1 text-xs font-mono text-white text-center focus:outline-none focus:border-cyan-400"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Student View Tracker & Reset if any views have been recorded */}
+                  {Array.isArray(accessModalClass.studentViews) && accessModalClass.studentViews.length > 0 && (
+                    <div className="mt-3 pt-3 border-t border-white/10 space-y-2">
+                      <div className="flex items-center justify-between text-xs font-mono">
+                        <span className="text-slate-400 flex items-center gap-1.5">
+                          <Users className="w-3.5 h-3.5 text-slate-400" />
+                          Tracked Students ({accessModalClass.studentViews.length}):
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleResetViews(accessModalClass._id)}
+                          disabled={resettingViews}
+                          className="text-[11px] text-amber-400 hover:text-amber-300 hover:underline flex items-center gap-1 transition-colors"
+                        >
+                          <RefreshCw className={`w-3 h-3 ${resettingViews ? 'animate-spin' : ''}`} />
+                          Reset All Student Views
+                        </button>
+                      </div>
+
+                      <div className="max-h-28 overflow-y-auto space-y-1.5 pr-1">
+                        {accessModalClass.studentViews.map((sv, idx) => {
+                          const reached = sv.count >= modalMaxViews;
+                          return (
+                            <div
+                              key={idx}
+                              className="flex items-center justify-between p-2 rounded-lg bg-black/40 border border-white/5 text-xs font-mono"
+                            >
+                              <div className="flex items-center gap-2">
+                                <span className="font-bold text-slate-200">{sv.indexNumber || 'Unknown'}</span>
+                                <span
+                                  className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                                    reached
+                                      ? 'bg-red-500/20 text-red-300 border border-red-500/30'
+                                      : 'bg-cyan-500/10 text-cyan-300'
+                                  }`}
+                                >
+                                  {sv.count}/{modalMaxViews >= 999 ? '∞' : modalMaxViews} views {reached ? '(LIMIT REACHED)' : ''}
+                                </span>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => handleResetViews(accessModalClass._id, sv.indexNumber)}
+                                className="text-[10px] text-amber-400 hover:text-amber-300 underline"
+                              >
+                                Reset Views
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
                 {/* Access Mode Selector */}
                 <div>
                   <label className="block text-xs font-mono font-semibold uppercase tracking-wider text-slate-300 mb-3">
@@ -2416,12 +2629,12 @@ const LiveClass = () => {
                   {savingAccess ? (
                     <>
                       <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                      Saving Access Limit...
+                      Saving Settings...
                     </>
                   ) : (
                     <>
                       <ShieldCheck className="w-3.5 h-3.5" />
-                      Apply Access Limits
+                      Apply Access & View Limits
                     </>
                   )}
                 </button>
