@@ -51,6 +51,27 @@ const extractYoutubeId = (url) => {
   return '';
 }
 
+const normalizeZoomUrl = (value) => {
+  const trimmedValue = String(value || '').trim();
+  if (!trimmedValue) return '';
+
+  try {
+    const hasProtocol = /^[a-z][a-z\d+.-]*:\/\//i.test(trimmedValue);
+    const url = new URL(hasProtocol ? trimmedValue : `https://${trimmedValue}`);
+    const isZoomHost =
+      (url.hostname === 'zoom.us' || url.hostname.endsWith('.zoom.us') ||
+        url.hostname === 'zoom.com' || url.hostname.endsWith('.zoom.com') ||
+        url.hostname === 'zoomgov.com' || url.hostname.endsWith('.zoomgov.com'));
+    return url.protocol === 'https:' && isZoomHost ? url.href : '';
+  } catch {
+    return '';
+  }
+};
+
+const getClassPlatform = (cls) => cls?.platform || 'youtube';
+const getClassJoinUrl = (cls) =>
+  getClassPlatform(cls) === 'zoom' ? cls.meetingUrl : cls.youtubeUrl;
+
 const LiveClass = () => {
   // Data state
   const [classes, setClasses] = useState([]);
@@ -63,7 +84,9 @@ const LiveClass = () => {
   // Live broadcast form state
   const [editingId, setEditingId] = useState(null);
   const [title, setTitle] = useState('');
+  const [platform, setPlatform] = useState('youtube');
   const [youtubeUrl, setYoutubeUrl] = useState('');
+  const [meetingUrl, setMeetingUrl] = useState('');
   const [description, setDescription] = useState('');
   const [batch, setBatch] = useState('All');
   const [status, setStatus] = useState('scheduled'); // 'live', 'scheduled', 'ended'
@@ -119,6 +142,8 @@ const LiveClass = () => {
 
   // Detected Video ID from current form input
   const currentVideoId = useMemo(() => extractYoutubeId(youtubeUrl), [youtubeUrl]);
+  const normalizedMeetingUrl = useMemo(() => normalizeZoomUrl(meetingUrl), [meetingUrl]);
+  const currentZoomUrlValid = Boolean(normalizedMeetingUrl);
   const currentRecVideoId = useMemo(() => extractYoutubeId(recUrl), [recUrl]);
 
   // Load classes from backend or fallback to localStorage
@@ -126,15 +151,11 @@ const LiveClass = () => {
     setLoading(true);
     try {
       const res = await API.get('/live-classes');
-      if (res.data && Array.isArray(res.data) && res.data.length > 0) {
-        setClasses(res.data);
-        localStorage.setItem('chemone_live_classes', JSON.stringify(res.data));
-      } else {
-        // Fallback to local storage if empty
-        const cached = localStorage.getItem('chemone_live_classes');
-        const initial = cached ? JSON.parse(cached) : DEFAULT_CLASSES;
-        setClasses(initial);
+      if (!Array.isArray(res.data)) {
+        throw new Error('Invalid live classes response');
       }
+      setClasses(res.data);
+      localStorage.setItem('chemone_live_classes', JSON.stringify(res.data));
     } catch (err) {
       console.warn('Backend live-classes API unavailable, utilizing local storage cache:', err.message);
       const cached = localStorage.getItem('chemone_live_classes');
@@ -162,7 +183,9 @@ const LiveClass = () => {
   const resetForm = () => {
     setEditingId(null);
     setTitle('');
+    setPlatform('youtube');
     setYoutubeUrl('');
+    setMeetingUrl('');
     setDescription('');
     setBatch('All');
     setStatus('scheduled');
@@ -177,7 +200,9 @@ const LiveClass = () => {
   const handleEdit = (cls) => {
     setEditingId(cls._id);
     setTitle(cls.title || '');
+    setPlatform(getClassPlatform(cls));
     setYoutubeUrl(cls.youtubeUrl || '');
+    setMeetingUrl(cls.meetingUrl || '');
     setDescription(cls.description || '');
     setBatch(cls.batch || 'All');
     setStatus(cls.status || 'scheduled');
@@ -201,13 +226,17 @@ const LiveClass = () => {
       return;
     }
 
-    if (!youtubeUrl.trim()) {
-      toast.error('Please provide a YouTube URL or Video ID');
-      return;
-    }
-
-    if (!currentVideoId) {
-      toast.error('Could not detect a valid YouTube Video ID from the link. Please check the format.');
+    if (platform === 'youtube') {
+      if (!youtubeUrl.trim()) {
+        toast.error('Please provide a YouTube URL or Video ID');
+        return;
+      }
+      if (!currentVideoId) {
+        toast.error('Could not detect a valid YouTube Video ID from the link. Please check the format.');
+        return;
+      }
+    } else if (!currentZoomUrlValid) {
+      toast.error('Please provide a valid HTTPS Zoom meeting link');
       return;
     }
 
@@ -215,8 +244,10 @@ const LiveClass = () => {
 
     const payload = {
       title: title.trim(),
-      youtubeUrl: youtubeUrl.trim(),
-      videoId: currentVideoId,
+      platform,
+      youtubeUrl: platform === 'youtube' ? youtubeUrl.trim() : '',
+      meetingUrl: platform === 'zoom' ? normalizedMeetingUrl : '',
+      videoId: platform === 'youtube' ? currentVideoId : '',
       description: description.trim(),
       batch,
       status,
@@ -229,14 +260,9 @@ const LiveClass = () => {
 
     try {
       if (editingId) {
-        // Try backend update
-        let updatedItem = { ...payload, _id: editingId, updatedAt: new Date().toISOString() };
-        try {
-          const res = await API.put(`/live-classes/${editingId}`, payload);
-          if (res.data) updatedItem = res.data;
-        } catch (apiErr) {
-          console.warn('Backend update failed, updating locally:', apiErr);
-        }
+        const res = await API.put(`/live-classes/${editingId}`, payload);
+        const updatedItem = res.data;
+        if (!updatedItem) throw new Error('The server did not return the updated live class');
 
         const updatedList = classes.map((c) => {
           if (c._id === editingId) return updatedItem;
@@ -251,20 +277,9 @@ const LiveClass = () => {
         saveLocalBackup(updatedList);
         toast.success('Live class updated successfully!');
       } else {
-        // Create new
-        let newItem = {
-          ...payload,
-          _id: 'lc_' + Date.now(),
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        };
-
-        try {
-          const res = await API.post('/live-classes', payload);
-          if (res.data) newItem = res.data;
-        } catch (apiErr) {
-          console.warn('Backend create failed, creating locally:', apiErr);
-        }
+        const res = await API.post('/live-classes', payload);
+        const newItem = res.data;
+        if (!newItem?._id) throw new Error('The server did not return the created live class');
 
         const updatedList = payload.status === 'live'
           ? [newItem, ...classes.map((c) => c.status === 'live' ? { ...c, status: 'ended' } : c)]
@@ -277,7 +292,14 @@ const LiveClass = () => {
 
       resetForm();
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to save live class');
+      const serverMessage = err.response?.data?.message;
+      const isLegacyZoomApi =
+        platform === 'zoom' && serverMessage === 'Title and YouTube URL are required';
+      toast.error(
+        isLegacyZoomApi
+          ? 'Zoom is not enabled on the API server yet. Restart or deploy the updated backend, then try again.'
+          : serverMessage || err.message || 'Failed to save live class'
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -286,11 +308,7 @@ const LiveClass = () => {
   // Toggle Live status directly
   const handleToggleStatus = async (cls, newStatus) => {
     try {
-      try {
-        await API.patch(`/live-classes/${cls._id}/status`, { status: newStatus });
-      } catch (e) {
-        console.warn('Backend status toggle failed, toggling locally:', e);
-      }
+      await API.patch(`/live-classes/${cls._id}/status`, { status: newStatus });
 
       const updated = classes.map((item) => {
         if (item._id === cls._id) {
@@ -312,8 +330,8 @@ const LiveClass = () => {
       } else {
         toast.success('Class status updated');
       }
-    } catch {
-      toast.error('Failed to change status');
+    } catch (err) {
+      toast.error(err.response?.data?.message || err.message || 'Failed to change status');
     }
   };
 
@@ -793,10 +811,10 @@ const LiveClass = () => {
                 </span>
               </div>
               <h1 className="text-3xl sm:text-4xl font-bebas tracking-wider text-white">
-                Live Classes & <span className="text-acid">YouTube Broadcast</span>
+                Live Classes & <span className="text-acid">Live Broadcasts</span>
               </h1>
               <p className="text-sm sm:text-base text-slate-400 max-w-2xl font-grotesk mt-1">
-                Configure live streams, paste YouTube links, and broadcast interactive chemistry lessons seamlessly.
+                Schedule YouTube streams or Zoom meetings for your chemistry classes.
               </p>
             </div>
 
@@ -922,7 +940,20 @@ const LiveClass = () => {
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
               {/* Preview player */}
               <div className="lg:col-span-5 aspect-video rounded-xl overflow-hidden bg-black border border-white/10 shadow-inner relative group">
-                {activeLiveClass.videoId ? (
+                {getClassPlatform(activeLiveClass) === 'zoom' ? (
+                  <div className="w-full h-full flex flex-col items-center justify-center gap-3 text-center p-5 bg-slate-950">
+                    <Video className="w-12 h-12 text-blue-400" />
+                    <p className="text-sm font-mono text-white">Zoom meeting is live</p>
+                    <a
+                      href={activeLiveClass.meetingUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-4 py-2 rounded-xl bg-blue-600 text-white font-mono text-xs hover:bg-blue-500"
+                    >
+                      Open Zoom
+                    </a>
+                  </div>
+                ) : activeLiveClass.videoId ? (
                   <iframe
                     className="w-full h-full"
                     src={`https://www.youtube.com/embed/${activeLiveClass.videoId}?autoplay=0&rel=0`}
@@ -975,13 +1006,13 @@ const LiveClass = () => {
                   </button>
 
                   <a
-                    href={activeLiveClass.youtubeUrl}
+                    href={getClassJoinUrl(activeLiveClass)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 text-white font-mono text-xs hover:bg-white/15 transition-all border border-white/10"
                   >
                     <ExternalLink className="w-4 h-4" />
-                    Open YouTube
+                    {getClassPlatform(activeLiveClass) === 'zoom' ? 'Open Zoom' : 'Open YouTube'}
                   </a>
 
                   <button
@@ -1010,7 +1041,7 @@ const LiveClass = () => {
                     {editingId ? 'Edit Live Session' : 'Create Live Broadcast'}
                   </h2>
                   <p className="text-xs text-slate-400 font-mono">
-                    {editingId ? 'Update details of scheduled / live class' : 'Add YouTube link & schedule live session'}
+                    {editingId ? 'Update details of scheduled / live class' : 'Add a YouTube stream or Zoom meeting'}
                   </p>
                 </div>
               </div>
@@ -1027,58 +1058,111 @@ const LiveClass = () => {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-6">
-              {/* 1. YouTube Link Input (Highlighted Hero Input) */}
+              {/* 1. Choose a live platform and provide its link */}
               <div className="p-4 rounded-xl bg-gradient-to-r from-red-950/20 to-black/40 border border-red-500/30">
+                <label className="block text-xs font-mono font-semibold uppercase tracking-wider text-slate-300 mb-2">
+                  Live Class Platform
+                </label>
+                <select
+                  value={platform}
+                  onChange={(e) => setPlatform(e.target.value)}
+                  className="w-full mb-4 bg-ink/90 border border-white/15 rounded-xl px-4 py-3 text-sm font-mono text-white focus:outline-none focus:border-acid"
+                >
+                  <option value="youtube">YouTube Live / Video</option>
+                  <option value="zoom">Zoom Meeting</option>
+                </select>
+
                 <div className="flex items-center justify-between mb-2">
                   <label className="text-xs font-mono font-semibold uppercase tracking-wider text-red-300 flex items-center gap-2">
                     <Video className="w-4 h-4 text-red-400" />
-                    YouTube Stream / Video Link <span className="text-red-400">*</span>
+                    {platform === 'zoom' ? 'Zoom Meeting Link' : 'YouTube Stream / Video Link'} <span className="text-red-400">*</span>
                   </label>
 
                   {/* Status Indicator */}
-                  {currentVideoId ? (
+                  {platform === 'youtube' && currentVideoId ? (
                     <span className="inline-flex items-center text-[11px] font-mono font-medium text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
                       <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
                       ID: {currentVideoId}
                     </span>
-                  ) : youtubeUrl ? (
+                  ) : platform === 'youtube' && youtubeUrl ? (
                     <span className="inline-flex items-center text-[11px] font-mono text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
                       <AlertCircle className="w-3.5 h-3.5 mr-1" />
                       Invalid Link
                     </span>
+                  ) : platform === 'zoom' && meetingUrl ? (
+                    <span className={`inline-flex items-center text-[11px] font-mono px-2 py-0.5 rounded border ${
+                      currentZoomUrlValid
+                        ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20'
+                        : 'text-amber-400 bg-amber-500/10 border-amber-500/20'
+                    }`}>
+                      {currentZoomUrlValid ? 'Valid Zoom Link' : 'Invalid Zoom Link'}
+                    </span>
                   ) : null}
                 </div>
 
-                <div className="relative">
-                  <input
-                    type="text"
-                    value={youtubeUrl}
-                    onChange={(e) => setYoutubeUrl(e.target.value)}
-                    placeholder="e.g. https://www.youtube.com/watch?v=... or https://youtu.be/..."
-                    className="w-full bg-ink/90 border border-white/15 rounded-xl px-4 py-3 text-sm font-mono text-white placeholder-slate-500 focus:outline-none focus:border-red-400 focus:ring-1 focus:ring-red-400 transition-all pr-24"
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      try {
-                        const text = await navigator.clipboard.readText();
-                        if (text) {
-                          setYoutubeUrl(text);
-                          toast.success('Pasted from clipboard!');
-                        }
-                      } catch {
-                        toast.error('Unable to read clipboard');
-                      }
-                    }}
-                    className="absolute right-2 top-2 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/15 text-slate-300 text-xs font-mono transition-colors"
-                  >
-                    Paste
-                  </button>
-                </div>
-                <p className="text-[11px] text-slate-400 mt-2 font-mono">
-                  Supports standard YouTube videos, YouTube Live broadcast URLs, or embed links.
-                </p>
+                {platform === 'youtube' ? (
+                  <>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={youtubeUrl}
+                        onChange={(e) => setYoutubeUrl(e.target.value)}
+                        onPaste={(e) => {
+                          const value = e.clipboardData.getData('text').trim();
+                          if (normalizeZoomUrl(value)) {
+                            e.preventDefault();
+                            setPlatform('zoom');
+                            setMeetingUrl(value);
+                            setYoutubeUrl('');
+                          }
+                        }}
+                        placeholder="e.g. https://www.youtube.com/watch?v=... or https://youtu.be/..."
+                        className="w-full bg-ink/90 border border-white/15 rounded-xl px-4 py-3 text-sm font-mono text-white placeholder-slate-500 focus:outline-none focus:border-red-400 focus:ring-1 focus:ring-red-400 transition-all pr-24"
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          try {
+                            const text = await navigator.clipboard.readText();
+                            if (text) {
+                              if (normalizeZoomUrl(text)) {
+                                setPlatform('zoom');
+                                setMeetingUrl(text);
+                                setYoutubeUrl('');
+                              } else {
+                                setYoutubeUrl(text);
+                              }
+                              toast.success('Pasted from clipboard!');
+                            }
+                          } catch {
+                            toast.error('Unable to read clipboard');
+                          }
+                        }}
+                        className="absolute right-2 top-2 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/15 text-slate-300 text-xs font-mono transition-colors"
+                      >
+                        Paste
+                      </button>
+                    </div>
+                    <p className="text-[11px] text-slate-400 mt-2 font-mono">
+                      Supports standard YouTube videos, YouTube Live broadcast URLs, or embed links.
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <input
+                      type="text"
+                      value={meetingUrl}
+                      onChange={(e) => setMeetingUrl(e.target.value)}
+                      placeholder="zoom.us/j/... or https://zoom.us/j/..."
+                      className="w-full bg-ink/90 border border-white/15 rounded-xl px-4 py-3 text-sm font-mono text-white placeholder-slate-500 focus:outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400 transition-all"
+                      required
+                    />
+                    <p className="text-[11px] text-slate-400 mt-2 font-mono">
+                      Students will join this Zoom meeting in a new tab. Use an HTTPS Zoom meeting link.
+                    </p>
+                  </>
+                )}
               </div>
 
               {/* 2. Class Title */}
@@ -1269,16 +1353,29 @@ const LiveClass = () => {
                     Live Player Preview
                   </h3>
                 </div>
-                {currentVideoId && (
+                {(platform === 'youtube' ? currentVideoId : currentZoomUrlValid) && (
                   <span className="text-xs font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
                     Ready to Stream
                   </span>
                 )}
               </div>
 
-              {/* YouTube Iframe or Placeholder */}
+              {/* Platform preview */}
               <div className="aspect-video w-full rounded-xl overflow-hidden bg-black border border-white/10 relative shadow-inner">
-                {currentVideoId ? (
+                {platform === 'zoom' && currentZoomUrlValid ? (
+                  <div className="w-full h-full flex flex-col items-center justify-center gap-3 text-center p-6 bg-slate-950">
+                    <Video className="w-12 h-12 text-blue-400" />
+                    <p className="text-sm font-mono text-white">Zoom meeting link is ready</p>
+                    <a
+                      href={normalizedMeetingUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 text-white font-mono text-xs hover:bg-blue-500"
+                    >
+                      Open Zoom <ExternalLink className="w-3.5 h-3.5" />
+                    </a>
+                  </div>
+                ) : platform === 'youtube' && currentVideoId ? (
                   <iframe
                     className="w-full h-full"
                     src={`https://www.youtube.com/embed/${currentVideoId}?rel=0`}
@@ -1293,7 +1390,7 @@ const LiveClass = () => {
                     </div>
                     <p className="text-sm font-mono text-slate-300 mb-1">Interactive Stream Preview</p>
                     <p className="text-xs text-slate-500 font-grotesk max-w-xs">
-                      Enter a YouTube stream link or video ID in the form to test live playback.
+                      Enter a {platform === 'zoom' ? 'valid Zoom link' : 'YouTube stream link or video ID'} to preview the session.
                     </p>
                   </div>
                 )}
@@ -1341,7 +1438,7 @@ const LiveClass = () => {
               </div>
 
               {/* Video metadata snippet */}
-              {currentVideoId && (
+              {platform === 'youtube' && currentVideoId && (
                 <div className="mt-4 p-3 rounded-xl bg-white/5 border border-white/5 space-y-2">
                   <div className="flex items-center justify-between text-xs font-mono">
                     <span className="text-slate-400">Video ID:</span>
@@ -1371,11 +1468,19 @@ const LiveClass = () => {
               <ul className="space-y-2.5 text-xs text-slate-300 font-grotesk">
                 <li className="flex items-start gap-2">
                   <span className="text-acid font-mono font-bold">1.</span>
-                  <span>Start your live stream inside <strong>YouTube Studio</strong> or OBS.</span>
+                  <span>
+                    {platform === 'zoom'
+                      ? <>Schedule or start your meeting in <strong>Zoom</strong>.</>
+                      : <>Start your live stream inside <strong>YouTube Studio</strong> or OBS.</>}
+                  </span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-acid font-mono font-bold">2.</span>
-                  <span>Copy the shareable YouTube live link and paste it into the field above.</span>
+                  <span>
+                    {platform === 'zoom'
+                      ? 'Copy the Zoom meeting invitation link and paste it into the field above.'
+                      : 'Copy the shareable YouTube live link and paste it into the field above.'}
+                  </span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="text-acid font-mono font-bold">3.</span>
@@ -1470,7 +1575,9 @@ const LiveClass = () => {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredClasses.map((cls) => {
-                const vid = cls.videoId || extractYoutubeId(cls.youtubeUrl);
+                const vid = getClassPlatform(cls) === 'youtube'
+                  ? cls.videoId || extractYoutubeId(cls.youtubeUrl)
+                  : '';
                 const isLive = cls.status === 'live';
                 const isScheduled = cls.status === 'scheduled';
 
@@ -1493,8 +1600,9 @@ const LiveClass = () => {
                             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                           />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center text-slate-600 bg-slate-900">
-                            <Video className="w-10 h-10" />
+                          <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-slate-400 bg-slate-900">
+                            <Video className={`w-10 h-10 ${getClassPlatform(cls) === 'zoom' ? 'text-blue-400' : 'text-slate-600'}`} />
+                            {getClassPlatform(cls) === 'zoom' && <span className="text-xs font-mono">ZOOM MEETING</span>}
                           </div>
                         )}
 
@@ -1593,10 +1701,10 @@ const LiveClass = () => {
 
                         {/* YouTube */}
                         <a
-                          href={cls.youtubeUrl}
+                          href={getClassJoinUrl(cls)}
                           target="_blank"
                           rel="noopener noreferrer"
-                          title="Open YouTube"
+                          title={getClassPlatform(cls) === 'zoom' ? 'Open Zoom' : 'Open YouTube'}
                           className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
                         >
                           <ExternalLink className="w-4 h-4" />
@@ -2117,7 +2225,7 @@ const LiveClass = () => {
 
                         {/* Open in YouTube */}
                         <a
-                          href={cls.youtubeUrl}
+                          href={getClassJoinUrl(cls)}
                           target="_blank"
                           rel="noopener noreferrer"
                           title="Open in YouTube"
@@ -2183,13 +2291,28 @@ const LiveClass = () => {
               </div>
 
               <div className="aspect-video w-full bg-black">
-                <iframe
-                  className="w-full h-full"
-                  src={`https://www.youtube.com/embed/${previewClass.videoId || extractYoutubeId(previewClass.youtubeUrl)}?autoplay=1&rel=0`}
-                  title={previewClass.title}
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                />
+                {getClassPlatform(previewClass) === 'zoom' ? (
+                  <div className="w-full h-full flex flex-col items-center justify-center gap-4 text-center p-6 bg-slate-950">
+                    <Video className="w-14 h-14 text-blue-400" />
+                    <p className="text-white font-mono">Zoom meeting: {previewClass.title}</p>
+                    <a
+                      href={previewClass.meetingUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-blue-600 text-white font-mono text-sm hover:bg-blue-500"
+                    >
+                      Open Zoom <ExternalLink className="w-4 h-4" />
+                    </a>
+                  </div>
+                ) : (
+                  <iframe
+                    className="w-full h-full"
+                    src={`https://www.youtube.com/embed/${previewClass.videoId || extractYoutubeId(previewClass.youtubeUrl)}?autoplay=1&rel=0`}
+                    title={previewClass.title}
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  />
+                )}
               </div>
 
               <div className="p-5 flex items-center justify-between gap-4">
