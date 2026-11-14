@@ -8,7 +8,7 @@ The modern web interface for the ChemBridge platform, designed to provide an int
 - **Interactive Learning**: Access daily worksheets and spot tests to reinforce chemistry knowledge.
 - **AI Chatbot**: Get instant help and explanations for complex chemistry topics.
 - **Performance Tracking**: View results from physical exams and spot tests.
-- **Online Payments**: Select monthly fees and continue to PayHere hosted checkout.
+- **Payment Slips**: Select monthly fees, upload bank-transfer receipts, and track verification status.
 - **Gamified Experience**: Engage with chemistry-themed games.
 - **Secure Access**: Personal dashboards, profile settings, and secure authentication.
 

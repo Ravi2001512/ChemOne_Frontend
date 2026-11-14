@@ -32,6 +32,7 @@ import StudentLiveClass from "./pages/Student/LiveClass";
 import Welcome from "./pages/welcome";
 import OnlinePayment from "./pages/Student/OnlinePayement";
 import PaymentSettings from "./pages/Admin/PaymentSettings";
+import ManagePaymentSlips from "./pages/Admin/ManagePaymentSlips";
 
 const AdminRoute = ({ children }) => {
   const user = JSON.parse(sessionStorage.getItem('user') || '{}');
@@ -100,10 +101,11 @@ function App() {
           <Route path="/admin/live-classes" element={<AdminRoute><LiveClass /></AdminRoute>} />
           <Route path="/admin/live-class" element={<AdminRoute><LiveClass /></AdminRoute>} />
           <Route path="/admin/payment-settings" element={<AdminRoute><PaymentSettings /></AdminRoute>} />
+          <Route path="/admin/payment-slips" element={<AdminRoute><ManagePaymentSlips /></AdminRoute>} />
 
           <Route path="/student" element={<StudentDashboard />} />
           <Route path="/student/live-classes" element={<StudentLiveClass />} />
-          <Route path="/student/online-payments" element={<OnlinePayment />} />
+          <Route path="/student/online-payments" element={<StudentRoute><OnlinePayment /></StudentRoute>} />
           <Route path="/student/spot-test" element={<ViewSpotTest />} />
           <Route path="/student/spot-test/:id" element={<TakeSpotTest />} />
           <Route path="/student/daily-worksheet" element={<Dailyworksheet />} />

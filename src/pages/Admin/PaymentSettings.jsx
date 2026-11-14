@@ -16,7 +16,7 @@ const EMPTY_SETTINGS = {
 
 const PaymentSettings = () => {
   const [settings, setSettings] = useState(EMPTY_SETTINGS);
-  const [onlinePaymentsEnabled, setOnlinePaymentsEnabled] = useState(false);
+  const [paymentSlipStorageEnabled, setPaymentSlipStorageEnabled] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -28,7 +28,7 @@ const PaymentSettings = () => {
           monthlyFee: String(res.data.monthlyFee),
           bankDetails: res.data.bankDetails,
         });
-        setOnlinePaymentsEnabled(res.data.onlinePaymentsEnabled);
+        setPaymentSlipStorageEnabled(res.data.paymentSlipStorageEnabled);
       } catch (err) {
         toast.error(err.response?.data?.message || 'Unable to load payment settings.');
       } finally {
@@ -85,7 +85,7 @@ const PaymentSettings = () => {
 
         <div
           className={`mb-6 p-4 rounded-xl border flex items-start gap-3 ${
-            onlinePaymentsEnabled
+            paymentSlipStorageEnabled
               ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-200'
               : 'bg-amber-500/10 border-amber-500/20 text-amber-200'
           }`}
@@ -93,13 +93,13 @@ const PaymentSettings = () => {
           <ShieldCheck className="w-5 h-5 flex-shrink-0" />
           <div>
             <p className="text-sm font-semibold">
-              {onlinePaymentsEnabled
-                ? 'PayHere checkout is configured'
-                : 'PayHere checkout is not configured'}
+              {paymentSlipStorageEnabled
+                ? 'Payment slip storage is configured'
+                : 'Payment slip storage is not configured'}
             </p>
-            {!onlinePaymentsEnabled && (
+            {!paymentSlipStorageEnabled && (
               <p className="mt-1 text-xs opacity-80">
-                Add the PayHere merchant credentials and public frontend/backend URLs to the backend environment to enable online payments.
+                Configure GCS_BUCKET_NAME and Google Cloud Storage credentials in the backend environment to accept payment slips.
               </p>
             )}
           </div>
@@ -116,7 +116,7 @@ const PaymentSettings = () => {
               </div>
               <div>
                 <h2 className="font-grotesk font-bold text-white">Monthly fee</h2>
-                <p className="text-xs text-slate-400">This amount is used for online checkouts.</p>
+                <p className="text-xs text-slate-400">This amount is used to calculate student payment slip submissions.</p>
               </div>
             </div>
             <label className="block max-w-sm">

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import StudentNavbar from '../../components/StudentNavbar';
 import API from '../../services/api';
 import {
@@ -21,8 +21,11 @@ import {
   Info,
   X,
   Loader2,
-  Phone,
-  MapPin,
+  Upload,
+  Image as ImageIcon,
+  FileText,
+  UserRound,
+  Fingerprint,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -37,7 +40,6 @@ const CLASS_FEE = 2500; // LKR per month
 /* ───────────────────────── component ───────────────────────── */
 const OnlinePayment = () => {
   const navigate = useNavigate();
-  const location = useLocation();
 
   /* ── auth ── */
   const currentUser = useMemo(() => {
@@ -52,32 +54,35 @@ const OnlinePayment = () => {
   useEffect(() => {
     if (!token || !currentUser) {
       navigate('/login', { replace: true });
+    } else if (currentUser.role !== 'student') {
+      navigate('/admin', { replace: true });
     }
   }, [token, currentUser, navigate]);
 
   /* ── state ── */
   const [paidMonths, setPaidMonths] = useState([]);
+  const [pendingMonths, setPendingMonths] = useState([]);
+  const [rejectedMonths, setRejectedMonths] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedMonths, setSelectedMonths] = useState([]);
   const [monthlyFee, setMonthlyFee] = useState(CLASS_FEE);
+  const [paymentSlipStorageEnabled, setPaymentSlipStorageEnabled] = useState(false);
   const [bankDetails, setBankDetails] = useState({
     bankName: '',
     branch: '',
     accountName: '',
     accountNumber: '',
   });
-  const [gatewayConfigured, setGatewayConfigured] = useState(false);
   const [showBankDetails, setShowBankDetails] = useState(false);
   const [copied, setCopied] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [showPayModal, setShowPayModal] = useState(false);
-  const [customerDetails, setCustomerDetails] = useState({
-    phone: '',
-    address: '',
-    city: '',
+  const [studentDetails, setStudentDetails] = useState({
+    studentName: currentUser?.name || '',
+    indexNumber: currentUser?.indexNumber || '',
   });
-  const [paymentNotice, setPaymentNotice] = useState('');
-  const [returnedOrderId, setReturnedOrderId] = useState('');
+  const [paymentSlip, setPaymentSlip] = useState(null);
+  const [slipPreview, setSlipPreview] = useState('');
   const [mounted, setMounted] = useState(false);
 
   /* ── generate month list (current year) ── */
@@ -92,15 +97,20 @@ const OnlinePayment = () => {
         name,
         index: idx,
         isPaid: paidMonths.includes(key),
+        isPending: pendingMonths.includes(key),
+        isRejected: rejectedMonths.includes(key),
         isPast: idx < currentMonth,
         isCurrent: idx === currentMonth,
         isFuture: idx > currentMonth,
       };
     });
-  }, [paidMonths, currentMonth, currentYear]);
+  }, [paidMonths, pendingMonths, rejectedMonths, currentMonth, currentYear]);
 
   const paidCount = monthList.filter((m) => m.isPaid).length;
-  const unpaidCount = monthList.filter((m) => !m.isPaid && !m.isFuture).length;
+  const pendingCount = monthList.filter((m) => m.isPending).length;
+  const unpaidCount = monthList.filter(
+    (m) => !m.isPaid && !m.isPending && !m.isFuture
+  ).length;
 
   /* ── fetch paid months ── */
   useEffect(() => {
@@ -111,7 +121,9 @@ const OnlinePayment = () => {
         setMonthlyFee(res.data.monthlyFee);
         setBankDetails(res.data.bankDetails);
         setPaidMonths(res.data.paidMonths || []);
-        setGatewayConfigured(res.data.onlinePaymentsEnabled);
+        setPendingMonths(res.data.pendingMonths || []);
+        setRejectedMonths(res.data.rejectedMonths || []);
+        setPaymentSlipStorageEnabled(res.data.paymentSlipStorageEnabled);
       } catch (err) {
         toast.error(err.response?.data?.message || 'Unable to load payment settings.');
       } finally {
@@ -120,53 +132,7 @@ const OnlinePayment = () => {
       }
     };
     fetchPayments();
-  }, [currentUser]);
-
-  useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    const outcome = params.get('payment');
-    const orderId = params.get('order_id');
-    if (!outcome || !orderId) return;
-
-    setReturnedOrderId(orderId);
-    if (outcome === 'cancelled') {
-      navigate('/student/online-payments', { replace: true });
-      const cancelOrder = async () => {
-        try {
-          await API.post(`/payments/${encodeURIComponent(orderId)}/cancel`);
-          setPaymentNotice('Checkout was canceled. No payment was made.');
-        } catch (err) {
-          setPaymentNotice(
-            err.response?.data?.message || 'Unable to update the canceled checkout.'
-          );
-        }
-      };
-      cancelOrder();
-      return;
-    }
-
-    const checkStatus = async () => {
-      try {
-        const res = await API.get(`/payments/${encodeURIComponent(orderId)}/status`);
-        if (res.data.status === 'paid') {
-          setPaidMonths((months) => [...new Set([...months, ...res.data.months])]);
-          setPaymentNotice(`Payment confirmed for ${res.data.months.join(', ')}.`);
-          toast.success('Payment confirmed!');
-        } else {
-          setPaymentNotice(
-            'Your payment is awaiting PayHere confirmation. Check the status again in a moment.'
-          );
-        }
-      } catch (err) {
-        setPaymentNotice(
-          err.response?.data?.message || 'Unable to confirm payment status right now.'
-        );
-      }
-    };
-
-    navigate('/student/online-payments', { replace: true });
-    checkStatus();
-  }, [location.search, navigate]);
+  }, []);
 
   /* ── toggle month selection ── */
   const toggleMonth = (key) => {
@@ -183,50 +149,56 @@ const OnlinePayment = () => {
     setTimeout(() => setCopied(null), 2000);
   };
 
-  const checkPaymentStatus = async () => {
-    if (!returnedOrderId) return;
-    try {
-      const res = await API.get(
-        `/payments/${encodeURIComponent(returnedOrderId)}/status`
-      );
-      if (res.data.status === 'paid') {
-        setPaidMonths((months) => [...new Set([...months, ...res.data.months])]);
-        setPaymentNotice(`Payment confirmed for ${res.data.months.join(', ')}.`);
-        toast.success('Payment confirmed!');
-      } else {
-        setPaymentNotice('Payment is still awaiting PayHere confirmation. Try again shortly.');
-      }
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Unable to check payment status.');
+  const handleSlipUpload = (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Payment slip must be 5MB or smaller.');
+      return;
     }
+    if (!['image/jpeg', 'image/png', 'image/webp', 'application/pdf'].includes(file.type)) {
+      toast.error('Upload a JPG, PNG, WebP, or PDF payment slip.');
+      return;
+    }
+    setPaymentSlip(file);
+    setSlipPreview(file.type.startsWith('image/') ? URL.createObjectURL(file) : '');
   };
 
-  const handleOnlineCheckout = async () => {
+  useEffect(() => () => {
+    if (slipPreview) URL.revokeObjectURL(slipPreview);
+  }, [slipPreview]);
+
+  const handleSlipSubmit = async (event) => {
+    event.preventDefault();
     if (selectedMonths.length === 0) {
       toast.error('Please select at least one month');
+      return;
+    }
+    if (!paymentSlip) {
+      toast.error('Upload your payment slip to continue.');
       return;
     }
 
     setSubmitting(true);
     try {
-      const res = await API.post('/payments/checkout', {
-        months: selectedMonths,
-        ...customerDetails,
+      const formData = new FormData();
+      formData.append('months', JSON.stringify(selectedMonths));
+      formData.append('studentName', studentDetails.studentName);
+      formData.append('indexNumber', studentDetails.indexNumber);
+      formData.append('slip', paymentSlip);
+      const res = await API.post('/payments/slips', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
       });
-      const form = document.createElement('form');
-      form.method = 'POST';
-      form.action = res.data.checkoutUrl;
-      Object.entries(res.data.fields).forEach(([name, value]) => {
-        const input = document.createElement('input');
-        input.type = 'hidden';
-        input.name = name;
-        input.value = value;
-        form.appendChild(input);
-      });
-      document.body.appendChild(form);
-      form.submit();
+      toast.success(res.data.message || 'Payment slip submitted for review.');
+      setPendingMonths((months) => [...new Set([...months, ...selectedMonths])]);
+      setShowPayModal(false);
+      setSelectedMonths([]);
+      setPaymentSlip(null);
+      setSlipPreview('');
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Unable to start online checkout.');
+      toast.error(err.response?.data?.message || 'Unable to submit payment slip.');
+    } finally {
       setSubmitting(false);
     }
   };
@@ -267,6 +239,12 @@ const OnlinePayment = () => {
               <CheckCircle2 className="w-3.5 h-3.5" />
               Paid: {paidCount}
             </div>
+            {pendingCount > 0 && (
+              <div className="px-3 py-1.5 rounded-xl border bg-blue-500/10 border-blue-500/30 text-xs font-mono text-blue-300 flex items-center gap-1.5">
+                <Clock className="w-3.5 h-3.5" />
+                In review: {pendingCount}
+              </div>
+            )}
             {unpaidCount > 0 && (
               <div className="px-3 py-1.5 rounded-xl border bg-amber-500/10 border-amber-500/30 text-xs font-mono text-amber-300 flex items-center gap-1.5">
                 <Clock className="w-3.5 h-3.5" />
@@ -280,27 +258,11 @@ const OnlinePayment = () => {
           </div>
         </div>
 
-        {paymentNotice && (
-          <div className="mb-6 p-4 rounded-xl bg-blue-500/10 border border-blue-500/20 text-sm text-blue-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <span>{paymentNotice}</span>
-            {returnedOrderId && paymentNotice.includes('awaiting') && (
-              <button
-                onClick={checkPaymentStatus}
-                className="inline-flex items-center gap-2 text-xs font-bold text-acid hover:underline"
-              >
-                <CheckCircle2 className="w-4 h-4" />
-                Check payment status
-              </button>
-            )}
-          </div>
-        )}
-
-        {!gatewayConfigured && (
+        {!loading && !paymentSlipStorageEnabled && (
           <div className="mb-6 p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 text-sm text-amber-200 flex items-start gap-3">
             <AlertCircle className="w-5 h-5 flex-shrink-0" />
             <span>
-              Online checkout is being set up. You can still view the academy's
-              bank transfer details below.
+              Payment slip uploads are temporarily unavailable. Please contact the academy.
             </span>
           </div>
         )}
@@ -314,13 +276,12 @@ const OnlinePayment = () => {
             </div>
             <div>
               <h3 className="text-sm font-grotesk font-bold text-white mb-1">
-                Pay online with PayHere
+                Upload your payment slip
               </h3>
               <p className="text-xs font-grotesk text-slate-400 leading-relaxed">
-                Select unpaid months and continue to PayHere's secure checkout
-                to pay by card or another supported method. Your payment status
-                updates automatically after PayHere confirms it. Bank transfer
-                details are also available below.
+                Select unpaid months, transfer the fee to the bank account below,
+                then upload your payment slip with your registered name and index
+                number. An admin will review it before your payment status updates.
               </p>
             </div>
           </div>
@@ -358,20 +319,25 @@ const OnlinePayment = () => {
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                   {monthList.map((month) => {
                     const isSelected = selectedMonths.includes(month.key);
-                    const isSelectable = !month.isPaid && !month.isFuture;
+                    const isSelectable =
+                      !month.isPaid && !month.isPending && !month.isFuture;
 
                     return (
                       <button
                         key={month.key}
-                        disabled={month.isPaid || month.isFuture}
+                        disabled={month.isPaid || month.isPending || month.isFuture}
                         onClick={() => isSelectable && toggleMonth(month.key)}
                         className={`relative group p-3 sm:p-4 rounded-xl border-2 transition-all duration-200 text-left ${
                           month.isPaid
                             ? 'bg-emerald-500/5 border-emerald-500/30 cursor-default'
                             : month.isFuture
                             ? 'bg-white/[0.02] border-white/5 cursor-not-allowed opacity-40'
+                            : month.isPending
+                            ? 'bg-blue-500/5 border-blue-500/30 cursor-default'
                             : isSelected
                             ? 'bg-acid/10 border-acid shadow-lg shadow-acid/10 ring-1 ring-acid/50'
+                            : month.isRejected
+                            ? 'bg-rose-500/5 border-rose-500/30 hover:border-acid/50 hover:bg-acid/5 cursor-pointer'
                             : month.isCurrent
                             ? 'bg-amber-500/5 border-amber-500/30 hover:border-acid/50 hover:bg-acid/5 cursor-pointer'
                             : 'bg-white/[0.02] border-white/10 hover:border-acid/50 hover:bg-acid/5 cursor-pointer'
@@ -383,6 +349,8 @@ const OnlinePayment = () => {
                             className={`w-2 h-2 rounded-full ${
                               month.isPaid
                                 ? 'bg-emerald-400'
+                                : month.isPending
+                                ? 'bg-blue-400'
                                 : month.isCurrent
                                 ? 'bg-amber-400 animate-pulse'
                                 : month.isFuture
@@ -398,7 +366,11 @@ const OnlinePayment = () => {
                               <Check className="w-3 h-3 text-ink" />
                             </div>
                           )}
-                          {month.isCurrent && !month.isPaid && !isSelected && (
+                          {month.isCurrent &&
+                            !month.isPaid &&
+                            !month.isPending &&
+                            !month.isRejected &&
+                            !isSelected && (
                             <span className="text-[9px] font-mono tracking-wider uppercase text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">
                               NOW
                             </span>
@@ -410,8 +382,12 @@ const OnlinePayment = () => {
                           className={`font-grotesk font-bold text-sm ${
                             month.isPaid
                               ? 'text-emerald-300'
+                              : month.isPending
+                              ? 'text-blue-300'
                               : isSelected
                               ? 'text-acid'
+                              : month.isRejected
+                              ? 'text-rose-300'
                               : month.isFuture
                               ? 'text-slate-600'
                               : 'text-white'
@@ -425,8 +401,12 @@ const OnlinePayment = () => {
                           className={`text-[10px] font-mono mt-1 ${
                             month.isPaid
                               ? 'text-emerald-400/70'
+                              : month.isPending
+                              ? 'text-blue-400/70'
                               : isSelected
                               ? 'text-acid/70'
+                              : month.isRejected
+                              ? 'text-rose-400/70'
                               : month.isFuture
                               ? 'text-slate-600'
                               : month.isCurrent
@@ -436,6 +416,10 @@ const OnlinePayment = () => {
                         >
                           {month.isPaid
                             ? '✓ Paid'
+                            : month.isPending
+                            ? 'Under review'
+                            : month.isRejected
+                            ? 'Slip rejected — resubmit'
                             : month.isFuture
                             ? 'Upcoming'
                             : isSelected
@@ -474,10 +458,11 @@ const OnlinePayment = () => {
                   </div>
                   <button
                     onClick={() => setShowPayModal(true)}
-                    className="inline-flex items-center gap-2 px-5 py-2.5 bg-acid text-ink rounded-xl font-grotesk font-bold text-sm transition-all duration-200 hover:-translate-y-0.5 shadow-lg shadow-acid/20 w-full sm:w-auto justify-center"
+                    disabled={!paymentSlipStorageEnabled}
+                    className="inline-flex items-center gap-2 px-5 py-2.5 bg-acid text-ink rounded-xl font-grotesk font-bold text-sm transition-all duration-200 hover:-translate-y-0.5 shadow-lg shadow-acid/20 w-full sm:w-auto justify-center disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <Banknote className="w-4 h-4" />
-                    Pay online with PayHere
+                    Upload payment slip
                     <ArrowRight className="w-4 h-4" />
                   </button>
                 </div>
@@ -634,8 +619,8 @@ const OnlinePayment = () => {
             <div className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.02] border border-white/5">
               <Shield className="w-5 h-5 text-acid/50 flex-shrink-0" />
               <p className="text-[10px] font-mono text-slate-500 leading-relaxed">
-                Online payments are confirmed by PayHere. Never enter card details
-                on this website; checkout takes place on PayHere's secure page.
+                Only signed-in students can upload payment slips. Uploaded slips
+                are reviewed by an admin before months are marked paid.
               </p>
             </div>
           </div>
@@ -669,13 +654,17 @@ const OnlinePayment = () => {
                   className={`w-3 h-3 sm:w-4 sm:h-4 rounded-full border transition-all ${
                     month.isPaid
                       ? 'bg-emerald-400 border-emerald-400/50 shadow-sm shadow-emerald-400/30'
+                      : month.isPending
+                      ? 'bg-blue-400 border-blue-400/50'
                       : month.isCurrent
                       ? 'bg-amber-400 border-amber-400/50 animate-pulse'
                       : month.isFuture
                       ? 'bg-slate-800 border-slate-700'
                       : 'bg-red-400/30 border-red-400/30'
                   }`}
-                  title={`${month.name} — ${month.isPaid ? 'Paid' : 'Unpaid'}`}
+                  title={`${month.name} — ${
+                    month.isPaid ? 'Paid' : month.isPending ? 'Under review' : 'Unpaid'
+                  }`}
                 />
                 <span className="text-[8px] sm:text-[9px] font-mono text-slate-600 hidden sm:block">
                   {month.name.slice(0, 3)}
@@ -689,171 +678,201 @@ const OnlinePayment = () => {
       {/* ── PAYMENT MODAL ────────────────────────────────── */}
       {showPayModal && (
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
-          {/* Backdrop */}
           <div
             className="absolute inset-0 bg-black/70 backdrop-blur-sm"
             onClick={() => setShowPayModal(false)}
           />
 
-          {/* Modal */}
-          <div className="relative bg-ink-lighter border border-white/10 rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-200">
-            {/* Header */}
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="payment-slip-title"
+            className="relative bg-ink-lighter border border-white/10 rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-200"
+          >
             <div className="sticky top-0 z-10 bg-ink-lighter border-b border-white/10 p-5 flex items-center justify-between rounded-t-2xl">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-acid/10 border border-acid/30 flex items-center justify-center text-acid">
-                  <CreditCard className="w-5 h-5" />
+                  <Upload className="w-5 h-5" />
                 </div>
                 <div>
-                  <h2 className="text-lg font-grotesk font-bold text-white">
-                    Pay securely with PayHere
+                  <h2 id="payment-slip-title" className="text-lg font-grotesk font-bold text-white">
+                    Upload payment slip
                   </h2>
                   <p className="text-[10px] font-mono text-slate-400">
-                    Your card details are entered on PayHere's website
+                    Submit your bank transfer for admin review
                   </p>
                 </div>
               </div>
               <button
+                type="button"
                 onClick={() => setShowPayModal(false)}
                 className="p-2 rounded-lg hover:bg-white/5 text-slate-400 hover:text-white transition-colors"
+                aria-label="Close upload form"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            {/* Body */}
-            <div className="p-5 space-y-5">
-              {/* Selected Months */}
-              <div>
-                <p className="text-xs font-mono text-slate-400 mb-2 uppercase tracking-wider">
-                  Paying for
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {selectedMonths.map((key) => {
-                    const [year, month] = key.split('-');
-                    const monthIdx = parseInt(month, 10) - 1;
-                    return (
-                      <span
-                        key={key}
-                        className="px-3 py-1.5 rounded-lg bg-acid/10 border border-acid/30 text-xs font-mono text-acid font-semibold"
+            <form onSubmit={handleSlipSubmit}>
+              <div className="p-5 space-y-5">
+                <div>
+                  <p className="text-xs font-mono text-slate-400 mb-2 uppercase tracking-wider">
+                    Paying for
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedMonths.map((key) => {
+                      const [year, month] = key.split('-');
+                      const monthIdx = parseInt(month, 10) - 1;
+                      return (
+                        <span
+                          key={key}
+                          className="px-3 py-1.5 rounded-lg bg-acid/10 border border-acid/30 text-xs font-mono text-acid font-semibold"
+                        >
+                          {MONTH_NAMES[monthIdx]} {year}
+                        </span>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="p-4 rounded-xl bg-white/[0.03] border border-white/10">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-mono text-slate-400">
+                      Total amount
+                    </span>
+                    <span className="text-xl font-grotesk font-bold text-acid">
+                      Rs. {totalSelected.toLocaleString()}
+                    </span>
+                  </div>
+                  <p className="text-[10px] font-mono text-slate-500 mt-1">
+                    {selectedMonths.length} × Rs. {monthlyFee.toLocaleString()}/month
+                  </p>
+                </div>
+
+                <label className="block">
+                  <span className="block text-xs font-mono text-slate-400 mb-1.5">
+                    <UserRound className="inline w-3.5 h-3.5 mr-1" />
+                    Student name
+                  </span>
+                  <input
+                    type="text"
+                    autoComplete="name"
+                    maxLength={100}
+                    value={studentDetails.studentName}
+                    onChange={(event) =>
+                      setStudentDetails((details) => ({
+                        ...details,
+                        studentName: event.target.value,
+                      }))
+                    }
+                    className="w-full rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-sm text-white focus:border-acid focus:outline-none"
+                    required
+                  />
+                </label>
+
+                <label className="block">
+                  <span className="block text-xs font-mono text-slate-400 mb-1.5">
+                    <Fingerprint className="inline w-3.5 h-3.5 mr-1" />
+                    Student index number
+                  </span>
+                  <input
+                    type="text"
+                    maxLength={50}
+                    value={studentDetails.indexNumber}
+                    onChange={(event) =>
+                      setStudentDetails((details) => ({
+                        ...details,
+                        indexNumber: event.target.value,
+                      }))
+                    }
+                    className="w-full rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-sm text-white focus:border-acid focus:outline-none"
+                    required
+                  />
+                </label>
+
+                <div>
+                  <p className="text-xs font-mono text-slate-400 mb-2 uppercase tracking-wider">
+                    Payment slip
+                  </p>
+                  {paymentSlip ? (
+                    <div className="relative rounded-xl border border-white/10 p-3 flex items-center gap-3">
+                      {slipPreview ? (
+                        <img
+                          src={slipPreview}
+                          alt="Payment slip preview"
+                          className="w-20 h-20 rounded-lg object-cover"
+                        />
+                      ) : (
+                        <FileText className="w-10 h-10 text-acid flex-shrink-0" />
+                      )}
+                      <div className="min-w-0">
+                        <p className="text-sm text-white truncate">{paymentSlip.name}</p>
+                        <p className="text-xs text-slate-400">
+                          {(paymentSlip.size / (1024 * 1024)).toFixed(2)} MB
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPaymentSlip(null);
+                          setSlipPreview('');
+                        }}
+                        className="ml-auto p-2 rounded-lg hover:bg-white/5 text-slate-400 hover:text-white"
+                        aria-label="Remove payment slip"
                       >
-                        {MONTH_NAMES[monthIdx]} {year}
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <label className="flex flex-col items-center justify-center p-7 rounded-xl border-2 border-dashed border-white/10 hover:border-acid/30 hover:bg-acid/5 transition-all cursor-pointer">
+                      <ImageIcon className="w-8 h-8 text-slate-500 mb-2" />
+                      <span className="text-xs font-mono text-slate-300 text-center">
+                        Choose a payment slip
                       </span>
-                    );
-                  })}
+                      <span className="text-[10px] font-mono text-slate-500 mt-1">
+                        JPG, PNG, WebP, or PDF · up to 5MB
+                      </span>
+                      <input
+                        type="file"
+                        accept=".jpg,.jpeg,.png,.webp,.pdf,image/jpeg,image/png,image/webp,application/pdf"
+                        onChange={handleSlipUpload}
+                        className="hidden"
+                      />
+                    </label>
+                  )}
+                  <p className="mt-2 text-[10px] text-slate-500">
+                    Upload the receipt after transferring the displayed amount to the academy account.
+                  </p>
                 </div>
               </div>
 
-              {/* Amount */}
-              <div className="p-4 rounded-xl bg-white/[0.03] border border-white/10">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-mono text-slate-400">
-                    Total Amount
-                  </span>
-                  <span className="text-xl font-grotesk font-bold text-acid">
-                    Rs. {totalSelected.toLocaleString()}
-                  </span>
-                </div>
-                <p className="text-[10px] font-mono text-slate-500 mt-1">
-                  {selectedMonths.length} × Rs. {monthlyFee.toLocaleString()}/month
-                </p>
+              <div className="sticky bottom-0 z-10 bg-ink-lighter border-t border-white/10 p-5 flex flex-col sm:flex-row gap-3 rounded-b-2xl">
+                <button
+                  type="button"
+                  onClick={() => setShowPayModal(false)}
+                  className="flex-1 px-4 py-2.5 rounded-xl border border-white/10 text-sm font-mono text-slate-400 hover:bg-white/5 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-acid text-ink rounded-xl font-grotesk font-bold text-sm transition-all duration-200 hover:-translate-y-0.5 shadow-lg shadow-acid/20 disabled:opacity-50 disabled:hover:translate-y-0"
+                >
+                  {submitting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Uploading...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="w-4 h-4" />
+                      Submit for verification
+                    </>
+                  )}
+                </button>
               </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <label className="sm:col-span-2">
-                  <span className="block text-xs font-mono text-slate-400 mb-1.5">
-                    <Phone className="inline w-3.5 h-3.5 mr-1" />
-                    Phone number
-                  </span>
-                  <input
-                    type="tel"
-                    autoComplete="tel"
-                    value={customerDetails.phone}
-                    onChange={(event) =>
-                      setCustomerDetails((details) => ({
-                        ...details,
-                        phone: event.target.value,
-                      }))
-                    }
-                    className="w-full rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-sm text-white placeholder:text-slate-500 focus:border-acid focus:outline-none"
-                    placeholder="+94 77 123 4567"
-                    required
-                  />
-                </label>
-                <label className="sm:col-span-2">
-                  <span className="block text-xs font-mono text-slate-400 mb-1.5">
-                    <MapPin className="inline w-3.5 h-3.5 mr-1" />
-                    Address
-                  </span>
-                  <input
-                    type="text"
-                    autoComplete="street-address"
-                    value={customerDetails.address}
-                    onChange={(event) =>
-                      setCustomerDetails((details) => ({
-                        ...details,
-                        address: event.target.value,
-                      }))
-                    }
-                    className="w-full rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-sm text-white placeholder:text-slate-500 focus:border-acid focus:outline-none"
-                    placeholder="Street address"
-                    required
-                  />
-                </label>
-                <label className="sm:col-span-2">
-                  <span className="block text-xs font-mono text-slate-400 mb-1.5">
-                    City
-                  </span>
-                  <input
-                    type="text"
-                    autoComplete="address-level2"
-                    value={customerDetails.city}
-                    onChange={(event) =>
-                      setCustomerDetails((details) => ({
-                        ...details,
-                        city: event.target.value,
-                      }))
-                    }
-                    className="w-full rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-sm text-white placeholder:text-slate-500 focus:border-acid focus:outline-none"
-                    placeholder="City"
-                    required
-                  />
-                </label>
-              </div>
-
-              {!gatewayConfigured && (
-                <div className="p-3 rounded-lg bg-amber-500/5 border border-amber-500/20 text-xs text-amber-200">
-                  PayHere merchant setup is not complete yet. Please use the
-                  bank transfer details on this page or contact the academy.
-                </div>
-              )}
-            </div>
-
-            {/* Footer */}
-            <div className="sticky bottom-0 z-10 bg-ink-lighter border-t border-white/10 p-5 flex flex-col sm:flex-row gap-3 rounded-b-2xl">
-              <button
-                onClick={() => setShowPayModal(false)}
-                className="flex-1 px-4 py-2.5 rounded-xl border border-white/10 text-sm font-mono text-slate-400 hover:bg-white/5 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleOnlineCheckout}
-                disabled={submitting || !gatewayConfigured}
-                className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-acid text-ink rounded-xl font-grotesk font-bold text-sm transition-all duration-200 hover:-translate-y-0.5 shadow-lg shadow-acid/20 disabled:opacity-50 disabled:hover:translate-y-0"
-              >
-                {submitting ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    Connecting...
-                  </>
-                ) : (
-                  <>
-                    <CreditCard className="w-4 h-4" />
-                    Continue to PayHere
-                  </>
-                )}
-              </button>
-            </div>
+            </form>
           </div>
         </div>
       )}
