@@ -10,6 +10,7 @@ import {
   ArrowRight,
   ExternalLink,
   Video,
+  CreditCard,
 } from 'lucide-react';
 import StudentNavbar from '../../components/StudentNavbar';
 //import Countdown from '../../components/Countdown';
@@ -40,6 +41,14 @@ const StudentDashboard = () => {
       onClick: () => navigate('/student/live-classes'),
       color: 'yellow',
       tag: 'Live',
+    },
+    {
+      title: 'Online Payments',
+      description: 'Manage your online payments and subscriptions',
+      icon: CreditCard,
+      onClick: () => navigate('/student/online-payments'),
+      color: 'blue',
+      tag: 'Payments',
     },
     {
       title: 'Spot Tests',
