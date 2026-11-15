@@ -7,11 +7,13 @@ import {
   FileText,
   Loader2,
   RefreshCw,
+  Trash2,
   Wallet,
   XCircle,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import AdminNavbar from '../../components/AdminNavbar';
+import ConfirmationModal from '../../components/ConfirmationModal';
 import API from '../../services/api';
 
 const MONTH_NAMES = [
@@ -38,6 +40,7 @@ const ManagePaymentSlips = () => {
   const [loading, setLoading] = useState(true);
   const [workingId, setWorkingId] = useState('');
   const [reloadKey, setReloadKey] = useState(0);
+  const [deleteTarget, setDeleteTarget] = useState(null);
 
   useEffect(() => {
     let active = true;
@@ -92,6 +95,33 @@ const ManagePaymentSlips = () => {
       toast.error(err.response?.data?.message || 'Unable to review payment slip.');
     } finally {
       setWorkingId('');
+    }
+  };
+
+  const deleteSlip = async (submission) => {
+    setWorkingId(submission.id);
+    try {
+      const res = await API.delete(`/payments/admin/slips/${submission.id}`);
+      toast.success(res.data.message || 'Payment slip deleted.');
+      setSubmissions((current) =>
+        current.filter((item) => item.id !== submission.id)
+      );
+      setSlipUrls((current) => {
+        const remainingUrls = { ...current };
+        delete remainingUrls[submission.id];
+        return remainingUrls;
+      });
+      if (visibleSlipId === submission.id) setVisibleSlipId('');
+      setReviewNotes((current) => {
+        const remainingNotes = { ...current };
+        delete remainingNotes[submission.id];
+        return remainingNotes;
+      });
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Unable to delete payment slip.');
+    } finally {
+      setWorkingId('');
+      setDeleteTarget(null);
     }
   };
 
@@ -269,6 +299,15 @@ const ManagePaymentSlips = () => {
                         </button>
                       </>
                     )}
+
+                    <button
+                      onClick={() => setDeleteTarget(submission)}
+                      disabled={workingId === submission.id}
+                      className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-rose-500/10 border border-rose-400/20 text-rose-200 text-sm hover:bg-rose-500/20 disabled:opacity-50"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      Delete slip and payment
+                    </button>
                   </div>
                 </div>
 
@@ -307,6 +346,19 @@ const ManagePaymentSlips = () => {
           Refresh submissions
         </button>
       </main>
+      <ConfirmationModal
+        isOpen={Boolean(deleteTarget)}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={() => deleteTarget && deleteSlip(deleteTarget)}
+        title="Delete payment slip?"
+        message={
+          deleteTarget
+            ? `This permanently deletes ${deleteTarget.studentName}'s uploaded slip and payment record. If approved, the associated classes and months will become unpaid. This cannot be undone.`
+            : ''
+        }
+        confirmText="Delete permanently"
+        type="danger"
+      />
     </div>
   );
 };
