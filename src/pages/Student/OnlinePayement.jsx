@@ -35,7 +35,12 @@ const MONTH_NAMES = [
   'July', 'August', 'September', 'October', 'November', 'December',
 ];
 
-const CLASS_FEE = 2500; // LKR per month
+const CLASS_TYPES = [
+  { value: 'theory', label: 'Theory' },
+  { value: 'revision', label: 'Revision' },
+  { value: 'paper', label: 'Paper' },
+];
+const DEFAULT_CLASS_FEES = { theory: 2500, revision: 2500, paper: 2500 };
 
 /* ───────────────────────── component ───────────────────────── */
 const OnlinePayment = () => {
@@ -60,12 +65,14 @@ const OnlinePayment = () => {
   }, [token, currentUser, navigate]);
 
   /* ── state ── */
-  const [paidMonths, setPaidMonths] = useState([]);
-  const [pendingMonths, setPendingMonths] = useState([]);
-  const [rejectedMonths, setRejectedMonths] = useState([]);
+  const [paidClassMonths, setPaidClassMonths] = useState([]);
+  const [pendingClassMonths, setPendingClassMonths] = useState([]);
+  const [rejectedClassMonths, setRejectedClassMonths] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [statusRefreshError, setStatusRefreshError] = useState('');
   const [selectedMonths, setSelectedMonths] = useState([]);
-  const [monthlyFee, setMonthlyFee] = useState(CLASS_FEE);
+  const [selectedClassTypes, setSelectedClassTypes] = useState([]);
+  const [classFees, setClassFees] = useState(DEFAULT_CLASS_FEES);
   const [paymentSlipStorageEnabled, setPaymentSlipStorageEnabled] = useState(false);
   const [bankDetails, setBankDetails] = useState({
     bankName: '',
@@ -83,7 +90,6 @@ const OnlinePayment = () => {
   });
   const [paymentSlip, setPaymentSlip] = useState(null);
   const [slipPreview, setSlipPreview] = useState('');
-  const [mounted, setMounted] = useState(false);
 
   /* ── generate month list (current year) ── */
   const currentYear = new Date().getFullYear();
@@ -92,19 +98,46 @@ const OnlinePayment = () => {
   const monthList = useMemo(() => {
     return MONTH_NAMES.map((name, idx) => {
       const key = `${currentYear}-${String(idx + 1).padStart(2, '0')}`;
+      const classTypesToCheck = selectedClassTypes.length
+        ? selectedClassTypes
+        : CLASS_TYPES.map(({ value }) => value);
+      const hasClassMonth = (payments, classType) =>
+        payments.some(
+          (payment) =>
+            payment.months.includes(key) && payment.classTypes.includes(classType)
+        );
+      const paidTypes = classTypesToCheck.filter((classType) =>
+        hasClassMonth(paidClassMonths, classType)
+      );
+      const pendingTypes = classTypesToCheck.filter((classType) =>
+        hasClassMonth(pendingClassMonths, classType)
+      );
+      const rejectedTypes = classTypesToCheck.filter((classType) =>
+        hasClassMonth(rejectedClassMonths, classType)
+      );
       return {
         key,
         name,
         index: idx,
-        isPaid: paidMonths.includes(key),
-        isPending: pendingMonths.includes(key),
-        isRejected: rejectedMonths.includes(key),
+        isPaid: paidTypes.length === classTypesToCheck.length,
+        isPending: pendingTypes.length > 0,
+        isRejected: rejectedTypes.length > 0,
+        hasClassConflict:
+          selectedClassTypes.length > 0 &&
+          (paidTypes.length > 0 || pendingTypes.length > 0),
         isPast: idx < currentMonth,
         isCurrent: idx === currentMonth,
         isFuture: idx > currentMonth,
       };
     });
-  }, [paidMonths, pendingMonths, rejectedMonths, currentMonth, currentYear]);
+  }, [
+    paidClassMonths,
+    pendingClassMonths,
+    rejectedClassMonths,
+    selectedClassTypes,
+    currentMonth,
+    currentYear,
+  ]);
 
   const paidCount = monthList.filter((m) => m.isPaid).length;
   const pendingCount = monthList.filter((m) => m.isPending).length;
@@ -112,33 +145,100 @@ const OnlinePayment = () => {
     (m) => !m.isPaid && !m.isPending && !m.isFuture
   ).length;
 
-  /* ── fetch paid months ── */
+  const paidMonthsByClass = useMemo(
+    () =>
+      Object.fromEntries(
+        CLASS_TYPES.map(({ value }) => [
+          value,
+          [
+            ...new Set(
+              paidClassMonths
+                .filter((payment) => payment.classTypes.includes(value))
+                .flatMap((payment) => payment.months)
+                .filter((month) => month.startsWith(`${currentYear}-`))
+            ),
+          ].sort(),
+        ])
+      ),
+    [paidClassMonths, currentYear]
+  );
+
+  /* ── refresh payment status while the student page is open ── */
   useEffect(() => {
-    const fetchPayments = async () => {
-      setLoading(true);
+    let active = true;
+    let refreshing = false;
+    const fetchPayments = async (initialLoad = false) => {
+      if (refreshing) return;
+      refreshing = true;
       try {
         const res = await API.get('/payments/config');
-        setMonthlyFee(res.data.monthlyFee);
+        if (!active) return;
+        const fees = res.data.classFees || {};
+        setClassFees(
+          Object.fromEntries(
+            CLASS_TYPES.map(({ value }) => [
+              value,
+              Number(fees[value] ?? res.data.monthlyFee ?? DEFAULT_CLASS_FEES[value]),
+            ])
+          )
+        );
         setBankDetails(res.data.bankDetails);
-        setPaidMonths(res.data.paidMonths || []);
-        setPendingMonths(res.data.pendingMonths || []);
-        setRejectedMonths(res.data.rejectedMonths || []);
+        const legacyStatus = (months) =>
+          months?.length
+            ? [{ months, classTypes: CLASS_TYPES.map(({ value }) => value) }]
+            : [];
+        setPaidClassMonths(res.data.paidClassMonths || legacyStatus(res.data.paidMonths));
+        setPendingClassMonths(res.data.pendingClassMonths || legacyStatus(res.data.pendingMonths));
+        setRejectedClassMonths(res.data.rejectedClassMonths || legacyStatus(res.data.rejectedMonths));
         setPaymentSlipStorageEnabled(res.data.paymentSlipStorageEnabled);
+        setStatusRefreshError('');
       } catch (err) {
-        toast.error(err.response?.data?.message || 'Unable to load payment settings.');
+        if (active) {
+          const message = err.response?.data?.message || 'Unable to refresh payment status.';
+          if (initialLoad) toast.error(message);
+          else setStatusRefreshError(message);
+        }
       } finally {
-        setLoading(false);
-        requestAnimationFrame(() => setMounted(true));
+        refreshing = false;
+        if (active && initialLoad) {
+          setLoading(false);
+        }
       }
     };
-    fetchPayments();
+
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === 'visible') fetchPayments();
+    };
+
+    fetchPayments(true);
+    const intervalId = window.setInterval(refreshWhenVisible, 15000);
+    window.addEventListener('focus', refreshWhenVisible);
+    document.addEventListener('visibilitychange', refreshWhenVisible);
+
+    return () => {
+      active = false;
+      window.clearInterval(intervalId);
+      window.removeEventListener('focus', refreshWhenVisible);
+      document.removeEventListener('visibilitychange', refreshWhenVisible);
+    };
   }, []);
 
   /* ── toggle month selection ── */
   const toggleMonth = (key) => {
+    const month = monthList.find((item) => item.key === key);
+    if (!selectedClassTypes.length || month?.isFuture || month?.hasClassConflict) return;
     setSelectedMonths((prev) =>
       prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]
     );
+  };
+
+  const toggleClassType = (classType) => {
+    setSelectedClassTypes((previous) =>
+      previous.includes(classType)
+        ? previous.filter((item) => item !== classType)
+        : [...previous, classType]
+    );
+    setSelectedMonths([]);
   };
 
   /* ── copy to clipboard ── */
@@ -175,6 +275,10 @@ const OnlinePayment = () => {
       toast.error('Please select at least one month');
       return;
     }
+    if (selectedClassTypes.length === 0) {
+      toast.error('Please select at least one class');
+      return;
+    }
     if (!paymentSlip) {
       toast.error('Upload your payment slip to continue.');
       return;
@@ -184,6 +288,7 @@ const OnlinePayment = () => {
     try {
       const formData = new FormData();
       formData.append('months', JSON.stringify(selectedMonths));
+      formData.append('classTypes', JSON.stringify(selectedClassTypes));
       formData.append('studentName', studentDetails.studentName);
       formData.append('indexNumber', studentDetails.indexNumber);
       formData.append('slip', paymentSlip);
@@ -191,9 +296,13 @@ const OnlinePayment = () => {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       toast.success(res.data.message || 'Payment slip submitted for review.');
-      setPendingMonths((months) => [...new Set([...months, ...selectedMonths])]);
+      setPendingClassMonths((payments) => [
+        ...payments,
+        { months: selectedMonths, classTypes: selectedClassTypes },
+      ]);
       setShowPayModal(false);
       setSelectedMonths([]);
+      setSelectedClassTypes([]);
       setPaymentSlip(null);
       setSlipPreview('');
     } catch (err) {
@@ -203,7 +312,11 @@ const OnlinePayment = () => {
     }
   };
 
-  const totalSelected = selectedMonths.length * monthlyFee;
+  const selectedClassFee = selectedClassTypes.reduce(
+    (total, classType) => total + (classFees[classType] || 0),
+    0
+  );
+  const totalSelected = selectedMonths.length * selectedClassFee;
 
   if (!token || !currentUser) return null;
 
@@ -211,11 +324,7 @@ const OnlinePayment = () => {
     <div className="min-h-screen bg-ink text-slate-100 pb-16 sm:pb-20">
       <StudentNavbar />
 
-      <main
-        className={`max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-4 sm:pt-6 transition-all duration-500 ease-out ${
-          mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
-        }`}
-      >
+      <main className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-4 sm:pt-6">
         {/* ── HEADER ─────────────────────────────────────────── */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 mb-6 sm:mb-8">
           <div>
@@ -225,7 +334,7 @@ const OnlinePayment = () => {
                 PAYMENT CENTER
               </span>
               <span className="text-[11px] sm:text-xs font-mono text-slate-400">
-                ChemBridge Academy
+                ChemBridge
               </span>
             </div>
             <h1 className="text-xl sm:text-3xl font-bebas tracking-wide text-white">
@@ -253,10 +362,22 @@ const OnlinePayment = () => {
             )}
             <div className="px-3 py-1.5 rounded-xl border bg-white/5 border-white/10 text-xs font-mono text-slate-300 flex items-center gap-1.5">
               <CreditCard className="w-3.5 h-3.5" />
-              Rs. {monthlyFee.toLocaleString()} / month
+              {selectedClassTypes.length
+                ? `Rs. ${selectedClassFee.toLocaleString()} / month`
+                : 'Choose class options'}
             </div>
           </div>
         </div>
+
+        {statusRefreshError ? (
+          <div className="mb-4 rounded-lg border border-amber-500/20 bg-amber-500/10 px-3 py-2 text-xs text-amber-200">
+            {statusRefreshError} Payment status will retry automatically.
+          </div>
+        ) : (
+          <p className="mb-4 text-[10px] font-mono text-slate-500">
+            Payment approvals refresh automatically while this page is open.
+          </p>
+        )}
 
         {!loading && !paymentSlipStorageEnabled && (
           <div className="mb-6 p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 text-sm text-amber-200 flex items-start gap-3">
@@ -279,8 +400,9 @@ const OnlinePayment = () => {
                 Upload your payment slip
               </h3>
               <p className="text-xs font-grotesk text-slate-400 leading-relaxed">
-                Select unpaid months, transfer the fee to the bank account below,
-                then upload your payment slip with your registered name and index
+                Select one or more class options and unpaid months, transfer only
+                the selected class fees to the bank account below, then upload your
+                payment slip with your registered name and index
                 number. An admin will review it before your payment status updates.
               </p>
             </div>
@@ -308,6 +430,44 @@ const OnlinePayment = () => {
                 </div>
               </div>
 
+              <div className="mb-5">
+                <p className="text-xs font-mono text-slate-400 mb-2 uppercase tracking-wider">
+                  Select class options — you can choose one, two, or all three
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {CLASS_TYPES.map(({ value, label }) => {
+                    const isSelected = selectedClassTypes.includes(value);
+                    return (
+                      <button
+                        key={value}
+                        type="button"
+                        onClick={() => toggleClassType(value)}
+                        className={`p-3 rounded-xl border text-left transition-colors ${
+                          isSelected
+                            ? 'bg-acid/10 border-acid text-acid'
+                            : 'bg-white/[0.02] border-white/10 text-white hover:border-acid/50'
+                        }`}
+                      >
+                        <span className="flex items-center justify-between">
+                          <span className="font-grotesk font-bold">{label}</span>
+                          {isSelected && <Check className="w-4 h-4" />}
+                        </span>
+                        <span className="block mt-1 text-xs font-mono text-slate-400">
+                          Rs. {classFees[value].toLocaleString()} / month
+                        </span>
+                        {paidMonthsByClass[value].length > 0 && (
+                          <span className="block mt-2 text-[10px] font-mono text-emerald-300">
+                            Approved: {paidMonthsByClass[value]
+                              .map((month) => MONTH_NAMES[Number(month.slice(5, 7)) - 1].slice(0, 3))
+                              .join(', ')}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
               {loading ? (
                 <div className="py-16 flex flex-col items-center justify-center">
                   <div className="w-8 h-8 border-2 border-acid border-t-transparent rounded-full animate-spin mb-3" />
@@ -320,18 +480,24 @@ const OnlinePayment = () => {
                   {monthList.map((month) => {
                     const isSelected = selectedMonths.includes(month.key);
                     const isSelectable =
-                      !month.isPaid && !month.isPending && !month.isFuture;
+                      selectedClassTypes.length > 0 &&
+                      !month.hasClassConflict &&
+                      !month.isFuture;
 
                     return (
                       <button
                         key={month.key}
-                        disabled={month.isPaid || month.isPending || month.isFuture}
+                        disabled={!isSelectable && !isSelected}
                         onClick={() => isSelectable && toggleMonth(month.key)}
                         className={`relative group p-3 sm:p-4 rounded-xl border-2 transition-all duration-200 text-left ${
                           month.isPaid
                             ? 'bg-emerald-500/5 border-emerald-500/30 cursor-default'
                             : month.isFuture
                             ? 'bg-white/[0.02] border-white/5 cursor-not-allowed opacity-40'
+                            : month.hasClassConflict
+                            ? 'bg-blue-500/5 border-blue-500/30 cursor-not-allowed'
+                            : !selectedClassTypes.length
+                            ? 'bg-white/[0.02] border-white/5 cursor-not-allowed opacity-50'
                             : month.isPending
                             ? 'bg-blue-500/5 border-blue-500/30 cursor-default'
                             : isSelected
@@ -349,6 +515,10 @@ const OnlinePayment = () => {
                             className={`w-2 h-2 rounded-full ${
                               month.isPaid
                                 ? 'bg-emerald-400'
+                                : month.hasClassConflict
+                                  ? 'bg-blue-400'
+                                  : !selectedClassTypes.length
+                                  ? 'bg-slate-600'
                                 : month.isPending
                                 ? 'bg-blue-400'
                                 : month.isCurrent
@@ -368,7 +538,7 @@ const OnlinePayment = () => {
                           )}
                           {month.isCurrent &&
                             !month.isPaid &&
-                            !month.isPending &&
+                            !month.hasClassConflict &&
                             !month.isRejected &&
                             !isSelected && (
                             <span className="text-[9px] font-mono tracking-wider uppercase text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">
@@ -382,6 +552,10 @@ const OnlinePayment = () => {
                           className={`font-grotesk font-bold text-sm ${
                             month.isPaid
                               ? 'text-emerald-300'
+                              : month.hasClassConflict
+                              ? 'text-blue-300'
+                              : !selectedClassTypes.length
+                              ? 'text-slate-500'
                               : month.isPending
                               ? 'text-blue-300'
                               : isSelected
@@ -401,6 +575,10 @@ const OnlinePayment = () => {
                           className={`text-[10px] font-mono mt-1 ${
                             month.isPaid
                               ? 'text-emerald-400/70'
+                              : month.hasClassConflict
+                              ? 'text-blue-400/70'
+                              : !selectedClassTypes.length
+                              ? 'text-slate-500'
                               : month.isPending
                               ? 'text-blue-400/70'
                               : isSelected
@@ -416,6 +594,10 @@ const OnlinePayment = () => {
                         >
                           {month.isPaid
                             ? '✓ Paid'
+                            : month.hasClassConflict
+                            ? 'Some selected class already paid / in review'
+                            : !selectedClassTypes.length
+                            ? 'Select class options first'
                             : month.isPending
                             ? 'Under review'
                             : month.isRejected
@@ -430,9 +612,9 @@ const OnlinePayment = () => {
                         </p>
 
                         {/* Price */}
-                        {!month.isPaid && !month.isFuture && (
+                        {selectedClassTypes.length > 0 && !month.isFuture && (
                           <p className="text-[11px] font-mono text-slate-500 mt-1">
-                            Rs. {monthlyFee.toLocaleString()}
+                            Rs. {selectedClassFee.toLocaleString()}
                           </p>
                         )}
                       </button>
@@ -584,10 +766,12 @@ const OnlinePayment = () => {
                 </div>
                 <div className="flex justify-between items-center p-2.5 rounded-lg bg-white/[0.03]">
                   <span className="text-xs font-mono text-slate-400">
-                    Monthly Fee
+                    Selected classes / month
                   </span>
                   <span className="text-xs font-mono text-white font-semibold">
-                    Rs. {monthlyFee.toLocaleString()}
+                    {selectedClassTypes.length
+                      ? `Rs. ${selectedClassFee.toLocaleString()}`
+                      : 'None selected'}
                   </span>
                 </div>
 
@@ -595,20 +779,20 @@ const OnlinePayment = () => {
 
                 <div className="flex justify-between items-center p-2.5 rounded-lg bg-emerald-500/5 border border-emerald-500/20">
                   <span className="text-xs font-mono text-emerald-300">
-                    Total Paid
+                    Fully paid months
                   </span>
                   <span className="text-xs font-mono text-emerald-300 font-bold">
-                    Rs. {(paidCount * monthlyFee).toLocaleString()}
+                    {paidCount}
                   </span>
                 </div>
 
                 {unpaidCount > 0 && (
                   <div className="flex justify-between items-center p-2.5 rounded-lg bg-red-500/5 border border-red-500/20">
                     <span className="text-xs font-mono text-red-300">
-                      Outstanding
+                      Unpaid months
                     </span>
                     <span className="text-xs font-mono text-red-300 font-bold">
-                      Rs. {(unpaidCount * monthlyFee).toLocaleString()}
+                      {unpaidCount}
                     </span>
                   </div>
                 )}
@@ -717,7 +901,23 @@ const OnlinePayment = () => {
               <div className="p-5 space-y-5">
                 <div>
                   <p className="text-xs font-mono text-slate-400 mb-2 uppercase tracking-wider">
-                    Paying for
+                    Classes
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedClassTypes.map((classType) => (
+                      <span
+                        key={classType}
+                        className="px-3 py-1.5 rounded-lg bg-blue-500/10 border border-blue-500/30 text-xs font-mono text-blue-200 font-semibold"
+                      >
+                        {CLASS_TYPES.find((item) => item.value === classType)?.label} — Rs.{' '}
+                        {classFees[classType].toLocaleString()} / month
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <p className="text-xs font-mono text-slate-400 mb-2 uppercase tracking-wider">
+                    Months
                   </p>
                   <div className="flex flex-wrap gap-2">
                     {selectedMonths.map((key) => {
@@ -745,7 +945,8 @@ const OnlinePayment = () => {
                     </span>
                   </div>
                   <p className="text-[10px] font-mono text-slate-500 mt-1">
-                    {selectedMonths.length} × Rs. {monthlyFee.toLocaleString()}/month
+                    {selectedMonths.length} month{selectedMonths.length === 1 ? '' : 's'} × Rs.{' '}
+                    {selectedClassFee.toLocaleString()} per selected-class total / month
                   </p>
                 </div>
 

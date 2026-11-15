@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import {
   CheckCircle2,
+  Eye,
+  EyeOff,
   ExternalLink,
   FileText,
   Loader2,
@@ -22,10 +24,16 @@ const formatMonth = (month) => {
   return `${MONTH_NAMES[Number(monthNumber) - 1]} ${year}`;
 };
 
+const formatClassTypes = (classTypes = []) =>
+  classTypes
+    .map((classType) => classType.charAt(0).toUpperCase() + classType.slice(1))
+    .join(', ');
+
 const ManagePaymentSlips = () => {
   const [status, setStatus] = useState('pending');
   const [submissions, setSubmissions] = useState([]);
   const [slipUrls, setSlipUrls] = useState({});
+  const [visibleSlipId, setVisibleSlipId] = useState('');
   const [reviewNotes, setReviewNotes] = useState({});
   const [loading, setLoading] = useState(true);
   const [workingId, setWorkingId] = useState('');
@@ -54,10 +62,16 @@ const ManagePaymentSlips = () => {
   }, [status, reloadKey]);
 
   const openSlip = async (id) => {
+    if (visibleSlipId === id) {
+      setVisibleSlipId('');
+      return;
+    }
+
     setWorkingId(id);
     try {
       const res = await API.get(`/payments/admin/slips/${id}/file`);
       setSlipUrls((current) => ({ ...current, [id]: res.data.url }));
+      setVisibleSlipId(id);
     } catch (err) {
       toast.error(err.response?.data?.message || 'Unable to open payment slip.');
     } finally {
@@ -114,7 +128,7 @@ const ManagePaymentSlips = () => {
         </div>
 
         <div className="mb-5 p-3 rounded-xl bg-blue-500/5 border border-blue-500/15 text-xs text-blue-200/80">
-          Payment slips are available to admins only. Opened links expire after five minutes.
+          Uploaded slips can be previewed here by admins. Secure viewing links expire after five minutes.
         </div>
 
         {loading ? (
@@ -158,7 +172,11 @@ const ManagePaymentSlips = () => {
                       </span>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                    <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs">
+                      <div className="p-3 rounded-lg bg-white/[0.03]">
+                        <p className="text-slate-500 mb-1">Classes</p>
+                        <p className="text-white">{formatClassTypes(submission.classTypes)}</p>
+                      </div>
                       <div className="p-3 rounded-lg bg-white/[0.03]">
                         <p className="text-slate-500 mb-1">Months</p>
                         <p className="text-white">
@@ -187,29 +205,35 @@ const ManagePaymentSlips = () => {
                   </div>
 
                   <div className="flex flex-col gap-2 lg:w-56">
-                    {slipUrls[submission.id] ? (
+                    <button
+                      onClick={() => openSlip(submission.id)}
+                      disabled={workingId === submission.id}
+                      className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-blue-400/20 bg-blue-500/10 text-blue-200 text-sm hover:bg-blue-500/20 disabled:opacity-50"
+                    >
+                      {workingId === submission.id ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : visibleSlipId === submission.id ? (
+                        <EyeOff className="w-4 h-4" />
+                      ) : (
+                        <Eye className="w-4 h-4" />
+                      )}
+                      {workingId === submission.id
+                        ? 'Loading slip...'
+                        : visibleSlipId === submission.id
+                        ? 'Hide payment slip'
+                        : 'View uploaded slip'}
+                    </button>
+
+                    {visibleSlipId === submission.id && slipUrls[submission.id] && (
                       <a
                         href={slipUrls[submission.id]}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-blue-400/20 bg-blue-500/10 text-blue-200 text-sm hover:bg-blue-500/20"
+                        className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-white/10 text-slate-300 text-xs hover:bg-white/5"
                       >
                         <ExternalLink className="w-4 h-4" />
-                        Open payment slip
+                        Open in a new tab
                       </a>
-                    ) : (
-                      <button
-                        onClick={() => openSlip(submission.id)}
-                        disabled={workingId === submission.id}
-                        className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-white/10 text-sm text-white hover:bg-white/5 disabled:opacity-50"
-                      >
-                        {workingId === submission.id ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                          <FileText className="w-4 h-4" />
-                        )}
-                        Get secure slip link
-                      </button>
                     )}
 
                     {submission.status === 'pending' && (
@@ -247,6 +271,28 @@ const ManagePaymentSlips = () => {
                     )}
                   </div>
                 </div>
+
+                {visibleSlipId === submission.id && slipUrls[submission.id] && (
+                  <div className="mt-5 rounded-xl border border-white/10 bg-black/20 p-3 sm:p-4">
+                    {submission.slipMimeType?.startsWith('image/') ? (
+                      <img
+                        src={slipUrls[submission.id]}
+                        alt={`Payment slip uploaded by ${submission.studentName}`}
+                        className="mx-auto max-h-[75vh] max-w-full rounded-lg object-contain"
+                      />
+                    ) : submission.slipMimeType === 'application/pdf' ? (
+                      <iframe
+                        src={slipUrls[submission.id]}
+                        title={`Payment slip uploaded by ${submission.studentName}`}
+                        className="h-[70vh] w-full rounded-lg bg-white"
+                      />
+                    ) : (
+                      <p className="text-sm text-slate-300">
+                        This file type cannot be previewed. Use “Open in a new tab” to view it.
+                      </p>
+                    )}
+                  </div>
+                )}
               </article>
             ))}
           </div>

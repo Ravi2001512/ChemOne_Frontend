@@ -5,7 +5,11 @@ import AdminNavbar from '../../components/AdminNavbar';
 import API from '../../services/api';
 
 const EMPTY_SETTINGS = {
-  monthlyFee: '2500',
+  classFees: {
+    theory: '2500',
+    revision: '2500',
+    paper: '2500',
+  },
   bankDetails: {
     bankName: '',
     branch: '',
@@ -25,7 +29,12 @@ const PaymentSettings = () => {
       try {
         const res = await API.get('/payments/config');
         setSettings({
-          monthlyFee: String(res.data.monthlyFee),
+          classFees: Object.fromEntries(
+            ['theory', 'revision', 'paper'].map((classType) => [
+              classType,
+              String(res.data.classFees?.[classType] ?? res.data.monthlyFee ?? 2500),
+            ])
+          ),
           bankDetails: res.data.bankDetails,
         });
         setPaymentSlipStorageEnabled(res.data.paymentSlipStorageEnabled);
@@ -51,11 +60,16 @@ const PaymentSettings = () => {
     setSaving(true);
     try {
       const res = await API.put('/payments/settings', {
-        monthlyFee: settings.monthlyFee,
+        classFees: settings.classFees,
         bankDetails: settings.bankDetails,
       });
       setSettings({
-        monthlyFee: String(res.data.monthlyFee),
+        classFees: Object.fromEntries(
+          ['theory', 'revision', 'paper'].map((classType) => [
+            classType,
+            String(res.data.classFees[classType]),
+          ])
+        ),
         bankDetails: res.data.bankDetails,
       });
       toast.success(res.data.message || 'Payment settings saved.');
@@ -79,7 +93,7 @@ const PaymentSettings = () => {
             Payment <span className="text-acid">Settings</span>
           </h1>
           <p className="mt-2 text-sm text-slate-400">
-            Set the monthly student fee and the bank account shown on the student payment page.
+          Set each class fee and the bank account shown on the student payment page.
           </p>
         </div>
 
@@ -99,7 +113,7 @@ const PaymentSettings = () => {
             </p>
             {!paymentSlipStorageEnabled && (
               <p className="mt-1 text-xs opacity-80">
-                Configure GCS_BUCKET_NAME and Google Cloud Storage credentials in the backend environment to accept payment slips.
+                Set PAYMENT_SLIPS_BUCKET_NAME to a private Google Cloud Storage bucket in the backend environment, and configure credentials with access to that bucket. Restart the backend after updating its environment.
               </p>
             )}
           </div>
@@ -115,31 +129,42 @@ const PaymentSettings = () => {
                 <CreditCard className="w-5 h-5" />
               </div>
               <div>
-                <h2 className="font-grotesk font-bold text-white">Monthly fee</h2>
-                <p className="text-xs text-slate-400">This amount is used to calculate student payment slip submissions.</p>
+                <h2 className="font-grotesk font-bold text-white">Class fees</h2>
+                <p className="text-xs text-slate-400">Students pay only for the class options they select.</p>
               </div>
             </div>
-            <label className="block max-w-sm">
-              <span className="block text-xs font-mono text-slate-400 mb-1.5">
-                Monthly fee (LKR)
-              </span>
-              <input
-                type="number"
-                min="0.01"
-                max="10000000"
-                step="0.01"
-                required
-                disabled={loading}
-                value={settings.monthlyFee}
-                onChange={(event) =>
-                  setSettings((current) => ({
-                    ...current,
-                    monthlyFee: event.target.value,
-                  }))
-                }
-                className="w-full rounded-lg bg-white/5 border border-white/10 px-3 py-2.5 text-white focus:border-acid focus:outline-none disabled:opacity-50"
-              />
-            </label>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {[
+                ['theory', 'Theory'],
+                ['revision', 'Revision'],
+                ['paper', 'Paper'],
+              ].map(([classType, label]) => (
+                <label key={classType}>
+                  <span className="block text-xs font-mono text-slate-400 mb-1.5">
+                    {label} fee (LKR)
+                  </span>
+                  <input
+                    type="number"
+                    min="0.01"
+                    max="10000000"
+                    step="0.01"
+                    required
+                    disabled={loading}
+                    value={settings.classFees[classType]}
+                    onChange={(event) =>
+                      setSettings((current) => ({
+                        ...current,
+                        classFees: {
+                          ...current.classFees,
+                          [classType]: event.target.value,
+                        },
+                      }))
+                    }
+                    className="w-full rounded-lg bg-white/5 border border-white/10 px-3 py-2.5 text-white focus:border-acid focus:outline-none disabled:opacity-50"
+                  />
+                </label>
+              ))}
+            </div>
           </section>
 
           <div className="h-px bg-white/10" />
@@ -151,7 +176,7 @@ const PaymentSettings = () => {
               </div>
               <div>
                 <h2 className="font-grotesk font-bold text-white">Bank transfer account</h2>
-                <p className="text-xs text-slate-400">Displayed as the manual payment option for students.</p>
+                <p className="text-xs text-slate-400">All account details are required and displayed as the manual payment option for students.</p>
               </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -168,6 +193,7 @@ const PaymentSettings = () => {
                   <input
                     type="text"
                     maxLength={100}
+                    required
                     required
                     disabled={loading}
                     value={settings.bankDetails[field]}
