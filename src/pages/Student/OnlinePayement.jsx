@@ -17,7 +17,6 @@ import {
   Check,
   Banknote,
   ArrowRight,
-  Sparkles,
   Info,
   X,
   Loader2,
@@ -141,9 +140,6 @@ const OnlinePayment = () => {
 
   const paidCount = monthList.filter((m) => m.isPaid).length;
   const pendingCount = monthList.filter((m) => m.isPending).length;
-  const unpaidCount = monthList.filter(
-    (m) => !m.isPaid && !m.isPending && !m.isFuture
-  ).length;
 
   const paidMonthsByClass = useMemo(
     () =>
@@ -352,12 +348,6 @@ const OnlinePayment = () => {
               <div className="px-3 py-1.5 rounded-xl border bg-blue-500/10 border-blue-500/30 text-xs font-mono text-blue-300 flex items-center gap-1.5">
                 <Clock className="w-3.5 h-3.5" />
                 In review: {pendingCount}
-              </div>
-            )}
-            {unpaidCount > 0 && (
-              <div className="px-3 py-1.5 rounded-xl border bg-amber-500/10 border-amber-500/30 text-xs font-mono text-amber-300 flex items-center gap-1.5">
-                <Clock className="w-3.5 h-3.5" />
-                Due: {unpaidCount}
               </div>
             )}
             <div className="px-3 py-1.5 rounded-xl border bg-white/5 border-white/10 text-xs font-mono text-slate-300 flex items-center gap-1.5">
@@ -786,16 +776,6 @@ const OnlinePayment = () => {
                   </span>
                 </div>
 
-                {unpaidCount > 0 && (
-                  <div className="flex justify-between items-center p-2.5 rounded-lg bg-red-500/5 border border-red-500/20">
-                    <span className="text-xs font-mono text-red-300">
-                      Unpaid months
-                    </span>
-                    <span className="text-xs font-mono text-red-300 font-bold">
-                      {unpaidCount}
-                    </span>
-                  </div>
-                )}
               </div>
             </div>
 
@@ -810,53 +790,6 @@ const OnlinePayment = () => {
           </div>
         </div>
 
-        {/* ── PAYMENT PROGRESS BAR ────────────────────────── */}
-        <div className="mt-8 bg-ink-lighter border border-white/10 rounded-2xl p-5 sm:p-6 shadow-xl">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-grotesk font-bold text-white flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-acid" />
-              Annual Payment Progress
-            </h3>
-            <span className="text-xs font-mono text-acid font-bold">
-              {Math.round((paidCount / 12) * 100)}%
-            </span>
-          </div>
-
-          {/* Progress bar */}
-          <div className="w-full h-3 rounded-full bg-white/5 border border-white/10 overflow-hidden mb-4">
-            <div
-              className="h-full rounded-full bg-gradient-to-r from-acid/80 to-acid transition-all duration-1000 ease-out shadow-[0_0_12px_rgba(0,240,255,0.3)]"
-              style={{ width: `${(paidCount / 12) * 100}%` }}
-            />
-          </div>
-
-          {/* Mini month dots */}
-          <div className="flex items-center gap-1.5 justify-between">
-            {monthList.map((month) => (
-              <div key={month.key} className="flex flex-col items-center gap-1">
-                <div
-                  className={`w-3 h-3 sm:w-4 sm:h-4 rounded-full border transition-all ${
-                    month.isPaid
-                      ? 'bg-emerald-400 border-emerald-400/50 shadow-sm shadow-emerald-400/30'
-                      : month.isPending
-                      ? 'bg-blue-400 border-blue-400/50'
-                      : month.isCurrent
-                      ? 'bg-amber-400 border-amber-400/50 animate-pulse'
-                      : month.isFuture
-                      ? 'bg-slate-800 border-slate-700'
-                      : 'bg-red-400/30 border-red-400/30'
-                  }`}
-                  title={`${month.name} — ${
-                    month.isPaid ? 'Paid' : month.isPending ? 'Under review' : 'Unpaid'
-                  }`}
-                />
-                <span className="text-[8px] sm:text-[9px] font-mono text-slate-600 hidden sm:block">
-                  {month.name.slice(0, 3)}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
       </main>
 
       {/* ── PAYMENT MODAL ────────────────────────────────── */}
