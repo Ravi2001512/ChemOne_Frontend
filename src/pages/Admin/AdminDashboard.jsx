@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ClipboardList, Users, BarChart3, Settings, FileText, Bell, BookOpen, ArrowRight, QrCode,Video } from 'lucide-react';
+import { ClipboardList, Users, BarChart3, Settings, FileText, Bell, BookOpen, ArrowRight, QrCode, Video, CreditCard, Receipt } from 'lucide-react';
 import AdminNavbar from '../../components/AdminNavbar';
 
 /* ─── Main Component ──────────────────────────────────────────── */
@@ -44,6 +44,22 @@ const AdminDashboard = () => {
       onClick: () => navigate('/admin/students'),
       color: 'orange',
       tag: 'Students',
+    },
+    {
+      title: 'Payment Settings',
+      description: 'Set monthly fees and bank-transfer account details for students',
+      icon: CreditCard,
+      onClick: () => navigate('/admin/payment-settings'),
+      color: 'emerald',
+      tag: 'Payments',
+    },
+    {
+      title: 'Review Payment Slips',
+      description: 'Verify student bank-transfer receipts and approve monthly fees',
+      icon: Receipt,
+      onClick: () => navigate('/admin/payment-slips'),
+      color: 'sky',
+      tag: 'Payments',
     },
     {
       title: 'Upload Exam Results',
