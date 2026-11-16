@@ -15,7 +15,8 @@ import {
   Lock,
   ShieldCheck,
   Users,
-  Eye
+  Eye,
+  ExternalLink
 } from 'lucide-react';
 
 const extractYoutubeId = (url) => {
@@ -31,6 +32,8 @@ const extractYoutubeId = (url) => {
   }
   return '';
 };
+
+const getClassPlatform = (cls) => cls?.platform || 'youtube';
 
 
 const StudentLiveClass = () => {
@@ -84,7 +87,7 @@ const StudentLiveClass = () => {
       setLoading(true);
       try {
         const res = await API.get('/live-classes');
-        if (res.data && Array.isArray(res.data) && res.data.length > 0) {
+        if (Array.isArray(res.data)) {
           setClasses(res.data);
           selectInitial(res.data);
           return;
@@ -129,8 +132,13 @@ const StudentLiveClass = () => {
 
   const activeVideoId = useMemo(() => {
     if (!isRegisteredStudent || !selectedClass) return '';
+    if (getClassPlatform(selectedClass) === 'zoom') return '';
     return selectedClass.videoId || extractYoutubeId(selectedClass.youtubeUrl);
   }, [selectedClass, isRegisteredStudent]);
+  const isZoomClass = getClassPlatform(selectedClass) === 'zoom';
+  const hasPlayableContent = isZoomClass
+    ? Boolean(selectedClass?.meetingUrl && selectedClass.status !== 'ended')
+    : Boolean(activeVideoId);
 
   const studentIndexNumber = currentUser?.indexNumber;
   const isAdmin = currentUser?.role === 'admin' || currentUser?.role === 'instructor';
@@ -354,7 +362,7 @@ const StudentLiveClass = () => {
                     Only selected student index numbers can view this video. Please contact the administrator to request access.
                   </div>
                 </div>
-              ) : isViewLimitReached && activeVideoId ? (
+              ) : isViewLimitReached && hasPlayableContent ? (
                 <div className="flex flex-col items-center justify-center h-full w-full text-center p-3 sm:p-8 bg-black border border-red-500/20 overflow-y-auto">
                   <div className="w-10 h-10 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl bg-red-500/10 border border-red-500/30 flex items-center justify-center text-red-400 mb-2 sm:mb-4 shadow-xl shadow-red-500/10 flex-shrink-0">
                     <Eye className="w-5 h-5 sm:w-8 sm:h-8" />
@@ -374,6 +382,32 @@ const StudentLiveClass = () => {
                   <div className="p-2 sm:p-3 rounded-xl bg-white/5 border border-white/5 text-[10px] sm:text-xs font-mono text-slate-400 max-w-sm">
                     Each student is limited to {maxViewsPerVideo} views per video. Please contact your instructor if you need additional access.
                   </div>
+                </div>
+              ) : isZoomClass && selectedClass?.meetingUrl ? (
+                <div className="flex flex-col items-center justify-center h-full w-full text-center p-5 sm:p-8 bg-gradient-to-br from-slate-950 to-black">
+                  <Video className="w-12 h-12 sm:w-16 sm:h-16 text-blue-400 mb-3" />
+                  <p className="text-base sm:text-lg font-bold text-white mb-2">
+                    {selectedClass.status === 'ended' ? 'Zoom session ended' : 'Join the live Zoom class'}
+                  </p>
+                  {selectedClass.status !== 'ended' ? (
+                    <>
+                      <p className="text-xs sm:text-sm text-slate-400 mb-4 max-w-md">
+                        The meeting opens in Zoom or your browser. You may need to sign in or wait for the host to admit you.
+                      </p>
+                      <a
+                        href={selectedClass.meetingUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-blue-600 text-white font-semibold text-sm font-mono hover:bg-blue-500 transition-colors"
+                      >
+                        Join Zoom Meeting <ExternalLink className="w-4 h-4" />
+                      </a>
+                    </>
+                  ) : (
+                    <p className="text-xs sm:text-sm text-slate-400">
+                      This Zoom session has ended. A replay will be available here if one is published.
+                    </p>
+                  )}
                 </div>
               ) : activeVideoId ? (
                 <iframe
@@ -420,6 +454,11 @@ const StudentLiveClass = () => {
                     <span className="px-2.5 py-1 rounded-full text-[10px] sm:text-xs font-mono bg-white/5 text-slate-300 border border-white/10">
                       Batch: {selectedClass.batch}
                     </span>
+                    {isZoomClass && (
+                      <span className="px-2.5 py-1 rounded-full text-[10px] sm:text-xs font-mono font-semibold bg-blue-500/15 text-blue-300 border border-blue-500/30">
+                        ZOOM MEETING
+                      </span>
+                    )}
 
                     {selectedClass.isRestricted ? (
                       selectedHasAccess ? (
@@ -482,7 +521,9 @@ const StudentLiveClass = () => {
                   <div className="flex items-center gap-2">
                     <span className="text-slate-500">Mode:</span>
                     <span className={selectedClass.status === 'ended' ? 'text-purple-400 font-semibold' : 'text-acid font-semibold'}>
-                      {selectedClass.status === 'ended' ? 'On-Demand Lecture Recording' : 'Interactive Broadcast'}
+                      {isZoomClass
+                        ? selectedClass.status === 'ended' ? 'Zoom Meeting (Ended)' : 'Interactive Zoom Meeting'
+                        : selectedClass.status === 'ended' ? 'On-Demand Lecture Recording' : 'Interactive Broadcast'}
                     </span>
                   </div>
                 </div>
@@ -561,7 +602,8 @@ const StudentLiveClass = () => {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
               {filteredClasses.map((cls) => {
-                const vid = cls.videoId || extractYoutubeId(cls.youtubeUrl);
+                const isZoom = getClassPlatform(cls) === 'zoom';
+                const vid = isZoom ? '' : cls.videoId || extractYoutubeId(cls.youtubeUrl);
                 const isSelected = selectedClass?._id === cls._id;
                 const isLive = cls.status === 'live';
                 const isRecording = cls.status === 'ended';
@@ -642,7 +684,7 @@ const StudentLiveClass = () => {
                           {hasCardAccess ? (
                             <>
                               <Play className="w-6 h-6 fill-white" />
-                              {isRecording ? 'Play Recording' : 'Play Stream'}
+                              {isZoom ? 'Join Zoom' : isRecording ? 'Play Recording' : 'Play Stream'}
                             </>
                           ) : (
                             <>
@@ -662,6 +704,11 @@ const StudentLiveClass = () => {
                             }`}>
                             Batch: {cls.batch}
                           </span>
+                          {isZoom && (
+                            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-blue-500/10 text-blue-300 border border-blue-500/20">
+                              ZOOM
+                            </span>
+                          )}
 
                           {cls.isRestricted ? (
                             hasCardAccess ? (
@@ -698,7 +745,8 @@ const StudentLiveClass = () => {
                         }`}>
                         {hasCardAccess ? (
                           <>
-                            <Play className="w-3 h-3" /> {isRecording ? 'Watch Recording' : 'Watch Now'}
+                            {isZoom ? <ExternalLink className="w-3 h-3" /> : <Play className="w-3 h-3" />}
+                            {isZoom ? 'Join Zoom' : isRecording ? 'Watch Recording' : 'Watch Now'}
                           </>
                         ) : (
                           <>

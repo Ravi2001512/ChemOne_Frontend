@@ -8,11 +8,13 @@ The modern web interface for the ChemBridge platform, designed to provide an int
 - **Interactive Learning**: Access daily worksheets and spot tests to reinforce chemistry knowledge.
 - **AI Chatbot**: Get instant help and explanations for complex chemistry topics.
 - **Performance Tracking**: View results from physical exams and spot tests.
+- **Payment Slips**: Select monthly fees, upload bank-transfer receipts, and track verification status.
 - **Gamified Experience**: Engage with chemistry-themed games.
 - **Secure Access**: Personal dashboards, profile settings, and secure authentication.
 
 ### For Administrators
 - **Dashboard**: High-level overview of platform activity.
+- **Payment Settings**: Configure the monthly fee and bank-transfer account shown to students.
 - **Content Management**: Create and manage daily worksheets and spot tests.
 - **Student Management**: Oversee student progress and manage records.
 - **Result Management**: Process and notify students of their physical exam results.
